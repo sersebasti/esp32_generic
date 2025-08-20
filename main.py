@@ -1,55 +1,88 @@
-import network, time
-from wifi_connect import connect_from_json
+from wifi_connect import connect_from_json, start_ap_mode
 from logger import RollingLogger
+import time, network
+
+# Se hai il portale di configurazione, lo importiamo; altrimenti gestiamo senza.
+try:
+    from web_ap import start_web_ap
+except Exception:
+    start_web_ap = None
 
 log = RollingLogger(path="log.txt", max_bytes=8*1024, backups=1, echo=True)
 
 def ts():
     try:
-        y,mo,d,hh,mm,ss,_,_ = time.localtime()
-        if y >= 2020:
-            return "%02d:%02d:%02d" % (hh, mm, ss)
-    except:
-        pass
-    return "t+%dms" % time.ticks_ms()
+        t = time.localtime()
+        return "%02d:%02d:%02d" % (t[3], t[4], t[5])
+    except Exception:
+        return "t+%dms" % time.ticks_ms()
 
 def wifi_is_ok():
     sta = network.WLAN(network.STA_IF)
     return sta.active() and sta.isconnected() and sta.ifconfig()[0] not in (None, "", "0.0.0.0")
 
 def try_reconnect():
-    # se usi la versione con force_reconnect, passa force_reconnect=True
     ok, ip = connect_from_json("wifi.json", timeout=15)
     return ok, ip
 
-def run_wifi_loop(check_interval=30, heartbeat=True):
-    """Controlla la connessione ogni 'check_interval' secondi e riconnette se serve."""
-    ok, ip = connect_from_json("wifi.json", timeout=15)
-    print("OK:", ok, "IP:", ip)
-    prev_ok = ok
-    if ok:
-        log.info("WiFi up (ip=%s)" % ip)
-    else:
-        log.warn("WiFi down at start; will retry")
+def _start_config_ap_with_fallback():
+    """Accende AP di configurazione usando wifi_connect.start_ap_mode, con fallback locale.
+       Ritorna l'oggetto AP o None se fallisce tutto."""
+    ap = None
+    # 1) prova via wifi_connect
+    try:
+        ap = start_ap_mode(ssid="ESP32_SETUP", password="12345678", channel=6)
+    except Exception as e:
+        log.error("start_ap_mode() raised: %r" % e)
+        ap = None
 
+    # 2) fallback locale se serve
+    if not ap:
+        try:
+            # spegni STA
+            try:
+                sta = network.WLAN(network.STA_IF)
+                sta.active(False)
+            except Exception:
+                pass
+
+            ap = network.WLAN(network.AP_IF)
+            ap.active(False)
+            time.sleep_ms(100)
+            ap.active(True)
+            try:
+                ap.config(essid="ESP32_SETUP", password="12345678",
+                          authmode=network.AUTH_WPA_WPA2_PSK,
+                          channel=6, hidden=0, max_clients=5)
+            except Exception:
+                ap.config(essid="ESP32_SETUP", password="12345678",
+                          authmode=network.AUTH_WPA2_PSK)
+            try:
+                ap.ifconfig(("192.168.4.1","255.255.255.0","192.168.4.1","8.8.8.8"))
+            except Exception:
+                pass
+        except Exception as e:
+            log.error("Local AP fallback failed: %r" % e)
+            ap = None
+
+    return ap
+
+def run_wifi_loop(check_interval=30, heartbeat=True):
+    prev_ok = False
     while True:
         try:
             connected = wifi_is_ok()
 
-            # Heartbeat: stampa SEMPRE ad ogni ciclo
+            # Heartbeat
             if heartbeat:
                 if connected:
                     sta = network.WLAN(network.STA_IF)
                     ip_now = sta.ifconfig()[0]
-                    rssi = None
                     try:
                         rssi = sta.status('rssi')
-                    except Exception:
-                        pass
-                    if rssi is None:
-                        print("[%s] HB connected ip=%s" % (ts(), ip_now))
-                    else:
                         print("[%s] HB connected ip=%s rssi=%sdBm" % (ts(), ip_now, rssi))
+                    except Exception:
+                        print("[%s] HB connected ip=%s" % (ts(), ip_now))
                 else:
                     print("[%s] HB not connected" % ts())
 
@@ -68,21 +101,36 @@ def run_wifi_loop(check_interval=30, heartbeat=True):
                 else:
                     log.error("Reconnect failed")
 
-            # dorme per 'check_interval' secondi (a passi da 1s per Ctrl-C/soft reboot)
+                    # Fallback: AP di configurazione
+                    ap = _start_config_ap_with_fallback()
+                    if ap and ap.active():
+                        try:
+                            ip_ap = ap.ifconfig()[0]
+                        except Exception:
+                            ip_ap = "192.168.4.1"
+                        print("Access Point attivo per configurazione! IP:", ip_ap)
+                        # Se c'è il portale, avvialo: dovrebbe salvare e fare reset
+                        if start_web_ap:
+                            start_web_ap()  # blocca finché salva & resetta
+                        else:
+                            print("Apri http://%s per la configurazione (se web_ap non è presente, resta solo l'AP)." % ip_ap)
+                        return
+                    else:
+                        log.error("Impossibile avviare AP di configurazione")
+
+            # Sleep a passi da 1s (per Ctrl-C/soft reboot)
             for _ in range(int(check_interval)):
                 time.sleep(1)
-
-        except KeyboardInterrupt:
-            log.info("Loop interrupted by user")
-            break
         except Exception as e:
-            log.error("Loop exception: %r" % e)
+            log.error("Errore nel ciclo WiFi: %r" % e)
             time.sleep(5)
 
-# Avvio con intervallo parametrico e heartbeat attivo
+# Avvio
 run_wifi_loop(check_interval=30, heartbeat=True)
 
-
-# vedere le ultime 100 righe di log
-log = RollingLogger(path="log.txt")
-print(log.tail(100))
+# (facoltativo) stampa ultime 100 righe di log quando esci dal loop
+try:
+    log2 = RollingLogger(path="log.txt")
+    print(log2.tail(100))
+except Exception:
+    pass
