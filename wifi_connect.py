@@ -212,3 +212,4 @@ def start_ap_mode(ssid=None, password="12345678", channel=6):
     _log.log("AP attivo: SSID=%s, IP=%s" % (ssid, ap.ifconfig()[0]))
     print("Access Point creato: SSID=%s, password=%s" % (ssid, password))
     return ap
+

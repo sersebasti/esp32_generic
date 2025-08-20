@@ -94,7 +94,7 @@ def _write_wifi_json_raw(obj):
     log.info("Salvato wifi.json (raw)")
 
 def start_web_ap():
-    """Portale su 0.0.0.0:80 (fallback 8080). Dopo /save fa reset."""
+    """Portale su 0.0.0.0:80 (fallback 8080). Dopo /save ritorna."""
     # prepara server
     s = socket.socket()
     try:
@@ -140,15 +140,19 @@ def start_web_ap():
                         cl.send(HTTP_400)
                     else:
                         _write_wifi_json(ssid, pwd)
-                        cl.send(HTTP_TXT + b"OK. Riavvio tra 1s...")
-                        time.sleep(1); cl.close(); machine.reset(); return
+                        cl.send(HTTP_TXT + b"OK. Salvato. Mi connetto alla Wi-Fi...")
+                        try: cl.close()
+                        except: pass
+                        return  # esci da start_web_ap() invece di resettare
 
                 elif method == "POST" and path == "/save_json":
                     try:
                         obj = ujson.loads(body.decode())
                         _write_wifi_json_raw(obj)
-                        cl.send(HTTP_TXT + b"OK JSON. Riavvio tra 1s...")
-                        time.sleep(1); cl.close(); machine.reset(); return
+                        cl.send(HTTP_TXT + b"OK JSON. Salvato. Mi connetto alla Wi-Fi...")
+                        try: cl.close()
+                        except: pass
+                        return
                     except Exception:
                         cl.send(HTTP_400 + b"\nJSON error")
 
@@ -168,3 +172,4 @@ def start_web_ap():
     finally:
         try: s.close()
         except Exception: pass
+
