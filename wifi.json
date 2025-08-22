@@ -1,10 +1,1 @@
-{
-  "hostname": "esp32_1",
-
-  "ssid_1": "Galaxy A32 5GF950",
-  "password_1": "mercatello",
-
-  "ssid_2": "Vodafone-E34013225",
-  "password_2": "Merca1!tello"
-
-}
+{"networks": [{"ssid": "Vodafone-E34013225_EXT", "password": "Merca1!tello"}]}

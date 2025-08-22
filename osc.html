@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ADC Scope PC</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<h2>ADC Scope dal browser</h2>
+<canvas id="chart"></canvas>
+<script>
+async function update() {
+  const r = await fetch("http://192.168.1.24/adc/scope_counts?n=1024&sr=4000");
+  const j = await r.json();
+  const data = {
+    labels: j.counts.map((_, i) => i),
+    datasets: [{
+      label: "ADC counts",
+      data: j.counts,
+      borderColor: "blue",
+      borderWidth: 1,
+      fill: false,
+      pointRadius: 0
+    }]
+  };
+  chart.data = data;
+  chart.update();
+}
+const ctx = document.getElementById("chart");
+const chart = new Chart(ctx, {
+  type: "line",
+  data: {labels:[], datasets:[]},
+  options: {animation:false}
+});
+update();
+setInterval(update, 2000); // aggiorna ogni 2 secondi
+</script>
+</body>
+</html>

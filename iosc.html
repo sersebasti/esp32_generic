@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>iOSC – ADC RMS monitor</title>
+<style>
+  body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:16px;line-height:1.35}
+  #row{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:10px}
+  label{display:inline-block}
+  input,button{padding:6px 10px;border:1px solid #aaa;border-radius:6px}
+  button{cursor:pointer;background:#f7f7f7}
+  .grid{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:8px}
+  .card{border:1px solid #ddd;border-radius:8px;padding:8px}
+  canvas{border:1px solid #ccc;border-radius:8px;width:100%;max-width:100%;height:300px}
+  .ok{color:#0a6;font-weight:600}
+  .warn{color:#c00;font-weight:600}
+  small{color:#555}
+</style>
+</head>
+<body>
+<h2>iOSC – ADC RMS monitor</h2>
+
+<div id="row">
+  <label>ESP URL:
+    <input id="base" value="http://192.168.1.23" style="width:210px" />
+  </label>
+  <label>n (campioni):
+    <input id="n" type="number" min="32" max="4096" step="32" value="1024" style="width:110px" />
+  </label>
+  <label>sr (Hz):
+    <input id="sr" type="number" min="200" max="20000" step="100" value="4000" style="width:110px" />
+  </label>
+  <label>refresh (ms):
+    <input id="period" type="number" min="200" step="100" value="1500" style="width:110px" />
+  </label>
+  <button id="start">Start</button>
+  <button id="stop" disabled>Stop</button>
+  <button id="cal">Calibra baseline (0 A)</button>
+</div>
+
+<div class="grid">
+  <div class="card"><b>counts_rms</b><div id="vRms">–</div><small>RMS ultimo pacchetto</small></div>
+  <div class="card"><b>baseline μ</b><div id="vMu">–</div><small>media rumore</small></div>
+  <div class="card"><b>σ (dev.std.)</b><div id="vSigma">–</div><small>dispersione rumore</small></div>
+  <div class="card"><b>soglia</b>
+    <div id="vThr">–</div>
+    <small>μ + k·σ (k=<input id="k" value="3" type="number" step="0.1" style="width:60px">)</small>
+  </div>
+</div>
+
+<p id="status"><small>Pronto.</small></p>
+<canvas id="chart" width="960" height="320"></canvas>
+
+<script>
+let timer = null;
+const buf = [];           // storico counts_rms
+const MAXPTS = 600;       // punti visibili nel grafico
+let mu = null, sigma = null;
+
+const el = id => document.getElementById(id);
+const base   = el('base');
+const n      = el('n');
+const sr     = el('sr');
+const period = el('period');
+const vRms   = el('vRms');
+const vMu    = el('vMu');
+const vSigma = el('vSigma');
+const vThr   = el('vThr');
+const kEl    = el('k');
+const status = el('status');
+
+async function fetchScope() {
+  const url = `${base.value}/adc/scope_counts?n=${parseInt(n.value)}&sr=${parseInt(sr.value)}`;
+  const r = await fetch(url, {cache:'no-store'});
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.err || 'risposta non ok');
+  // compatibilità nomi
+  const rms = j.counts_rms ?? j.rms;
+  return {rms, n: j.n, sr: (j.sample_rate_hz || j.sample_rate)};
+}
+
+function drawChart() {
+  const c = el('chart');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0,0,W,H);
+
+  // assi
+  ctx.strokeStyle = '#eee';
+  ctx.beginPath();
+  for (let i=0;i<=10;i++){
+    const y = 10 + (H-20)*i/10;
+    ctx.moveTo(40,y); ctx.lineTo(W-10,y);
+  }
+  ctx.stroke();
+  // bounds
+  if (buf.length === 0) return;
+  const min = Math.min(...buf), max = Math.max(...buf);
+  const lo = min - 2, hi = max + 2;
+  const yMap = v => 10 + (H-20) * (1 - (v-lo)/(hi-lo));
+
+  // soglia
+  const kval = parseFloat(kEl.value||'3');
+  const thr = (mu!=null && sigma!=null) ? mu + kval*sigma : null;
+  if (thr!=null){
+    ctx.strokeStyle = '#f88';
+    ctx.beginPath();
+    const y = yMap(thr);
+    ctx.moveTo(40,y); ctx.lineTo(W-10,y); ctx.stroke();
+  }
+
+  // serie
+  ctx.strokeStyle = '#06c';
+  ctx.beginPath();
+  for (let i=0;i<buf.length;i++){
+    const x = 40 + (W-50) * i / Math.max(1, (buf.length-1));
+    const y = yMap(buf[i]);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // etichette
+  ctx.fillStyle='#666'; ctx.font='12px sans-serif';
+  ctx.fillText(hi.toFixed(1), 5, 20);
+  ctx.fillText(((hi+lo)/2).toFixed(1), 5, (H-20)/2);
+  ctx.fillText(lo.toFixed(1), 5, H-10);
+}
+
+function updateCards(rms){
+  vRms.textContent = rms.toFixed(2);
+  if (mu!=null)   vMu.textContent = mu.toFixed(2);
+  if (sigma!=null)vSigma.textContent = sigma.toFixed(2);
+  const kval = parseFloat(kEl.value||'3');
+  const thr = (mu!=null && sigma!=null) ? mu + kval*sigma : null;
+  if (thr!=null){
+    vThr.textContent = `${thr.toFixed(2)}  (${kval}σ)`;
+    status.innerHTML = (rms > thr)
+      ? `<span class="warn">SOPRA soglia</span>`
+      : `<span class="ok">Sotto soglia</span>`;
+  } else {
+    vThr.textContent = '—';
+    status.innerHTML = '<small>Calibra la baseline (0 A) per avere la soglia.</small>';
+  }
+}
+
+async function tick(){
+  try{
+    const {rms} = await fetchScope();
+    buf.push(rms); if (buf.length>MAXPTS) buf.shift();
+    updateCards(rms);
+    drawChart();
+  }catch(e){
+    status.innerHTML = `<span class="warn">Errore fetch: ${e}</span>`;
+  }
+}
+
+function start(){
+  stop();
+  timer = setInterval(tick, parseInt(period.value));
+  tick();
+  el('start').disabled = true;
+  el('stop').disabled = false;
+}
+function stop(){
+  if (timer){ clearInterval(timer); timer=null; }
+  el('start').disabled = false;
+  el('stop').disabled = true;
+}
+
+async function calibrate(){
+  stop();
+  status.textContent = 'Calibrazione in corso: lascia a 0 A...';
+  const SAMPLES = 20;   // 20 letture
+  const vals = [];
+  for (let i=0;i<SAMPLES;i++){
+    try{
+      const {rms} = await fetchScope();
+      vals.push(rms);
+      status.textContent = `Calibrazione ${i+1}/${SAMPLES}...`;
+      await new Promise(r=>setTimeout(r, 150));
+    }catch(e){
+      status.innerHTML = `<span class="warn">Errore durante calibrazione: ${e}</span>`;
+      return;
+    }
+  }
+  // calcola mu e sigma
+  const m = vals.reduce((a,b)=>a+b,0)/vals.length;
+  const s = Math.sqrt(vals.reduce((a,v)=>a+(v-m)*(v-m),0)/vals.length);
+  mu = m; sigma = s;
+  vMu.textContent = mu.toFixed(2);
+  vSigma.textContent = sigma.toFixed(2);
+  updateCards(vals[vals.length-1]);
+  drawChart();
+  status.innerHTML = '<span class="ok">Calibrazione completata</span>';
+}
+
+el('start').addEventListener('click', start);
+el('stop').addEventListener('click', stop);
+el('cal').addEventListener('click', calibrate);
+kEl.addEventListener('change', ()=>{ updateCards(buf.at(-1) ?? NaN); drawChart(); });
+
+// avvio “idle”
+drawChart();
+</script>
+</body>
+</html>

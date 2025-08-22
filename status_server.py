@@ -1,4 +1,5 @@
 # status_server.py (MicroPython)
+import adc_scope
 import socket, time, ujson, network, ubinascii, gc
 
 def _get_ip_sta():
@@ -218,9 +219,24 @@ def _delete_network(ssid):
     _cfg_write_all(cfg)
     return True, "deleted", fmt, len(new)
 
-_HTTP_200_JSON = b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n"
+_HTTP_200_JSON = (
+    b"HTTP/1.1 200 OK\r\n"
+    b"Content-Type: application/json\r\n"
+    b"Cache-Control: no-store\r\n"
+    b"Access-Control-Allow-Origin: *\r\n"
+    b"Connection: close\r\n\r\n"
+)
+
+_HTTP_200_HTML = (
+    b"HTTP/1.1 200 OK\r\n"
+    b"Content-Type: text/html; charset=utf-8\r\n"
+    b"Cache-Control: no-store\r\n"
+    b"Access-Control-Allow-Origin: *\r\n"
+    b"Connection: close\r\n\r\n"
+)
+
 _HTTP_400 = b"HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nCache-Control: no-store\r\nConnection: close\r\n\r\nBad Request"
-_HTTP_200_TXT  = b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nCache-Control: no-store\r\nConnection: close\r\n\r\nOK"
+
 
 def _parse_path(req_line):
     try:
@@ -311,6 +327,28 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
                         cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
                     except Exception as e:
                         cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "message": "invalid_request"}).encode())
+
+                elif method == "GET" and path.startswith("/adc/scope_counts"):
+                    if not adc_scope:
+                        cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"adc_scope_module_missing"}'); 
+                        continue
+                    n = 1024; sr = 4000
+                    if "?" in path:
+                        try:
+                            q = path.split("?",1)[1]
+                            for p in q.split("&"):
+                                if "=" in p:
+                                    k,v = p.split("=",1)
+                                    if k == "n":  n = int(v)
+                                    if k in ("sr","sample_rate_hz"): sr = int(v)
+                        except Exception:
+                            pass
+                    payload = adc_scope.json_dump_counts(n=n, sample_rate_hz=sr)
+                    cl.send(_HTTP_200_JSON + payload)
+                    
+            
+                    
+                
 
                 else:
                     cl.send(_HTTP_400)
