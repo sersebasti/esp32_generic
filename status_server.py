@@ -306,6 +306,8 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
             ip = _get_ip_sta() or "0.0.0.0"
             print("Status server su http://%s:%d/status" % (ip, bound))
 
+        busy = False  # <<< LOCK anti richieste sovrapposte durante il campionamento    
+
         while True:
             try:
                 cl, addr = s.accept()
@@ -320,7 +322,7 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
                 method, path = _parse_path(line)
 
                 if method == "GET" and path.startswith("/health"):
-                    cl.send(_HTTP_200_TXT)
+                    cl.send(_HTTP_200_JSON + b'{"ok":true}')    
 
                 elif method == "GET" and path.startswith("/status"):
                     payload = {
@@ -365,21 +367,28 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
 
                 elif method == "GET" and path.startswith("/adc/scope_counts"):
                     if not adc_scope:
-                        cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"adc_scope_module_missing"}'); 
-                        continue
-                    n = 1024; sr = 4000
-                    if "?" in path:
-                        try:
-                            q = path.split("?",1)[1]
-                            for p in q.split("&"):
-                                if "=" in p:
-                                    k,v = p.split("=",1)
-                                    if k == "n":  n = int(v)
-                                    if k in ("sr","sample_rate_hz"): sr = int(v)
-                        except Exception:
-                            pass
-                    payload = adc_scope.json_dump_counts(n=n, sample_rate_hz=sr)
-                    cl.send(_HTTP_200_JSON + payload)
+                        cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"adc_scope_module_missing"}')
+                    else:
+                        if busy:
+                            cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
+                        else:
+                            busy = True
+                            try:
+                                n = 1024; sr = 4000
+                                if "?" in path:
+                                    try:
+                                        q = path.split("?",1)[1]
+                                        for p in q.split("&"):
+                                            if "=" in p:
+                                                k,v = p.split("=",1)
+                                                if k == "n":  n = int(v)
+                                                if k in ("sr","sample_rate_hz"): sr = int(v)
+                                    except Exception:
+                                        pass
+                                payload = adc_scope.json_dump_counts(n=n, sample_rate_hz=sr)
+                                cl.send(_HTTP_200_JSON + payload.encode())
+                            finally:
+                                busy = False
                     
                 elif method == "GET" and path.startswith("/calibrate"):
                     # default acquisizione
@@ -411,69 +420,90 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
 
                     # amp == 0: salva baseline (media a riposo)
                     elif amp == 0.0:
-                        arr, sr = adc_scope.sample_counts(n, sr)
-                        baseline = sum(arr) / len(arr)
-                        cal["baseline_mean"] = round(baseline, 2)
-                        cal["n0"] = len(arr); cal["sr0"] = sr
-                        if "points" not in cal: cal["points"] = []
-                        _cal_save(cal)
-                        resp = {"ok": True, "saved": {"baseline_mean": cal["baseline_mean"], "n0": cal["n0"], "sr0": cal["sr0"]}}
-                        cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
+                        if busy:
+                            cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
+                        else:
+                            busy = True
+                            try:
+                                arr, sr = adc_scope.sample_counts(n, sr)
+                                baseline = sum(arr) / len(arr)
+                                cal["baseline_mean"] = round(baseline, 2)
+                                cal["n0"] = len(arr); cal["sr0"] = sr
+                                if "points" not in cal: cal["points"] = []
+                                _cal_save(cal)
+                                resp = {"ok": True, "saved": {"baseline_mean": cal["baseline_mean"], "n0": cal["n0"], "sr0": cal["sr0"]}}
+                                cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
+                            finally:
+                                busy = False
 
                     # amp > 0: acquisisci RMS (detrend con baseline) e aggiungi punto, poi rifitta k
                     else:
-                        arr, sr = adc_scope.sample_counts(n, sr)
-                        baseline = float(cal.get("baseline_mean", sum(arr)/len(arr)))  # fallback se manca baseline
-                        rms = _rms_with_baseline(arr, baseline)
-                        pt = {"amps": float(amp), "rms_counts": round(rms, 2)}
-                        pts = cal.get("points", [])
-                        pts.append(pt)
-                        cal["points"] = pts
-                        k = _fit_k(pts)  # A per count
-                        cal["k_A_per_count"] = round(k, 9)
-                        _cal_save(cal)
+                        if busy:
+                            cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
+                        else:
+                            busy = True
+                            try:
+                                arr, sr = adc_scope.sample_counts(n, sr)
+                                baseline = float(cal.get("baseline_mean", sum(arr)/len(arr)))  # fallback se manca
+                                rms = _rms_with_baseline(arr, baseline)
+                                pt = {"amps": float(amp), "rms_counts": round(rms, 2)}
+                                pts = cal.get("points", [])
+                                pts.append(pt)
+                                cal["points"] = pts
+                                k = _fit_k(pts)  # A per count
+                                cal["k_A_per_count"] = round(k, 9)
+                                _cal_save(cal)
 
-                        mn = min(arr); mx = max(arr)
-                        clipping = (mn < 50) or (mx > 4040)
-                        resp = {
-                            "ok": True,
-                            "added": pt,
-                            "k_A_per_count": cal["k_A_per_count"],
-                            "num_points": len(pts),
-                            "baseline_mean": round(baseline, 2),
-                            "min": int(mn), "max": int(mx), "clipping": bool(clipping)
-                        }
-                        cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())            
+                                mn = min(arr); mx = max(arr)
+                                clipping = (mn < 50) or (mx > 4040)
+                                resp = {
+                                    "ok": True,
+                                    "added": pt,
+                                    "k_A_per_count": cal["k_A_per_count"],
+                                    "num_points": len(pts),
+                                    "baseline_mean": round(baseline, 2),
+                                    "min": int(mn), "max": int(mx), "clipping": bool(clipping)
+                                }
+                                cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
+                            finally:
+                                busy = False           
                     
                 elif method == "GET" and path.startswith("/amps"):
-                    n = 1600; sr = 4000
-                    if "?" in path:
-                        q = path.split("?", 1)[1]
-                        for p in q.split("&"):
-                            if "=" in p:
-                                k, v = p.split("=", 1)
-                                if k == "n": n = int(v)
-                                elif k in ("sr", "sample_rate_hz"): sr = int(v)
-
-                    cal = _cal_load()
-                    k = float(cal.get("k_A_per_count", 0.0))
-                    if k <= 0:
-                        cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"no_model"}')
+                    if busy:
+                        cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
                     else:
-                        arr, sr = adc_scope.sample_counts(n, sr)
-                        baseline = float(cal.get("baseline_mean", sum(arr)/len(arr)))
-                        rms = _rms_with_baseline(arr, baseline)
-                        amps = k * rms
-                        mn = min(arr); mx = max(arr)
-                        clipping = (mn < 50) or (mx > 4040)
-                        out = {
-                            "ok": True,
-                            "amps_rms": round(amps, 3),
-                            "rms_counts": round(rms, 2),
-                            "baseline_mean": round(baseline, 2),
-                            "min": int(mn), "max": int(mx), "clipping": bool(clipping)
-                        }
-                        cl.send(_HTTP_200_JSON + ujson.dumps(out).encode())
+                        busy = True
+                        try:
+                            n = 1600; sr = 4000
+                            if "?" in path:
+                                q = path.split("?", 1)[1]
+                                for p in q.split("&"):
+                                    if "=" in p:
+                                        k, v = p.split("=", 1)
+                                        if k == "n": n = int(v)
+                                        elif k in ("sr", "sample_rate_hz"): sr = int(v)
+
+                            cal = _cal_load()
+                            k = float(cal.get("k_A_per_count", 0.0))
+                            if k <= 0:
+                                cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"no_model"}')
+                            else:
+                                arr, sr = adc_scope.sample_counts(n, sr)
+                                baseline = float(cal.get("baseline_mean", sum(arr)/len(arr)))
+                                rms = _rms_with_baseline(arr, baseline)
+                                amps = k * rms
+                                mn = min(arr); mx = max(arr)
+                                clipping = (mn < 50) or (mx > 4040)
+                                out = {
+                                    "ok": True,
+                                    "amps_rms": round(amps, 3),
+                                    "rms_counts": round(rms, 2),
+                                    "baseline_mean": round(baseline, 2),
+                                    "min": int(mn), "max": int(mx), "clipping": bool(clipping)
+                                }
+                                cl.send(_HTTP_200_JSON + ujson.dumps(out).encode())
+                        finally:
+                            busy = False
 
                 elif method == "POST" and path.startswith("/calibrate/reset"):
                     try:
@@ -493,6 +523,7 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
             finally:
                 try: cl.close()
                 except Exception: pass
+                gc.collect()
     finally:
         try: s.close()
         except Exception: pass
