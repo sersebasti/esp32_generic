@@ -35,3 +35,19 @@ curl "http://ESP_IP/amps?n=1600&sr=4000"
 
 # 5) reset calibrate - elimina tutti i dati di calibrazione
 curl -X POST "http://192.168.1.24/calibrate/reset"
+
+
+
+
+# carica un file nella root del device
+curl -X POST --data-binary @status_server.py "http://ESP_IP/upload?to=/status_server.py"
+
+# carica una pagina nella sottocartella /www (la crea se non esiste)
+curl -X POST --data-binary @osc.html "http://ESP_IP/upload?to=/www/osc.html"
+
+# carica main.py e poi riavvia manualmente (pulsante EN o power-cycle)
+curl -X POST --data-binary @main.py "http://ESP_IP/upload?to=/main.py"
+
+
+
+curl -X POST "http://ESP_IP/reboot"

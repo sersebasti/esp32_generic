@@ -2,6 +2,9 @@
 import adc_scope
 import socket, time, ujson, network, ubinascii, gc, math
 
+BUSY = {"v": False}   # lock globale anti-overlap, mutabile
+version = "1.0.0"
+
 def _get_ip_sta():
     try:
         sta = network.WLAN(network.STA_IF)
@@ -238,6 +241,55 @@ _HTTP_200_HTML = (
 _HTTP_400 = b"HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nCache-Control: no-store\r\nConnection: close\r\n\r\nBad Request"
 
 
+# Risposta CORS per le richieste preflight dei browser
+_HTTP_204_CORS = (
+    b"HTTP/1.1 204 No Content\r\n"
+    b"Access-Control-Allow-Origin: *\r\n"
+    b"Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS\r\n"
+    b"Access-Control-Allow-Headers: Content-Type\r\n"
+    b"Connection: close\r\n\r\n"
+)
+
+# Intestazioni JSON + CORS (puoi usare questa per le risposte /upload)
+_HTTP_200_JSON_CORS = (
+    b"HTTP/1.1 200 OK\r\n"
+    b"Content-Type: application/json\r\n"
+    b"Cache-Control: no-store\r\n"
+    b"Access-Control-Allow-Origin: *\r\n"
+    b"Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS\r\n"
+    b"Access-Control-Allow-Headers: Content-Type\r\n"
+    b"Connection: close\r\n\r\n"
+)
+
+
+def _hdr_get(req_bytes, name_lower):
+    """Estrae il valore dell'header (in minuscolo), es. b'content-length'."""
+    try:
+        head = req_bytes.split(b"\r\n\r\n", 1)[0]
+        for line in head.split(b"\r\n")[1:]:
+            L = line.lower()
+            if L.startswith(name_lower + b":"):
+                return line.split(b":", 1)[1].strip()
+    except:
+        pass
+    return None
+
+def _body_initial_and_len(req_bytes):
+    """Ritorna (body_gia_letto, content_length). Se manca CL → (None, None)."""
+    try:
+        head, body0 = req_bytes.split(b"\r\n\r\n", 1)
+    except ValueError:
+        return b"", 0
+    v = _hdr_get(req_bytes, b"content-length")
+    if v is None:
+        return None, None
+    try:
+        total = int(v)
+    except:
+        total = 0
+    return body0, total
+
+
 def _parse_path(req_line):
     try:
         parts = req_line.split(" ")
@@ -305,27 +357,34 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
         if verbose:
             ip = _get_ip_sta() or "0.0.0.0"
             print("Status server su http://%s:%d/status" % (ip, bound))
+        
+        BUSY["v"] = False
 
-        busy = False  # <<< LOCK anti richieste sovrapposte durante il campionamento    
-
+       
         while True:
             try:
                 cl, addr = s.accept()
             except OSError:
                 continue
             try:
-                cl.settimeout(1.0)
+                cl.settimeout(3.0)
                 req = cl.recv(1024)
                 if not req:
                     cl.close(); continue
                 line = req.split(b"\r\n", 1)[0].decode("utf-8", "ignore")
                 method, path = _parse_path(line)
 
+                if method == "OPTIONS":
+                    # Preflight CORS: permette ai browser di fare POST/PUT da pagine locali
+                    cl.send(_HTTP_204_CORS)
+                    continue
+
                 if method == "GET" and path.startswith("/health"):
                     cl.send(_HTTP_200_JSON + b'{"ok":true}')    
 
                 elif method == "GET" and path.startswith("/status"):
                     payload = {
+                        "version": version,
                         "name": meta["hostname"],
                         "ip": _get_ip_sta(),
                         "ssid": _get_ssid(),
@@ -369,10 +428,10 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
                     if not adc_scope:
                         cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"adc_scope_module_missing"}')
                     else:
-                        if busy:
+                        if BUSY["v"]:
                             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
                         else:
-                            busy = True
+                            BUSY["v"] = True
                             try:
                                 n = 1024; sr = 4000
                                 if "?" in path:
@@ -388,7 +447,7 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
                                 payload = adc_scope.json_dump_counts(n=n, sample_rate_hz=sr)
                                 cl.send(_HTTP_200_JSON + payload.encode())
                             finally:
-                                busy = False
+                                BUSY["v"] = False
                     
                 elif method == "GET" and path.startswith("/calibrate"):
                     # default acquisizione
@@ -420,10 +479,10 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
 
                     # amp == 0: salva baseline (media a riposo)
                     elif amp == 0.0:
-                        if busy:
+                        if BUSY["v"]:
                             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
                         else:
-                            busy = True
+                            BUSY["v"] = True
                             try:
                                 arr, sr = adc_scope.sample_counts(n, sr)
                                 baseline = sum(arr) / len(arr)
@@ -434,14 +493,14 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
                                 resp = {"ok": True, "saved": {"baseline_mean": cal["baseline_mean"], "n0": cal["n0"], "sr0": cal["sr0"]}}
                                 cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
                             finally:
-                                busy = False
+                                BUSY["v"] = False
 
                     # amp > 0: acquisisci RMS (detrend con baseline) e aggiungi punto, poi rifitta k
                     else:
-                        if busy:
+                        if BUSY["v"]:
                             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
                         else:
-                            busy = True
+                            BUSY["v"] = True
                             try:
                                 arr, sr = adc_scope.sample_counts(n, sr)
                                 baseline = float(cal.get("baseline_mean", sum(arr)/len(arr)))  # fallback se manca
@@ -466,13 +525,13 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
                                 }
                                 cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
                             finally:
-                                busy = False           
+                                BUSY["v"] = False           
                     
                 elif method == "GET" and path.startswith("/amps"):
-                    if busy:
+                    if BUSY["v"]:
                         cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
                     else:
-                        busy = True
+                        BUSY["v"] = True
                         try:
                             n = 1600; sr = 4000
                             if "?" in path:
@@ -503,7 +562,7 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
                                 }
                                 cl.send(_HTTP_200_JSON + ujson.dumps(out).encode())
                         finally:
-                            busy = False
+                            BUSY["v"] = False
 
                 elif method == "POST" and path.startswith("/calibrate/reset"):
                     try:
@@ -512,6 +571,75 @@ def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
                     except:
                         pass
                     cl.send(_HTTP_200_JSON + b'{"ok":true}')
+
+
+
+                # --- Upload (POST/PUT) ---
+                elif method in ("POST", "PUT") and path.startswith("/upload"):
+                    cl.settimeout(5.0)
+                    if BUSY["v"]:
+                        cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"busy"}')
+                    else:
+                        BUSY["v"] = True
+                        try:
+                            # Estrai ?to=
+                            to_path = None
+                            if "?" in path:
+                                q = path.split("?", 1)[1]
+                                for p in q.split("&"):
+                                    if "=" in p:
+                                        k, v = p.split("=", 1)
+                                        if k in ("to","path","filename"):
+                                            to_path = v if v.startswith("/") else ("/" + v)
+
+                            # sanity sul path
+                            if (not to_path) or to_path.endswith("/") or (".." in to_path) or (not to_path.startswith("/")):
+                                cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"bad_path"}')
+                            else:
+                                # Content-Length + porzione di body già letta
+                                body0, total = _body_initial_and_len(req)
+                                if body0 is None or total is None:
+                                    cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"no_content_length"}')
+                                elif total <= 0:
+                                    cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"empty"}')
+                                elif total > 512*1024:
+                                    cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"too_big"}')
+                                else:
+                                    # (opz) crea dir un livello
+                                    try:
+                                        import os
+                                        dname = to_path.rsplit("/", 1)[0]
+                                        if dname and dname not in ("", "/"):
+                                            try: os.mkdir(dname)
+                                            except: pass
+                                    except: pass
+
+                                    written = 0
+                                    with open(to_path, "wb") as f:
+                                        if body0:
+                                            f.write(body0); written += len(body0)
+                                        while written < total:
+                                            chunk = cl.recv(min(1024, total - written))
+                                            if not chunk: break
+                                            f.write(chunk); written += len(chunk)
+
+                                
+                                    gc.collect()
+                                    ok = (written == total)
+                                    resp = ujson.dumps({"ok": ok, "path": to_path, "size": written})
+                                    cl.send(_HTTP_200_JSON_CORS + resp.encode())
+                        except Exception:
+                            try: cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"upload_failed"}')
+                            except: pass
+                        finally:
+                            BUSY["v"] = False
+
+                elif method == "POST" and path.startswith("/reboot"):
+                    cl.send(_HTTP_200_JSON + b'{"ok":true}')
+                    try: cl.close()
+                    except: pass
+                    import machine
+                    machine.reset()            
 
 
                 else:
