@@ -1,7 +1,7 @@
 import os, time
 
 class RollingLogger:
-    def __init__(self, path="log.txt", max_bytes=8*1024, backups=1,
+    def __init__(self, path="log.txt", max_bytes=2*1024, backups=1,
                  echo=True, echo_levels=("E","W","I")):
         self.path = path
         self.max_bytes = max_bytes
