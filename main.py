@@ -91,6 +91,16 @@ def run_wifi_loop(check_interval=30, heartbeat=True):
                     print("[%s] HB not connected" % ts())
 
             if connected:
+                # NEW: se l'AP è rimasto acceso, spegnilo
+                try:
+                    ap = network.WLAN(network.AP_IF)
+                    if ap.active():
+                        ap.active(False)
+                        print("AP spento: STA connesso")
+                except Exception:
+                    pass
+
+        
                 if not prev_ok:
                     sta = network.WLAN(network.STA_IF)
                     log.info("WiFi restored (ip=%s)" % sta.ifconfig()[0])
@@ -110,10 +120,29 @@ def run_wifi_loop(check_interval=30, heartbeat=True):
             else:
                 if prev_ok:
                     log.warn("WiFi lost; trying reconnect")
+
+                # NEW: assicurati che lo STA sia attivo anche se l'AP è acceso
+                try:
+                    sta = network.WLAN(network.STA_IF)
+                    sta.active(True)
+                except Exception:
+                    pass
+
                 ok, ip = try_reconnect()
+
                 prev_ok = ok
                 if ok:
                     log.info("Reconnected (ip=%s)" % ip)
+
+                    # NEW: spegni l'AP se rimasto acceso
+                    try:
+                        ap = network.WLAN(network.AP_IF)
+                        if ap.active():
+                            ap.active(False)
+                            print("AP spento dopo reconnect riuscito")
+                    except Exception:
+                        pass
+                    
                     # >>> AVVIA IL SERVER ANCHE DOPO RECONNECT (hard boot case)
                     if not status_started:
                         try:

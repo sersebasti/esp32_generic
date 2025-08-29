@@ -17,6 +17,32 @@ _STAT_MAP = {
 def _status_str(st):
     return _STAT_MAP.get(st, str(st))
 
+
+def _config_safe(wlan, **pairs):
+    """Set WLAN.config() keys se supportate; ignora le altre."""
+    for k, v in pairs.items():
+        try:
+            wlan.config(**{k: v})
+        except Exception:
+            pass
+
+def _set_hostname_safe(wlan, host):
+    if not host:
+        return
+    # ESP32 usa di solito 'dhcp_hostname'; su alcuni port può essere 'hostname'
+    for key in ("dhcp_hostname", "hostname"):
+        try:
+            wlan.config(**{key: host})
+            return
+        except Exception:
+            pass
+
+def _get_rssi_safe(wlan):
+    try:
+        return wlan.status('rssi')
+    except Exception:
+        return None    
+
 def _networks_from_cfg(cfg):
     """
     Estrae una lista di (ssid, password) da cfg.
@@ -108,16 +134,14 @@ def connect_from_json(path="wifi.json", timeout=12, force_reconnect=True, retrie
     sta = network.WLAN(network.STA_IF)
     sta.active(True)
 
-    # Disabilita power-save per stabilità durante l'aggancio
-    try: sta.config(pm=0xa11140)
-    except Exception: pass
+    # Power-save (su alcune build 8266 non esiste → safe)
+    _config_safe(sta, pm=0xa11140)
 
-    # Imposta country (abilita canali 12/13 su firmware compatibili)
-    try:
-        sta.config(country=country)
-        _log.log("WiFi: set country='%s'" % country)
-    except Exception:
-        pass
+    # Country (su 8266 spesso non c'è → safe)
+    _config_safe(sta, country=country)
+    # Log informativo (non sappiamo se applicato, ma utile comunque)
+    try: _log.log("WiFi: set country='%s'" % country)
+    except Exception: pass
 
     # Aumenta TX power se disponibile
     for key, val in (("txpower", 78), ("tx_power", 78)):  # ~ max su alcuni port
@@ -129,12 +153,12 @@ def connect_from_json(path="wifi.json", timeout=12, force_reconnect=True, retrie
             pass
 
     # Hostname (se supportato)
-    if host:
-        try:
-            sta.config(dhcp_hostname=host)
+    _set_hostname_safe(sta, host)
+    try:
+        if host:
             _log.log("WiFi: set hostname '%s'" % host)
-        except Exception:
-            pass
+    except Exception:
+        pass    
 
     if force_reconnect and sta.isconnected():
         try: prev_ip = sta.ifconfig()[0]
@@ -196,8 +220,7 @@ def connect_from_json(path="wifi.json", timeout=12, force_reconnect=True, retrie
                     except Exception: pass
 
                 ip, mask, gw, dns = sta.ifconfig()
-                try: rssi_now = sta.status('rssi')
-                except Exception: rssi_now = None
+                rssi_now = _get_rssi_safe(sta)
 
                 if ssid_now and ssid_now != ssid:
                     _log.log("WiFi: connected to '%s' (expected '%s') ip=%s gw=%s%s"
@@ -236,28 +259,43 @@ def start_ap_mode(ssid=None, password="12345678", channel=6):
     if not ssid:
         ssid = _unique_ssid("ESP32_SETUP")
 
-    # spegni STA per evitare conflitti
-    try:
-        sta = network.WLAN(network.STA_IF)
-        sta.active(False)
-    except Exception:
-        pass
-
     ap = network.WLAN(network.AP_IF)
-    ap.active(False)
-    time.sleep_ms(100)
-    ap.active(True)
+    sta = network.WLAN(network.STA_IF)
 
+    # Tentativo 1: AP+STA (non spengo lo STA)
     try:
-        ap.config(essid=ssid, password=password, authmode=network.AUTH_WPA_WPA2_PSK,
-                  channel=channel, hidden=0, max_clients=5)
+        ap.active(False)
+        time.sleep_ms(80)
+        ap.active(True)
+        try:
+            ap.config(essid=ssid, password=password,
+                      authmode=network.AUTH_WPA_WPA2_PSK,
+                      channel=channel, hidden=0, max_clients=5)
+        except Exception:
+            ap.config(essid=ssid, password=password, authmode=network.AUTH_WPA2_PSK)
+        try:
+            ap.ifconfig(("192.168.4.1","255.255.255.0","192.168.4.1","8.8.8.8"))
+        except Exception:
+            pass
     except Exception:
-        ap.config(essid=ssid, password=password, authmode=network.AUTH_WPA2_PSK)
-
-    try:
-        ap.ifconfig(("192.168.4.1","255.255.255.0","192.168.4.1","8.8.8.8"))
-    except Exception:
-        pass
+        # Fallback: spegni STA e riprova
+        try:
+            sta.active(False)
+        except Exception:
+            pass
+        ap.active(False)
+        time.sleep_ms(80)
+        ap.active(True)
+        try:
+            ap.config(essid=ssid, password=password,
+                      authmode=network.AUTH_WPA_WPA2_PSK,
+                      channel=channel, hidden=0, max_clients=5)
+        except Exception:
+            ap.config(essid=ssid, password=password, authmode=network.AUTH_WPA2_PSK)
+        try:
+            ap.ifconfig(("192.168.4.1","255.255.255.0","192.168.4.1","8.8.8.8"))
+        except Exception:
+            pass
 
     _log.log("AP attivo: SSID=%s, IP=%s" % (ssid, ap.ifconfig()[0]))
     print("Access Point creato: SSID=%s, password=%s" % (ssid, password))
