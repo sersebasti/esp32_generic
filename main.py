@@ -1,6 +1,7 @@
 from wifi_connect import connect_from_json, start_ap_mode
 from logger import RollingLogger
 import time, network
+from led_status import LedStatus
 
 # Se hai il portale di configurazione, lo importiamo; altrimenti gestiamo senza.
 try:
@@ -69,6 +70,8 @@ def _start_config_ap_with_fallback():
 
 def run_wifi_loop(check_interval=30, heartbeat=True):
     
+    leds = LedStatus()  # usa i default definiti in led_status.py
+
     # NEW: flag per non avviare più volte il server /status
     status_started = False
     
@@ -91,6 +94,7 @@ def run_wifi_loop(check_interval=30, heartbeat=True):
                     print("[%s] HB not connected" % ts())
 
             if connected:
+                leds.show_connected()
                 # NEW: se l'AP è rimasto acceso, spegnilo
                 try:
                     ap = network.WLAN(network.AP_IF)
@@ -118,6 +122,7 @@ def run_wifi_loop(check_interval=30, heartbeat=True):
                             print("Status server non avviato:", e)
                     # <<< NEW
             else:
+                leds.show_connecting()
                 if prev_ok:
                     log.warn("WiFi lost; trying reconnect")
 
@@ -142,7 +147,7 @@ def run_wifi_loop(check_interval=30, heartbeat=True):
                             print("AP spento dopo reconnect riuscito")
                     except Exception:
                         pass
-                    
+
                     # >>> AVVIA IL SERVER ANCHE DOPO RECONNECT (hard boot case)
                     if not status_started:
                         try:
@@ -162,6 +167,7 @@ def run_wifi_loop(check_interval=30, heartbeat=True):
                     ap = _start_config_ap_with_fallback()
 
                 if ap and ap.active():
+                    leds.show_ap()
                     try:
                         ip_ap = ap.ifconfig()[0]
                     except Exception:
