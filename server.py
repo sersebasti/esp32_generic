@@ -334,7 +334,7 @@ def _fit_k(points):
         sxx += r * r
     return (sxy / sxx) if sxx > 0 else 0.0
 
-def start_status_server(preferred_port=80, fallback_port=8080, verbose=True):
+def start_server(preferred_port=80, fallback_port=8080, verbose=True):
     meta = _read_meta()
     bound = None
     s = socket.socket()

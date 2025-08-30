@@ -1,12 +1,12 @@
 # wifi_manager.py
-import time, network
+import time, network # type: ignore
 from wifi_connect import connect_from_json, start_ap_mode
 from led_status import LedStatus
 
 try:
-    from status_server import start_status_server
+    from server import start_server
 except Exception:
-    start_status_server = None
+    start_server = None
 
 class WiFiManager:
     """
@@ -70,11 +70,11 @@ class WiFiManager:
         return ap
 
     def _ensure_status(self):
-        if self.status_started or (start_status_server is None):
+        if self.status_started or (start_server is None):
             return
         try:
             import _thread
-            _thread.start_new_thread(start_status_server, ())
+            _thread.start_new_thread(start_server, ())
             self.status_started = True
             print("Status endpoint attivo: GET /health, GET /status")
         except Exception as e:
@@ -169,7 +169,7 @@ class WiFiManager:
                             ip_ap = "192.168.4.1"
                         print("Access Point attivo per configurazione! IP:", ip_ap)
 
-                        if start_status_server and False:
+                        if start_server and False:
                             # (se vuoi servire anche qui qualcosa)
                             pass
 
