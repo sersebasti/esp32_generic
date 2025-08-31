@@ -1,5 +1,5 @@
 # filename: wifi_connect.py
-import network, time, json
+import network, time, json # type: ignore
 from logger import RollingLogger
 
 _log = RollingLogger(path="log.txt", max_bytes=8*1024, backups=1)
