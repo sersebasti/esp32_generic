@@ -67,7 +67,7 @@
 
     function allowed(path) {
       const name = sanitizeName(path);
-      return /\.(txt|py|json)$/i.test(name);
+      return /\.(txt|py|json|1)$/i.test(name);
     }
 
     function setURL(u) { urlEl.textContent = u; }
@@ -90,7 +90,7 @@
         const files = data.files.filter(f => allowed("/" + f.name));
         if (files.length === 0) {
           const opt = document.createElement("option");
-          opt.textContent = "(nessun file .txt/.py/.json trovato)";
+          opt.textContent = "(nessun file .txt/.py/.json/.txt/.1 trovato)";
           opt.value = "";
           fnameEl.appendChild(opt);
         } else {
