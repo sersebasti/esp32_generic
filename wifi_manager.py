@@ -30,7 +30,7 @@ class WiFiManager:
         self._rtc_synced = False
 
         # --- PULSANTE ---
-        self._btn_pin_num = 16  # D4 sulla tua board -> GPIO4 (cambia se necessario)
+        self._btn_pin_num = 32  
         self._btn_flag = False
         self._btn_last_ms = 0  # per debounce
         try:
@@ -321,16 +321,11 @@ def check_wifi_and_server(self, host=None, port=80, timeout=2.0, retries=2):
 
 
 def _irq_button(self, pin):
-    # ISR: pochissimo lavoro → solo debounce + flag; niente allocazioni pesanti
     now = time.ticks_ms()
-    if time.ticks_diff(now, self._btn_last_ms) > 200:  # debounce 200 ms
+    if time.ticks_diff(now, self._btn_last_ms) > 200:  # debounce
         self._btn_last_ms = now
         self._btn_flag = True
-        # piccolo feedback (se la tua build stampa dall'IRQ, ok; altrimenti commenta)
-        try:
-            print("🔘 (IRQ) bottone premuto")
-        except Exception:
-            pass
+        # NIENTE print qui dentro!
 
 
 def button_pressed(self, clear=True):
@@ -354,16 +349,12 @@ def run(self):
     BACKOFF_RETRY_MS = 500         # tra tentativi sulla stessa rete
     BACKOFF_NO_NET_S = 5           # nessuna rete configurata
     BACKOFF_ALL_FAIL_S = 2         # tutte le reti fallite
-    HEALTH_OK_SLEEP_S = 30         # tutto ok → ricontrollo tra 30s
+    HEALTH_OK_SLEEP_S = 5         # tutto ok → ricontrollo tra 30s
     SERVER_PORT = 80
 
     while True:
 
-        self.log.info("Loop WiFiManager attivo, controllo stato...")
-
-        if self.button_pressed(clear=True):
-            print("🔘 Bottone premuto → flag rilevato (TODO: azione futura)")
-
+        self.log.info("Loop WiFiManager attivo")
         result = self.check_wifi_and_server(port=SERVER_PORT)
         print("Stato WiFi+server:", result)
 
@@ -382,7 +373,7 @@ def run(self):
             for ssid, pwd in nets or []:
 
                 if self.button_pressed(clear=True):
-                    print("🔘 Bottone premuto durante i tentativi → (TODO: futura azione)")
+                    self.log.info("🔘 Bottone premuto durante i tentativi di connessione")
                     break  # esci dal for (rimani nel while, gestirai poi)
 
                 ok, ip = self._try_connect(ssid, pwd, timeout_s=15)
@@ -445,6 +436,8 @@ def run(self):
                     # controllo pulsante durante l'attesa
                     if self.button_pressed(clear=True):
                         print("🔘 Bottone premuto durante il sleep → (TODO: futura azione)")
+                        if self.button_pressed(clear=True):
+                            self.log.info("🔘 Bottone premuto all'inizio del loop → (TODO: futura azione)")
                         break  # interrompe il countdown e torna al while
                     time.sleep(1)
                 continue
