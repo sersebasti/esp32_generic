@@ -29,7 +29,7 @@ class WiFiManager:
         self.leds = LedStatus() if LedStatus else _NullLed()
 
         # --- PULSANTE ---
-        self._btn_pin_num = 4  # D4 sulla tua board -> GPIO4 (cambia se necessario)
+        self._btn_pin_num = 16  # D4 sulla tua board -> GPIO4 (cambia se necessario)
         self._btn_flag = False
         self._btn_last_ms = 0  # per debounce
         try:
@@ -445,3 +445,4 @@ WiFiManager.run = run
 if __name__ == "__main__":
     wm = WiFiManager()
     wm.run()
+
