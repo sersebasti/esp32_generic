@@ -80,7 +80,7 @@ curl -X POST --data-binary @main.py "http://192.168.1.10/fs/upload?to=/main.py"
 }
 
 # download
-curl -o main.py "http://192.168.1.10/fs/download?path=/main.py"
+curl -o tmp.txt.py "http://192.168.1.10/fs/download?path=/tmp.txt"
 
 # delete
 curl -X POST -H "Content-Type: application/json" \
