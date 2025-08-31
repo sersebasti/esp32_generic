@@ -1,6 +1,6 @@
 # status_server.py (MicroPython)
-import adc_scope
-import socket, time, ujson, network, ubinascii, gc, math
+import socket, time, ujson, network, ubinascii, gc, math, adc_scope, wifi_ui
+import wifi_config as wcfg
 
 from http_consts import (
     _HTTP_200_JSON, _HTTP_200_HTML, _HTTP_400,
@@ -64,43 +64,6 @@ def _read_meta():
         }
     except Exception:
         return {"hostname":"esp32"}
-
-def _read_config_networks():
-    """
-    Ritorna una lista di reti dal wifi.json SENZA password.
-    Supporta sia:
-      - {"networks":[{"ssid":"A","password":"x"}, ...]}
-      - {"ssid_1":"A","password_1":"x","ssid_2":"B","password_2":"y", ...}
-    """
-    out = []
-    try:
-        with open("wifi.json") as f:
-            cfg = ujson.load(f)
-    except Exception:
-        return out
-
-    nets = cfg.get("networks")
-    if isinstance(nets, list):
-        for i, n in enumerate(nets):
-            ssid = (n.get("ssid") or "").strip()
-            if ssid:
-                out.append({"ssid": ssid, "priority": i + 1})
-    else:
-        for k in cfg.keys():
-            if isinstance(k, str) and k.startswith("ssid_"):
-                try:
-                    idx = int(k.split("_", 1)[1])
-                except Exception:
-                    idx = 0
-                ssid = (cfg.get(k) or "").strip()
-                if ssid:
-                    out.append({"ssid": ssid, "priority": idx})
-        out.sort(key=lambda x: x.get("priority", 0))
-
-    current = _get_ssid()
-    for n in out:
-        n["connected"] = (n["ssid"] == current)
-    return out
 
 # --- helpers per POST JSON (senza toccare le GET esistenti) ---
 def _read_post_json(req, cl, max_len=4096):
@@ -361,33 +324,43 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                     }
                     cl.send(_HTTP_200_JSON + ujson.dumps(payload).encode())
 
+                elif method == "GET" and path.startswith("/wifi/ui"):
+                    cl.send(_HTTP_200_HTML + wifi_ui.page())
+
+
+                                # ---- ENDPOINTS Wi-Fi ----
+                elif method == "GET" and path.startswith("/wifi/scan"):
+                    # Elenco reti disponibili (scan della STA)
+                    payload = wcfg.scan()
+                    cl.send(_HTTP_200_JSON + ujson.dumps(payload).encode())
+
                 elif method == "GET" and path.startswith("/wifi/list"):
+                    # Elenco reti configurate su wifi.json (senza password)
                     payload = {
-                        "hostname": meta["hostname"],
-                        "configured_networks": _read_config_networks()
+                        "configured_networks": wcfg.configured_networks_no_password()
                     }
                     cl.send(_HTTP_200_JSON + ujson.dumps(payload).encode())
 
                 elif method == "POST" and path.startswith("/wifi/add"):
+                    # Body JSON: {"ssid":"...", "password":"...", "priority": <int|omesso>}
                     try:
                         body = _read_post_json(req, cl)
-                        ssid = body.get("ssid")
-                        password = body.get("password")
-                        prio = body.get("priority", None)
-                        ok, msg, fmt, count = _add_network(ssid, password, prio if isinstance(prio, int) else None)
-                        resp = {"ok": ok, "message": msg, "format": fmt, "count": count}
-                        cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
-                    except Exception as e:
+                        ok, msg = wcfg.add_network(
+                            body.get("ssid"),
+                            body.get("password"),
+                            body.get("priority")
+                        )
+                        cl.send(_HTTP_200_JSON + ujson.dumps({"ok": ok, "message": msg}).encode())
+                    except Exception:
                         cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "message": "invalid_request"}).encode())
 
                 elif method == "POST" and path.startswith("/wifi/delete"):
+                    # Body JSON: {"ssid":"..."}
                     try:
                         body = _read_post_json(req, cl)
-                        ssid = body.get("ssid")
-                        ok, msg, fmt, count = _delete_network(ssid)
-                        resp = {"ok": ok, "message": msg, "format": fmt, "count": count}
-                        cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
-                    except Exception as e:
+                        ok, msg = wcfg.delete_network(body.get("ssid"))
+                        cl.send(_HTTP_200_JSON + ujson.dumps({"ok": ok, "message": msg}).encode())
+                    except Exception:
                         cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "message": "invalid_request"}).encode())
 
                 elif method == "GET" and path.startswith("/adc/scope_counts"):
