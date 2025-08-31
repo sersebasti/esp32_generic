@@ -27,6 +27,7 @@ class WiFiManager:
         self.wifi_json = wifi_json
         self.log = log or _PrintLogger()
         self.leds = LedStatus() if LedStatus else _NullLed()
+        self._rtc_synced = False
 
         # --- PULSANTE ---
         self._btn_pin_num = 16  # D4 sulla tua board -> GPIO4 (cambia se necessario)
@@ -49,6 +50,24 @@ class _NullLed:
 WiFiManager._NullLed = _NullLed
 
 # ------------------ Metodi interni ------------------
+
+
+def _sync_time_once(self):
+    if self._rtc_synced:
+        return
+    try:
+        import ntptime, time
+        ntptime.host = "pool.ntp.org"   # opzionale
+        ntptime.settime()               # setta l'RTC a UTC
+        self._rtc_synced = True
+        try:
+            self.log.info("RTC sincronizzato: UTC=%r" % (time.gmtime(),))
+        except Exception:
+            pass
+    except Exception as e:
+        self.log.warn("NTP sync fallita: %r" % e)
+
+
 
 def _networks_from_cfg(cfg):
     """
@@ -376,6 +395,7 @@ def run(self):
                     msg = "Connesso alla rete '%s' con IP %s" % (ssid, ip)
                     self.log.info(msg); print("✅", msg)
 
+                    _sync_time_once(self)  # sincronizza RTC una volta   
                     try:
                         self._start_server(port=SERVER_PORT)
                     except Exception as e:
