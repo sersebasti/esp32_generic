@@ -2,6 +2,12 @@
 import adc_scope
 import socket, time, ujson, network, ubinascii, gc, math
 
+from http_consts import (
+    _HTTP_200_JSON, _HTTP_200_HTML, _HTTP_400,
+    _HTTP_204_CORS, _HTTP_200_JSON_CORS
+)
+import fs_api
+
 BUSY = {"v": False}   # lock globale anti-overlap, mutabile
 version = "1.0.0"
 
@@ -221,46 +227,6 @@ def _delete_network(ssid):
     _cfg_set_list(cfg, fmt, new)
     _cfg_write_all(cfg)
     return True, "deleted", fmt, len(new)
-
-_HTTP_200_JSON = (
-    b"HTTP/1.1 200 OK\r\n"
-    b"Content-Type: application/json\r\n"
-    b"Cache-Control: no-store\r\n"
-    b"Access-Control-Allow-Origin: *\r\n"
-    b"Connection: close\r\n\r\n"
-)
-
-_HTTP_200_HTML = (
-    b"HTTP/1.1 200 OK\r\n"
-    b"Content-Type: text/html; charset=utf-8\r\n"
-    b"Cache-Control: no-store\r\n"
-    b"Access-Control-Allow-Origin: *\r\n"
-    b"Connection: close\r\n\r\n"
-)
-
-_HTTP_400 = b"HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nCache-Control: no-store\r\nConnection: close\r\n\r\nBad Request"
-
-
-# Risposta CORS per le richieste preflight dei browser
-_HTTP_204_CORS = (
-    b"HTTP/1.1 204 No Content\r\n"
-    b"Access-Control-Allow-Origin: *\r\n"
-    b"Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS\r\n"
-    b"Access-Control-Allow-Headers: Content-Type\r\n"
-    b"Connection: close\r\n\r\n"
-)
-
-# Intestazioni JSON + CORS (puoi usare questa per le risposte /upload)
-_HTTP_200_JSON_CORS = (
-    b"HTTP/1.1 200 OK\r\n"
-    b"Content-Type: application/json\r\n"
-    b"Cache-Control: no-store\r\n"
-    b"Access-Control-Allow-Origin: *\r\n"
-    b"Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS\r\n"
-    b"Access-Control-Allow-Headers: Content-Type\r\n"
-    b"Connection: close\r\n\r\n"
-)
-
 
 def _hdr_get(req_bytes, name_lower):
     """Estrae il valore dell'header (in minuscolo), es. b'content-length'."""
@@ -634,11 +600,19 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                         finally:
                             BUSY["v"] = False
 
+
+                elif path.startswith("/fs/"):
+                    # delega a fs_api
+                    handled = fs_api.handle(cl, method, path, req, _read_post_json, _body_initial_and_len)
+                    if not handled:
+                        cl.send(_HTTP_400)
+                    continue
+
                 elif method == "POST" and path.startswith("/reboot"):
                     cl.send(_HTTP_200_JSON + b'{"ok":true}')
                     try: cl.close()
                     except: pass
-                    import machine
+                    import machine # type: ignore
                     machine.reset()            
 
 

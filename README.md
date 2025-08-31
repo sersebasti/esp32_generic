@@ -40,14 +40,57 @@ curl -X POST "http://192.168.1.24/calibrate/reset"
 
 
 # carica un file nella root del device
-curl -X POST --data-binary @status_server.py "http://ESP_IP/upload?to=/status_server.py"
+curl -X POST --data-binary @status_server.py "http://192.168.1.10/upload?to=/http_consts.py"
 
 # carica una pagina nella sottocartella /www (la crea se non esiste)
 curl -X POST --data-binary @osc.html "http://ESP_IP/upload?to=/www/osc.html"
 
-# carica main.py e poi riavvia manualmente (pulsante EN o power-cycle)
-curl -X POST --data-binary @main.py "http://ESP_IP/upload?to=/main.py"
 
-
-
+# reboot
 curl -X POST "http://ESP_IP/reboot"
+
+
+# ESP32 File Manager REST API
+
+Questa interfaccia HTTP espone delle API per gestire il filesystem interno dell’ESP32 con MicroPython.  
+L’ESP32 espone il server sulla rete locale, esempio: **http://192.168.1.10**
+
+---
+
+# Endpoint disponibili
+
+# 📂 GEstione files /fs/list  
+
+# list
+curl http://192.168.1.10/fs/list
+{
+  "ok": true,
+  "files": [
+    {"name": "boot.py", "size": 112},
+    {"name": "main.py", "size": 854}
+  ]
+}
+
+# upload
+curl -X POST --data-binary @main.py "http://192.168.1.10/fs/upload?to=/main.py"
+{
+  "ok": true,
+  "path": "/main.py",
+  "size": 854
+}
+
+# download
+curl -o main.py "http://192.168.1.10/fs/download?path=/main.py"
+
+# delete
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"path":"/main.py"}' \
+     http://192.168.1.10/fs/delete -->
+{"ok": true, "deleted": "/main.py"}
+
+# rename
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"src":"/main.py","dst":"/main_old.py"}' \
+     http://192.168.1.10/fs/rename
+{"ok": true, "renamed": ["/main.py", "/main_old.py"]}
+
