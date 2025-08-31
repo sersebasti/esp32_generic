@@ -1,6 +1,7 @@
 # wifi_manager.py
 # Gestore WiFi + avvio server HTTP con health-check e retry robusti
-# Versione reattiva: _try_connect con cancel_cb per interrompere subito al click
+# Setup mode one-shot: bottone → LED verde OFF, LED blu fisso, STA OFF, AP ON, server attivo
+# Dopo l’ingresso in setup, run() termina (nessun ciclo ulteriore).
 
 import network, time, json, socket, machine, micropython  # type: ignore
 
@@ -43,6 +44,7 @@ class WiFiManager:
         self.log = log or _PrintLogger()
         self.leds = LedStatus() if LedStatus else _NullLed()
         self._rtc_synced = False
+        self._setup_mode = False  # one-shot finché non si riavvia
 
         # --- PULSANTE ---
         self._btn_pin_num = 32  # cambia se necessario
@@ -53,7 +55,7 @@ class WiFiManager:
             # active-low → premuto = GND
             self._btn.irq(trigger=machine.Pin.IRQ_FALLING, handler=self._irq_button)
         except Exception as e:
-            self.log.warn("Button init failed: %r", e)
+            self.log.info("Button init failed: %r" % e)
             self._btn = None
 
 
@@ -61,6 +63,9 @@ class WiFiManager:
 class _NullLed:
     def show_connecting(self): pass
     def show_connected(self):  pass
+    # API opzionali per setup-mode
+    def green_off(self): pass
+    def blue_on(self): pass
 
 # esponi _NullLed come attributo della classe
 WiFiManager._NullLed = _NullLed
@@ -77,11 +82,11 @@ def _sync_time_once(self):
         ntptime.settime()               # setta l'RTC a UTC
         self._rtc_synced = True
         try:
-            self.log.info("RTC sincronizzato: UTC=%r", time.gmtime())
+            self.log.info("RTC sincronizzato: UTC=%r" % time.gmtime())
         except Exception:
             pass
     except Exception as e:
-        self.log.warn("NTP sync fallita: %r", e)
+        self.log.info("NTP sync fallita: %r" % e)
 
 
 def _networks_from_cfg(cfg):
@@ -131,11 +136,11 @@ def _load_networks(self):
         with open(self.wifi_json) as f:
             cfg = json.load(f)
     except Exception as e:
-        self.log.warn("Impossibile leggere %s: %r", self.wifi_json, e)
+        self.log.info("Impossibile leggere %s: %r" % (self.wifi_json, e))
         return []
     nets = _networks_from_cfg(cfg)
     if not nets:
-        self.log.warn("Nessuna rete trovata in %s" % self.wifi_json)
+        self.log.info("Nessuna rete trovata in %s" % self.wifi_json)
     return nets
 
 
@@ -161,6 +166,91 @@ def _reset_wifi(self):
         pass
 
 
+def _ap_enable(self, essid="ESP-SETUP", password="12345678"):
+    try:
+        ap = network.WLAN(network.AP_IF)
+        ap.active(True)
+
+        # Imposta un'opzione per volta: alcune build non accettano più kwargs insieme
+        ap.config(essid=essid)
+        if password:
+            # WPA2-PSK se password presente (>=8 char in genere)
+            ap.config(password=password)
+            try:
+                # AUTH_WPA_WPA2_PSK = 3 su ESP32
+                ap.config(authmode=3)
+            except Exception:
+                pass
+        else:
+            # rete open
+            try:
+                ap.config(authmode=0)  # OPEN
+            except Exception:
+                pass
+
+        ip = ap.ifconfig()[0]
+        self.log.info("AP attivo su")
+        return ip
+    except Exception as e:
+        self.log.info("AP enable fallito")
+        return None
+
+def _ap_disable(self):
+    try:
+        ap = network.WLAN(network.AP_IF)
+        if ap.active():
+            ap.active(False)
+            self.log.info("AP disattivato")
+    except Exception as e:
+        self.log.info("AP disable fallito: %r" % e)
+
+
+def _enter_setup_once(self):
+    """
+    Entra in setup mode una sola volta: LED verde OFF, blu fisso; STA OFF; AP ON; server ON.
+    Dopo aver predisposto tutto, ritorna al chiamante (il chiamante deciderà se uscire dal loop).
+    """
+    if self._setup_mode:
+        return
+    self._setup_mode = True
+    self.log.info("🔧 Setup mode → STA OFF, AP ON, server attivo")
+    
+
+    # LED: verde OFF, blu fisso (se disponibili)
+    try:
+        if hasattr(self.leds, "show_ap"):
+            self.leds.show_ap()
+
+    except Exception:
+        pass
+    print("LED: verde OFF, blu fisso")
+
+    # Spegni STA
+    try:
+        sta = network.WLAN(network.STA_IF)
+        if sta.active():
+            try:
+                sta.disconnect()
+            except Exception:
+                 pass
+            sta.active(False)
+    except Exception:
+         pass
+    print("WiFi STA disattivata")
+
+    # Accendi AP + server
+    ip_ap = self._ap_enable()
+    try:
+        self._start_server(port=80)
+    except Exception as e:
+        self.log.info("Start server fallito: %r" % e)
+        
+    if not ip_ap:
+        ip_ap = "192.168.4.1"
+        
+    print("UI WiFi: http://%s/wifi/ui" % ip_ap)
+
+
 def _try_connect(self, ssid, pwd, timeout_s=15, cancel_cb=None):
     """
     Prova a connettersi a (ssid,pwd) fino a timeout_s.
@@ -184,7 +274,7 @@ def _try_connect(self, ssid, pwd, timeout_s=15, cancel_cb=None):
     try:
         sta.connect(ssid, pwd)
     except Exception as e:
-        self.log.error("Errore connect(): %r", e)
+        self.log.info("Errore connect(): %r" % e)
         return (False, None, "error")
 
     t0 = time.ticks_ms()
@@ -221,16 +311,29 @@ def _port_open(self, ip, port, timeout_ms=500):
 def _start_server(self, port=80):
     """Avvia il server HTTP se non già in ascolto. Tollera EADDRINUSE."""
     if start_server is None:
-        self.log.warn("server.py non disponibile: start_server=None")
+        self.log.info("server.py non disponibile: start_server=None")
         return True
 
-    # IP attuale della STA
-    sta = network.WLAN(network.STA_IF)
-    ip = sta.ifconfig()[0] if sta and sta.isconnected() else "0.0.0.0"
+    # IP attuale: preferisci STA, altrimenti AP (se attivo)
+    try:
+        sta = network.WLAN(network.STA_IF)
+    except Exception:
+        sta = None
+    try:
+        ap = network.WLAN(network.AP_IF)
+    except Exception:
+        ap = None
 
-    # Se già aperto, non rilanciare
+    if sta and sta.isconnected():
+        ip = sta.ifconfig()[0]
+    elif ap and ap.active():
+        ip = ap.ifconfig()[0]
+    else:
+        ip = "0.0.0.0"
+
+    # Se già aperto su quell'IP, non rilanciare
     if ip != "0.0.0.0" and self._port_open(ip, port):
-        self.log.info("Server già attivo su %s:%d, skip avvio.", ip, port)
+        self.log.info("Server già attivo, skip avvio.")
         return True
 
     def _runner():
@@ -245,7 +348,7 @@ def _start_server(self, port=80):
         _thread.start_new_thread(_runner, ())
         return True
     except Exception as e:
-        self.log.warn("Thread server non disponibile (%r); provo in foreground", e)
+        self.log.info("Thread server non disponibile (%r); provo in foreground" % e)
         # foreground (bloccante): solo per debug!
         try:
             _runner()
@@ -253,13 +356,14 @@ def _start_server(self, port=80):
         except OSError as oe:
             # EADDRINUSE: consideriamo "ok" (codice può variare, es. 98/112)
             if getattr(oe, 'args', [None])[0] in (98, 112):
-                self.log.warn("Porta %d occupata: presumo server già su.", port)
+                self.log.info("Porta %d occupata: presumo server già su." % port)
                 return True
-            self.log.error("Avvio server fallito: %r", oe)
+            self.log.info("Avvio server fallito: %r" % oe)
             return False
         except Exception as e2:
-            self.log.error("Avvio server fallito: %r", e2)
+            self.log.info("Avvio server fallito: %r" % e2)
             return False
+
 
 
 # ------------------ HEALTH CHECK ------------------
@@ -371,6 +475,7 @@ def run(self):
       - se Wi-Fi non connesso → prova reti da wifi.json
       - se Wi-Fi ok ma server KO → prova ad avviare server senza toccare il Wi-Fi
       - se tutto ok → LED connected e pausa più lunga
+      - bottone one-shot → entra in setup e termina
     """
     BACKOFF_RETRY_MS = 500        # tra tentativi sulla stessa rete
     BACKOFF_NO_NET_S = 5          # nessuna rete configurata
@@ -381,8 +486,15 @@ def run(self):
     while True:
 
         self.log.info("Loop WiFiManager attivo")
+
+        # 1) Bottone premuto subito → entra in setup e TERMINA
+        if (not self._setup_mode) and self.button_pressed(clear=False):
+            self.log.info("🔘 Bottone premuto all'inizio loop → entro in setup")
+            #self._enter_setup_once()
+            break  # uscita dal while
+
         result = self.check_wifi_and_server(port=SERVER_PORT)
-        print("Stato WiFi+server:", result)
+        print("Stato WiFi+server: %s" % (result,))
 
         if not result["wifi_ok"]:
             # non connesso → reset + tentativi
@@ -394,24 +506,23 @@ def run(self):
 
             nets = self._load_networks()
             if not nets:
-                self.log.warn("Nessuna rete configurata in %s; attendo configurazione.", self.wifi_json)
+                self.log.info("Nessuna rete configurata in %s; attendo configurazione." % self.wifi_json)
                 time.sleep(BACKOFF_NO_NET_S)
                 continue
 
             connected = False
-            cancelled_by_button = False
 
             for ssid, pwd in nets or []:
 
-                # se il pulsante è già stato premuto, esci subito dal ciclo reti
-                if self.button_pressed(clear=True):
-                    self.log.info("🔘 Bottone premuto prima del tentativo connessione → stop ciclo reti")
-                    cancelled_by_button = True
-                    break
+                # 2) Bottone premuto prima del tentativo → setup e TERMINA
+                if self.button_pressed(clear=False):
+                    self.log.info("🔘 Bottone premuto prima del tentativo → entro in setup")
+                    #self._enter_setup_once()
+                    break  # esce dal for e dal while
 
                 ok, ip, reason = self._try_connect(
                     ssid, pwd, timeout_s=15,
-                    # peek: non consumare qui, così puoi gestire dopo
+                    # peek: non consumare qui, decide _try_connect
                     cancel_cb=lambda: self.button_pressed(clear=False)
                 )
 
@@ -419,50 +530,38 @@ def run(self):
                     try:
                         self.leds.show_connected()
                     except Exception:
-                        self.log.error("Errore LED connected")
+                        self.log.info("Errore LED connected")
 
                     self.log.info("Connesso alla rete '%s' con IP %s" % (ssid, ip))
                     print("✅ Connesso alla rete '%s' con IP %s" % (ssid, ip))
+                    
 
                     try:
                         self._sync_time_once()   # sincronizza RTC una volta
                     except Exception as e:
-                        self.log.warn("NTP sync fallita: %r", e)
+                        self.log.info("NTP sync fallita: %r" % e)
 
                     try:
                         self._start_server(port=SERVER_PORT)
                     except Exception as e:
-                        self.log.error("Start server fallito: %r", e)
+                        self.log.info("Start server fallito: %r" % e)
 
                     connected = True
                     break
                 else:
+                    # 3) Tentativo annullato dal bottone → setup e TERMINA
                     if reason == "cancelled":
-                        self.log.info("Connessione annullata dal pulsante durante il tentativo")
-                        cancelled_by_button = True
-                        break
+                        self.log.info("Connessione annullata dal pulsante → entro in setup")
+                        #self._enter_setup_once()
+                        break  # esce dal for e dal while
+
                     print("❌ Connessione fallita a '%s' (%s)" % (ssid, reason or "fail"))
-                    self.log.info("Connessione fallita a '%s' (%s)" % (ssid, reason))
+                    #self.log.info("Connessione fallita a '%s' (%s)", ssid, reason)
                     time.sleep_ms(BACKOFF_RETRY_MS)
 
-            # gestione esiti ciclo reti
             if not connected:
-                if cancelled_by_button:
-                    # consuma il flag ora (se ancora alto) e passa all’azione desiderata
-                    _ = self.button_pressed(clear=True)
-                    self.log.info("🔘 Azione bottone: avvio AP di configurazione")
-                    try:
-                        ap = network.WLAN(network.AP_IF)
-                        ap.active(True)
-                        ap.config(essid="ESP-SETUP", password="12345678", authmode=3)  # cambia pwd
-                        self.log.info("AP attivo su %s", ap.ifconfig()[0])
-                    except Exception as e:
-                        self.log.error("Errore avvio AP: %r", e)
-                    time.sleep(2)
-                    continue
-                else:
-                    time.sleep(BACKOFF_ALL_FAIL_S)
-                    continue
+                time.sleep(BACKOFF_ALL_FAIL_S)
+                continue
 
         else:
             # Wi-Fi OK
@@ -477,30 +576,38 @@ def run(self):
                         if again.get("server_ok"):
                             print("✅ Server avviato con successo.")
                         else:
-                            self.log.warn("Server non raggiungibile dopo avvio: %s", again.get("error"))
+                            self.log.info("Server non raggiungibile dopo avvio: %s" % again.get("error"))
                     except Exception as e:
-                        self.log.error("Errore avvio server: %s", e)
+                        self.log.info("Errore avvio server: %s" % e)
                 else:
                     # porta aperta ma /health KO: ritenta più tardi
-                    self.log.warn("Porta %d aperta ma /health KO; ritento più tardi.", SERVER_PORT)
+                    self.log.info("Porta %d aperta ma /health KO; ritento più tardi." % SERVER_PORT)
                     time.sleep(3)
                     continue
             else:
-                print("✅ WiFi e server OK. IP:", result["ip"])
+                print("✅ WiFi e server OK. IP: %s" % result["ip"])
                 try:
                     self.leds.show_connected()
                 except Exception:
                     pass
 
                 for rem in range(HEALTH_OK_SLEEP_S, 0, -1):
-                    print("sleeping...", rem)
-                    # controllo pulsante durante l'attesa
-                    if self.button_pressed(clear=True):
-                        print("🔘 Bottone premuto durante il sleep → (TODO: azione)")
-                        self.log.info("🔘 Bottone premuto durante il sleep")
-                        break  # interrompe il countdown e torna al while
+                    print("sleeping... %s" % (rem,))
+                    # 4) Bottone premuto durante lo sleep → setup e TERMINA
+                    if self.button_pressed(clear=False):
+                        self.log.info("🔘 Bottone premuto durante lo sleep → entro in setup")
+                        #self._enter_setup_once()
+                        break
                     time.sleep(1)
                 continue
+
+    print("---- fine ciclo while----\n")
+    self._enter_setup_once()
+
+    while True:
+        time.sleep(1) 
+
+
 
 
 # ------------------ Bind dei metodi alla classe ------------------
@@ -508,6 +615,9 @@ WiFiManager._sync_time_once = _sync_time_once
 WiFiManager._networks_from_cfg = staticmethod(_networks_from_cfg)
 WiFiManager._load_networks = _load_networks
 WiFiManager._reset_wifi = _reset_wifi
+WiFiManager._ap_enable = _ap_enable
+WiFiManager._ap_disable = _ap_disable
+WiFiManager._enter_setup_once = _enter_setup_once
 WiFiManager._try_connect = _try_connect
 WiFiManager._port_open = _port_open
 WiFiManager._start_server = _start_server
