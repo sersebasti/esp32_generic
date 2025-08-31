@@ -340,6 +340,8 @@ def run(self):
 
     while True:
 
+        self.log.info("Loop WiFiManager attivo, controllo stato...")
+
         if self.button_pressed(clear=True):
             print("🔘 Bottone premuto → flag rilevato (TODO: azione futura)")
 

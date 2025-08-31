@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ESP32 File Viewer</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Arial, sans-serif; }
+    body { margin: 20px; }
+    h1 { font-size: 20px; margin: 0 0 12px; }
+    .row { display: flex; gap: 8px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
+    input[type="text"], select { padding: 8px; min-width: 200px; }
+    button { padding: 8px 12px; border-radius: 10px; border: 1px solid #ccc; cursor: pointer; }
+    .muted { color: #666; font-size: 12px; }
+    pre { background: #f7f7f7; padding: 12px; border-radius: 8px; max-height: 60vh; overflow: auto; white-space: pre-wrap; }
+    code { background: #f0f0f0; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>ESP32 File Viewer</h1>
+
+  <div class="row">
+    <label for="ip">IP ESP32:</label>
+    <input id="ip" type="text" value="192.168.1.10" placeholder="es. 192.168.1.10" />
+    <button id="refreshBtn">Aggiorna lista file</button>
+  </div>
+
+  <div class="row">
+    <label for="fname">File:</label>
+    <select id="fname"></select>
+    <span class="muted">Ammessi: .txt, .py, .json</span>
+  </div>
+
+  <div class="row">
+    <button id="downloadBtn">Scarica</button>
+    <button id="viewBtn">Visualizza</button>
+  </div>
+
+  <div class="row">
+    <span id="status" class="muted">Pronto.</span>
+  </div>
+  <div class="row">
+    <span class="muted">URL:</span> <code id="url"></code>
+  </div>
+
+  <h2 style="font-size:16px;margin-top:12px;">Anteprima</h2>
+  <pre id="preview">(contenuto)</pre>
+
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+    const ipEl = $('#ip');
+    const fnameEl = $('#fname');
+    const statusEl = $('#status');
+    const previewEl = $('#preview');
+    const urlEl = $('#url');
+
+    function base() {
+      const ip = ipEl.value.trim();
+      if (!ip) throw new Error('IP non valido');
+      return `http://${ip}`;
+    }
+
+    function sanitizeName(path) {
+      // rimuovi eventuali slash iniziali per la validazione estensione
+      return path.replace(/^\/+/, '');
+    }
+
+    function allowed(path) {
+      const name = sanitizeName(path);
+      return /\.(txt|py|json)$/i.test(name);
+    }
+
+    function setURL(u) { urlEl.textContent = u; }
+
+    async function fetchText(url) {
+      setURL(url);
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    }
+
+    async function refreshList() {
+      try {
+        statusEl.textContent = 'Carico lista file...';
+        fnameEl.innerHTML = "";
+        const url = `${base()}/fs/list`;
+        const txt = await fetchText(url);
+        const data = JSON.parse(txt);
+        if (!data.ok) throw new Error("Lista non valida");
+        const files = data.files.filter(f => allowed("/" + f.name));
+        if (files.length === 0) {
+          const opt = document.createElement("option");
+          opt.textContent = "(nessun file .txt/.py/.json trovato)";
+          opt.value = "";
+          fnameEl.appendChild(opt);
+        } else {
+          for (const f of files) {
+            const opt = document.createElement("option");
+            opt.value = "/" + f.name;                 // <-- path con slash (come il tuo curl)
+            opt.textContent = f.name + " (" + (f.size||0) + " B)";
+            fnameEl.appendChild(opt);
+          }
+        }
+        statusEl.textContent = 'Lista aggiornata';
+      } catch (err) {
+        statusEl.textContent = 'Errore: ' + err.message;
+      }
+    }
+
+    async function download() {
+      try {
+        const path = fnameEl.value;
+        if (!path) throw new Error('Seleziona un file');
+        if (!allowed(path)) throw new Error('Estensione non ammessa');
+        statusEl.textContent = 'Scarico ' + path + '...';
+        const url = `${base()}/fs/download?path=${path}`;
+        setURL(url);
+        const r = await fetch(url, { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const blob = await r.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = sanitizeName(path);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(a.href);
+        statusEl.textContent = 'Scaricato ' + path;
+      } catch (err) {
+        statusEl.textContent = 'Errore: ' + err.message;
+      }
+    }
+
+    async function view() {
+      try {
+        const path = fnameEl.value;
+        if (!path) throw new Error('Seleziona un file');
+        if (!allowed(path)) throw new Error('Estensione non ammessa');
+        statusEl.textContent = 'Carico ' + path + '...';
+        const url = `${base()}/fs/download?path=${path}`;
+        const text = await fetchText(url);
+        previewEl.textContent = text;
+        statusEl.textContent = 'Mostrato ' + path;
+      } catch (err) {
+        statusEl.textContent = 'Errore: ' + err.message;
+      }
+    }
+
+    $('#downloadBtn').addEventListener('click', download);
+    $('#viewBtn').addEventListener('click', view);
+    $('#refreshBtn').addEventListener('click', refreshList);
+
+    // aggiorna subito alla prima apertura
+    refreshList();
+  </script>
+</body>
+</html>
