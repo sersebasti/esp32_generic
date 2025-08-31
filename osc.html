@@ -1,39 +1,149 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
-<meta charset="utf-8">
-<title>ADC Scope PC</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ADC Scope (ESP32)</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Arial, sans-serif; }
+  body { margin: 18px; }
+  h2 { margin: 0 0 10px; font-size: 20px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+  input[type="text"], input[type="number"] { padding: 8px; }
+  button { padding: 8px 12px; border-radius: 10px; border: 1px solid #ccc; cursor: pointer; }
+  .muted { color:#666; font-size:12px }
+  #status { min-height: 1.2em; }
+  canvas { max-height: 70vh; }
+</style>
 </head>
 <body>
-<h2>ADC Scope dal browser</h2>
-<canvas id="chart"></canvas>
+  <h2>ADC Scope dal browser</h2>
+
+  <div class="row">
+    <label for="ip">IP ESP32:</label>
+    <input id="ip" type="text" placeholder="es. 192.168.1.10" />
+    <label for="n">Campioni (n):</label>
+    <input id="n" type="number" min="64" max="4096" step="64" value="1024" />
+    <label for="sr">Sample rate (Hz):</label>
+    <input id="sr" type="number" min="100" max="20000" step="100" value="4000" />
+    <button id="save">Salva</button>
+    <button id="start">Start</button>
+    <button id="stop" disabled>Stop</button>
+  </div>
+
+  <div class="row">
+    <span id="status" class="muted">Pronto.</span>
+    <span id="last" class="muted"></span>
+  </div>
+
+  <canvas id="chart"></canvas>
+
 <script>
-async function update() {
-  const r = await fetch("http://192.168.1.24/adc/scope_counts?n=1024&sr=4000");
-  const j = await r.json();
-  const data = {
-    labels: j.counts.map((_, i) => i),
-    datasets: [{
-      label: "ADC counts",
-      data: j.counts,
-      borderColor: "blue",
+  // --- UI refs
+  const ipEl = document.getElementById('ip');
+  const nEl  = document.getElementById('n');
+  const srEl = document.getElementById('sr');
+  const saveBtn  = document.getElementById('save');
+  const startBtn = document.getElementById('start');
+  const stopBtn  = document.getElementById('stop');
+  const statusEl = document.getElementById('status');
+  const lastEl   = document.getElementById('last');
+
+  // --- Persistenza semplice
+  function loadPrefs() {
+    ipEl.value = localStorage.getItem('adc.ip') || '192.168.1.10';
+    nEl.value  = localStorage.getItem('adc.n')  || '1024';
+    srEl.value = localStorage.getItem('adc.sr') || '4000';
+  }
+  function savePrefs() {
+    localStorage.setItem('adc.ip', ipEl.value.trim());
+    localStorage.setItem('adc.n',  nEl.value);
+    localStorage.setItem('adc.sr', srEl.value);
+    setStatus('Preferenze salvate.');
+  }
+
+  // --- Chart
+  const ctx = document.getElementById('chart');
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [{
+      label: 'ADC counts',
+      data: [],
       borderWidth: 1,
-      fill: false,
       pointRadius: 0
-    }]
-  };
-  chart.data = data;
-  chart.update();
-}
-const ctx = document.getElementById("chart");
-const chart = new Chart(ctx, {
-  type: "line",
-  data: {labels:[], datasets:[]},
-  options: {animation:false}
-});
-update();
-setInterval(update, 2000); // aggiorna ogni 2 secondi
+    }]},
+    options: {
+      responsive: true,
+      animation: false,
+      scales: {
+        x: { display: true, title: { display: true, text: 'sample' } },
+        y: { display: true, title: { display: true, text: 'counts' } }
+      },
+      plugins: { legend: { display: true } }
+    }
+  });
+
+  let timer = null;
+
+  function setStatus(msg) { statusEl.textContent = msg; }
+  function setLast(ts)    { lastEl.textContent = ts ? ('Ultimo aggiornamento: ' + ts) : ''; }
+
+  function url() {
+    const ip = ipEl.value.trim();
+    const n  = parseInt(nEl.value, 10)  || 1024;
+    const sr = parseInt(srEl.value, 10) || 4000;
+    if (!ip) throw new Error('IP non valido');
+    return `http://${ip}/adc/scope_counts?n=${n}&sr=${sr}`;
+  }
+
+  async function fetchAndPlot() {
+    try {
+      const u = url();
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+
+      if (!j || !Array.isArray(j.counts)) {
+        throw new Error('Risposta non valida');
+      }
+      const labels = j.counts.map((_, i) => i);
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = j.counts;
+      chart.update('none');
+
+      setStatus(`OK (${j.counts.length} campioni, sr=${j.sample_rate_hz || srEl.value} Hz)`);
+      setLast(new Date().toLocaleTimeString());
+    } catch (err) {
+      setStatus('Errore: ' + err.message);
+    }
+  }
+
+  function start() {
+    if (timer) return;
+    savePrefs();
+    fetchAndPlot(); // subito
+    timer = setInterval(fetchAndPlot, 2000); // ogni 2s
+    startBtn.disabled = true;
+    stopBtn.disabled  = false;
+  }
+  function stop() {
+    if (timer) clearInterval(timer);
+    timer = null;
+    startBtn.disabled = false;
+    stopBtn.disabled  = true;
+    setStatus('In pausa.');
+  }
+
+  // --- Eventi
+  saveBtn.addEventListener('click', savePrefs);
+  startBtn.addEventListener('click', start);
+  stopBtn.addEventListener('click', stop);
+
+  // Avvio
+  loadPrefs();
+  // facoltativo: partire subito
+  // start();
 </script>
 </body>
 </html>
