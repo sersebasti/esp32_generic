@@ -503,56 +503,6 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                         finally:
                             BUSY["v"] = False
 
-                
-                elif method == "POST" and path.startswith("/calibrate/delete"):
-                    try:
-                        body = _read_post_json(req, cl)
-                        idx = body.get("index", None)
-                        amp = body.get("amps", None)
-                        rms = body.get("rms_counts", None)
-
-                        cal = _cal_load()
-                        pts = cal.get("points", []) or []
-
-                        removed = None
-
-                        # 1) remove by index if provided
-                        if isinstance(idx, int) and 0 <= idx < len(pts):
-                            removed = pts.pop(idx)
-                        # 2) fallback: remove by exact pair match
-                        elif (amp is not None) and (rms is not None):
-                            for i, p in enumerate(pts):
-                                try:
-                                    if float(p.get("amps")) == float(amp) and float(p.get("rms_counts")) == float(rms):
-                                        removed = pts.pop(i)
-                                        break
-                                except Exception:
-                                    pass
-
-                        if removed is None:
-                            cl.send(_HTTP_200_JSON_CORS + ujson.dumps({"ok": False, "err": "not_found"}).encode())
-                        else:
-                            # recompute k if points remain
-                            cal["points"] = pts
-                            if pts:
-                                k = _fit_k(pts)
-                                cal["k_A_per_count"] = round(k, 9)
-                            else:
-                                cal["k_A_per_count"] = 0.0
-                            _cal_save(cal)
-                            resp = {
-                                "ok": True,
-                                "removed": removed,
-                                "num_points": len(pts),
-                                "k_A_per_count": cal.get("k_A_per_count", 0.0)
-                            }
-                            cl.send(_HTTP_200_JSON_CORS + ujson.dumps(resp).encode())
-                    except Exception:
-                        try:
-                            cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"invalid_request"}')
-                        except Exception:
-                            pass
-
                 elif method == "POST" and path.startswith("/calibrate/reset"):
                     try:
                         import os
