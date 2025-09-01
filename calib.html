@@ -22,9 +22,16 @@
   <div class="row">
     <label for="baseUrl">ESP32 base URL:</label>
     <input id="baseUrl" type="text" placeholder="http://192.168.1.24" />
-    <button id="btnLoad">Carica /calibrate</button>
+    <button id="btnLoad">Ricarica</button>
   </div>
   <div id="meta" class="mono"></div>
+    <div id="pointsBox" class="mono" style="margin:12px 0; padding:8px; border:1px solid #ddd; border-radius:8px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+      <strong>Punti di calibrazione</strong>
+      <button id="btnReload" title="Ricarica dati">Ricarica</button>
+    </div>
+    <div id="pointsList" style="margin-top:8px; font-size:14px;"></div>
+  </div>
   <canvas id="chart"></canvas>
   <div id="kinfo" class="kbox mono"></div>
 
@@ -42,6 +49,65 @@
   if (host) baseUrlEl.value = host.startsWith("http") ? host : ("http://" + host);
   if (!baseUrlEl.value) baseUrlEl.value = "http://192.168.1.24";
 
+    // --- Render elenco punti + delete ---
+  async function renderPoints(base, cal) {
+    const listEl = document.getElementById("pointsList");
+    const pts = (cal.points || []).map((p, i) => ({
+      i,
+      rms: Number(p.rms_counts),
+      amps: Number(p.amps)
+    }));
+
+    if (!pts.length) {
+      listEl.innerHTML = "<em>Nessun punto salvato.</em>";
+      return;
+    }
+
+    const ul = document.createElement("ul");
+    ul.style.listStyle = "none";
+    ul.style.padding = "0";
+    ul.style.margin = "0";
+
+    pts.forEach(p => {
+      const li = document.createElement("li");
+      li.style.display = "flex";
+      li.style.alignItems = "center";
+      li.style.justifyContent = "space-between";
+      li.style.gap = "8px";
+      li.style.borderTop = "1px dashed #ccc";
+      li.style.padding = "6px 0";
+
+      const left = document.createElement("span");
+      left.textContent = `#${p.i}  rms_counts=${p.rms}  |  amps=${p.amps}`;
+
+      const btn = document.createElement("button");
+      btn.textContent = "Elimina";
+      btn.title = "Rimuovi questo punto";
+      btn.onclick = async () => {
+        if (!confirm(`Confermi rimozione del punto #${p.i}?`)) return;
+        try {
+          const r = await fetch(base + "/calibrate/delete", {
+            method: "POST",
+            mode: "cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ index: p.i })
+          });
+          const j = await r.json();
+          if (!j.ok) throw new Error(j.err || "operazione fallita");
+          await load(); // ricarica grafico e lista
+        } catch (e) {
+          alert("Errore delete: " + e);
+        }
+      };
+
+      li.appendChild(left);
+      li.appendChild(btn);
+      ul.appendChild(li);
+    });
+
+    listEl.innerHTML = "";
+    listEl.appendChild(ul);
+  }
   // Chart.js
   const ctx = document.getElementById("chart").getContext("2d");
   const chart = new Chart(ctx, {
@@ -140,6 +206,7 @@
       chart.update();
 
       metaEl.textContent = `Punti: ${pts.length}  •  baseline_mean: ${cal.baseline_mean ?? "n/d"}  •  n0: ${cal.n0 ?? "n/d"}  •  sr0: ${cal.sr0 ?? "n/d"}`;
+      await renderPoints(base, cal);
       kinfoEl.textContent = `R²(k salvato) = ${isNaN(r2Saved)? "n/d" : r2Saved.toFixed(5)}   |   R²(k fit) = ${isNaN(r2Fit)? "n/d" : r2Fit.toFixed(5)}`;
     } catch (e) {
       metaEl.textContent = "Errore nel fetch: " + e;
@@ -149,6 +216,7 @@
   }
 
   btnLoad.addEventListener("click", load);
+  document.getElementById("btnReload").addEventListener("click", load);
   load(); // auto on start
 })();
 </script>
