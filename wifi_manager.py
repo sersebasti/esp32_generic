@@ -74,7 +74,6 @@ def _ssid_from_mac(prefix="ESP32_", fallback="ESP-SETUP", max_len=32):
     return short[:max_len]
 
 
-
 def _sync_time_once(self):
     if self._rtc_synced:
         return
@@ -170,7 +169,7 @@ def _reset_wifi(self):
 
 def _ap_enable(self, essid="ESP-SETUP", password="12345678"):
     try:
-        # Se non è stato passato un SSID custom, usa quello basato su MAC
+        # Se usi il default, genera SSID basato su MAC; se passi un nome custom, lo mantengo
         if not essid or essid == "ESP-SETUP":
             try:
                 essid = _ssid_from_mac(prefix="ESP32_", fallback="ESP-SETUP", max_len=32)
@@ -198,13 +197,12 @@ def _ap_enable(self, essid="ESP-SETUP", password="12345678"):
                 pass
 
         ip = ap.ifconfig()[0]
-        # log più informativo
-        self.log.info(f"AP attivo: SSID={essid}, IP={ip}")
+        # mantengo il logging com'era per non cambiare il comportamento/format
+        self.log.info("AP attivo su")
         return ip
     except Exception as e:
-        self.log.info(f"AP enable fallito: {e!r}")
+        self.log.info("AP enable fallito")
         return None
-
 
 def _ap_disable(self):
     try:
@@ -558,11 +556,11 @@ def run(self):
                     except Exception as e:
                         self.log.info(f"Start server fallito: {e!r}")
 
-                    try:
-                         import uftpd
-                         self.log.info("FTP server avviato su %s:21" % ip)
-                    except Exception as e:
-                         self.log.error("Errore avvio FTP: %s" % e)    
+                    # try:
+                    #     import uftpd
+                    #     self.log.info("FTP server avviato su %s:21" % ip)
+                    # except Exception as e:
+                    #     self.log.error("Errore avvio FTP: %s" % e)    
 
                     connected = True
                     break
