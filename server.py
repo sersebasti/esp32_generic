@@ -153,44 +153,6 @@ def _cfg_set_list(cfg, fmt, items):
             cfg["ssid_%d" % i] = s
             cfg["password_%d" % i] = p
 
-def _add_network(ssid, password, priority=None):
-    ssid = (ssid or "").strip()
-    if not ssid:
-        return False, "missing_ssid", None, 0
-    password = password or ""
-    cfg = _cfg_read_all()
-    fmt, lst = _cfg_get_list(cfg)
-
-    # già presente?
-    for (s, _) in lst:
-        if s == ssid:
-            return False, "exists", fmt, len(lst)
-
-    # inserimento
-    if isinstance(priority, int) and priority >= 1 and priority <= (len(lst)+1):
-        lst.insert(priority-1, (ssid, password))
-    else:
-        lst.append((ssid, password))
-
-    _cfg_set_list(cfg, fmt, lst)
-    _cfg_write_all(cfg)
-    return True, "added", fmt, len(lst)
-
-def _delete_network(ssid):
-    ssid = (ssid or "").strip()
-    if not ssid:
-        return False, "missing_ssid", None, 0
-    cfg = _cfg_read_all()
-    fmt, lst = _cfg_get_list(cfg)
-
-    new = [(s, p) for (s, p) in lst if s != ssid]
-    if len(new) == len(lst):
-        return False, "not_found", fmt, len(lst)
-
-    _cfg_set_list(cfg, fmt, new)
-    _cfg_write_all(cfg)
-    return True, "deleted", fmt, len(new)
-
 def _hdr_get(req_bytes, name_lower):
     """Estrae il valore dell'header (in minuscolo), es. b'content-length'."""
     try:
