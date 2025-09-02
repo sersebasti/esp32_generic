@@ -24,6 +24,7 @@ th,td{border:1px solid #eee;padding:6px;font-size:13px;text-align:left}
 .err{color:#a00}
 small{color:#666}
 #msg,#addMsg{min-height:1.3em}
+.hide{display:none}
 </style>
 </head><body>
 <h1>Configurazione Wi-Fi</h1>
@@ -45,7 +46,7 @@ small{color:#666}
 <section>
   <h2>Reti configurate (wifi.json)</h2>
   <table id="cfgTbl"><thead>
-    <tr><th>#</th><th>SSID</th><th>Connessa</th><th></th></tr>
+    <tr><th>#</th><th>SSID</th><th class="col-conn">Connessa</th><th></th></tr>
   </thead><tbody></tbody></table>
 </section>
 
@@ -74,6 +75,31 @@ async function postJSON(url, data){
   return r.json();
 }
 
+/* --- Mostra/nasconde la colonna "Connessa" in base allo stato STA --- */
+let showConnCol = false; // default: nascosta (AP setup)
+
+function toggleConnColumn(show){
+  qsa('.col-conn').forEach(el=>{
+    if(show) el.classList.remove('hide'); else el.classList.add('hide');
+  });
+}
+function COLSPAN(){ return showConnCol ? 4 : 3; }
+
+async function initMode(){
+  showConnCol = false;
+  try{
+    const s = await getJSON('/status');
+    // Supporta sia {"sta_connected": true} sia {"wifi":{"sta":{"active":...,"connected":...}}}
+    const staConn = !!(s && (s.sta_connected === true ||
+                   (s.wifi && s.wifi.sta && s.wifi.sta.connected === true)));
+    const staActive = !!(s && (s.wifi && s.wifi.sta && s.wifi.sta.active === true));
+    showConnCol = staConn || staActive; // mostra solo se lo STA è attivo/valido
+  }catch(e){
+    showConnCol = false; // se /status non c'è, assumo AP setup
+  }
+  toggleConnColumn(showConnCol);
+}
+
 async function loadScan(){
   const tbody = qs('#scanTbl tbody'); tbody.innerHTML = '<tr><td colspan="4">Scanning…</td></tr>';
   try{
@@ -97,16 +123,16 @@ async function loadScan(){
 }
 
 async function loadCfg(){
-  const tbody = qs('#cfgTbl tbody'); tbody.innerHTML = '<tr><td colspan="4">Carico…</td></tr>';
+  const tbody = qs('#cfgTbl tbody'); tbody.innerHTML = '<tr><td colspan="'+COLSPAN()+'">Carico…</td></tr>';
   try{
     const data = await getJSON('/wifi/list');
     tbody.innerHTML = '';
     (data.configured_networks||[]).forEach((n,i)=>{
       const tr = document.createElement('tr');
-      tr.innerHTML = '<td>'+(n.priority||i+1)+'</td>'+
-                     '<td>'+n.ssid+'</td>'+
-                     '<td>'+(n.connected?'<span class="badge">connessa</span>':'')+'</td>'+
-                     '<td><button data-ssid="'+n.ssid+'">Elimina</button></td>';
+      const left = '<td>'+(n.priority||i+1)+'</td><td>'+n.ssid+'</td>';
+      const conn = showConnCol ? ('<td class="col-conn">'+(n.connected?'<span class="badge">connessa</span>':'')+'</td>') : '';
+      const right = '<td><button data-ssid="'+n.ssid+'">Elimina</button></td>';
+      tr.innerHTML = left + conn + right;
       tbody.appendChild(tr);
     });
     qsa('#cfgTbl button').forEach(b=>{
@@ -121,7 +147,7 @@ async function loadCfg(){
       };
     });
   }catch(e){
-    tbody.innerHTML = '<tr><td colspan="4" class="err">Impossibile leggere wifi.json</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="'+COLSPAN()+'" class="err">Impossibile leggere wifi.json</td></tr>';
   }
 }
 
@@ -139,7 +165,10 @@ qs('#btnAdd').onclick = async ()=>{
   }
 };
 
-qs('#btnRefresh').onclick = ()=>{ loadScan(); loadCfg(); }
+qs('#btnRefresh').onclick = async ()=>{
+  await initMode();
+  loadScan(); loadCfg();
+};
 qs('#btnReboot').onclick = async ()=>{
   try{
     await postJSON('/reboot',{});
@@ -150,7 +179,8 @@ qs('#btnReboot').onclick = async ()=>{
   }
 };
 
-loadScan(); loadCfg();
+/* Avvio: rileva modalità → carica tabelle */
+initMode().then(()=>{ loadScan(); loadCfg(); });
 </script>
 </body></html>
 """
