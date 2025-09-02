@@ -46,7 +46,7 @@
 
       <div class="row">
         <button id="refreshBtn">Aggiorna lista file</button>
-        <span class="muted">Ammessi in lista: .txt, .py, .json, .1</span>
+        <span class="muted">Ammessi in lista: .txt, .py, .json</span>
       </div>
 
       <div class="row">
@@ -138,7 +138,7 @@
         const files = (data.files || []).filter(f => allowed("/" + f.name));
         if (files.length === 0) {
           const opt = document.createElement("option");
-          opt.textContent = "(nessun file .txt/.py/.json/.1 trovato)";
+          opt.textContent = "(nessun file .txt/.py/.json trovato)";
           opt.value = "";
           fnameEl.appendChild(opt);
         } else {
@@ -202,7 +202,7 @@
       const name = sanitizeName(path).toLowerCase();
       const protectedList = [
         "boot.py","main.py","wifi_manager.py",
-        "fs_api.py","uftpd.py","server.py","wifi.json"
+        "fs_api.py","server.py","wifi.json"
       ];
       return protectedList.includes(name);
     }

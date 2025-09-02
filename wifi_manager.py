@@ -546,11 +546,11 @@ def run(self):
                     except Exception as e:
                         self.log.info("Start server fallito: %r" % e)
 
-                    try:
-                        import uftpd
-                        self.log.info("FTP server avviato su %s:21" % ip)
-                    except Exception as e:
-                        self.log.error("Errore avvio FTP: %s" % e)    
+                    # try:
+                    #     import uftpd
+                    #     self.log.info("FTP server avviato su %s:21" % ip)
+                    # except Exception as e:
+                    #     self.log.error("Errore avvio FTP: %s" % e)    
 
                     connected = True
                     break
