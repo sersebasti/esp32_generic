@@ -114,7 +114,7 @@
     function allowed(path) {
       const name = sanitizeName(path);
       // Mostra solo alcuni tipi nel viewer, ma l'upload può inviare qualunque file
-      return /\.(txt|py|json|1)$/i.test(name);
+      return /\.(txt|py|json)$/i.test(name);
     }
 
     async function fetchText(url, opts={}) {
@@ -161,7 +161,8 @@
         if (!path) throw new Error('Seleziona un file');
         if (!allowed(path)) throw new Error('Estensione non ammessa');
         statusEl.textContent = 'Carico ' + path + '...';
-        const url = `${base()}/fs/download?path=${encodeURIComponent(path)}`;
+        // slash reale nel parametro path (nessuna codifica dello '/')
+        const url = `${base()}/fs/download?path=${path}`;
         const text = await fetchText(url);
         previewEl.textContent = text;
         statusEl.textContent = 'Mostrato ' + path;
@@ -177,13 +178,16 @@
         if (!allowed(path)) throw new Error('Estensione non ammessa');
 
         statusEl.textContent = 'Scarico ' + path + '...';
-        const url = `${base()}/fs/download?path=${encodeURIComponent(path)}`;
+        // slash reale nel parametro path (nessuna codifica dello '/')
+        const url = `${base()}/fs/download?path=${path}`;
         setURL(url);
 
         const r = await fetch(url, { cache: 'no-store' });
         if (!r.ok) throw new Error('HTTP ' + r.status);
 
         const blob = await r.blob();
+      
+        
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = sanitizeName(path);
