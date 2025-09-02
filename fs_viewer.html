@@ -34,6 +34,7 @@
   <div class="row">
     <button id="downloadBtn">Scarica</button>
     <button id="viewBtn">Visualizza</button>
+    <button id="deleteBtn">Elimina</button>
   </div>
 
   <div class="row">
@@ -61,12 +62,13 @@
     }
 
     function sanitizeName(path) {
-      // rimuovi eventuali slash iniziali per la validazione estensione
-      return path.replace(/^\/+/, '');
+      // rimuovi eventuali slash iniziali per validazione/filename
+      return (path || '').replace(/^\/+/, '');
     }
 
     function allowed(path) {
       const name = sanitizeName(path);
+      // consenti .txt .py .json e file di log “.1”
       return /\.(txt|py|json|1)$/i.test(name);
     }
 
@@ -87,17 +89,18 @@
         const txt = await fetchText(url);
         const data = JSON.parse(txt);
         if (!data.ok) throw new Error("Lista non valida");
-        const files = data.files.filter(f => allowed("/" + f.name));
+
+        const files = (data.files || []).filter(f => allowed("/" + f.name));
         if (files.length === 0) {
           const opt = document.createElement("option");
-          opt.textContent = "(nessun file .txt/.py/.json/.txt/.1 trovato)";
+          opt.textContent = "(nessun file .txt/.py/.json/.1 trovato)";
           opt.value = "";
           fnameEl.appendChild(opt);
         } else {
           for (const f of files) {
             const opt = document.createElement("option");
-            opt.value = "/" + f.name;                 // <-- path con slash (come il tuo curl)
-            opt.textContent = f.name + " (" + (f.size||0) + " B)";
+            opt.value = "/" + f.name; // path con slash (compatibile con la tua API)
+            opt.textContent = `${f.name} (${f.size || 0} B)`;
             fnameEl.appendChild(opt);
           }
         }
@@ -112,11 +115,14 @@
         const path = fnameEl.value;
         if (!path) throw new Error('Seleziona un file');
         if (!allowed(path)) throw new Error('Estensione non ammessa');
+
         statusEl.textContent = 'Scarico ' + path + '...';
-        const url = `${base()}/fs/download?path=${path}`;
+        const url = `${base()}/fs/download?path=${encodeURIComponent(path)}`;
         setURL(url);
+
         const r = await fetch(url, { cache: 'no-store' });
         if (!r.ok) throw new Error('HTTP ' + r.status);
+
         const blob = await r.blob();
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -125,6 +131,7 @@
         a.click();
         a.remove();
         URL.revokeObjectURL(a.href);
+
         statusEl.textContent = 'Scaricato ' + path;
       } catch (err) {
         statusEl.textContent = 'Errore: ' + err.message;
@@ -136,8 +143,9 @@
         const path = fnameEl.value;
         if (!path) throw new Error('Seleziona un file');
         if (!allowed(path)) throw new Error('Estensione non ammessa');
+
         statusEl.textContent = 'Carico ' + path + '...';
-        const url = `${base()}/fs/download?path=${path}`;
+        const url = `${base()}/fs/download?path=${encodeURIComponent(path)}`;
         const text = await fetchText(url);
         previewEl.textContent = text;
         statusEl.textContent = 'Mostrato ' + path;
@@ -146,9 +154,58 @@
       }
     }
 
+    // (opzionale) proteggi file critici da eliminazioni accidentali
+    function protect(path) {
+      const name = sanitizeName(path).toLowerCase();
+      const protectedList = [
+        "boot.py", "main.py", "wifi_manager.py",
+        "fs_api.py", "uftpd.py", "server.py", "wifi.json"
+      ];
+      return protectedList.includes(name);
+    }
+
+    async function delFile() {
+      try {
+        const path = fnameEl.value;
+        if (!path) throw new Error('Seleziona un file');
+        if (!allowed(path)) throw new Error('Estensione non ammessa');
+        if (protect(path)) throw new Error('File protetto (non eliminabile)');
+
+        if (!confirm(`Eliminare definitivamente ${path}?`)) return;
+
+        statusEl.textContent = 'Elimino ' + path + '...';
+        const url = `${base()}/fs/delete`;
+        setURL(url);
+
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ path })
+        });
+
+        const txt = await r.text();
+        let data = {};
+        try { data = JSON.parse(txt); } catch(_) {}
+
+        if (!r.ok || !data.ok) {
+          const err = (data && data.err) ? data.err : ('HTTP ' + r.status);
+          throw new Error('Delete failed: ' + err);
+        }
+
+        statusEl.textContent = 'Eliminato ' + path;
+        await refreshList();
+        previewEl.textContent = '(contenuto)';
+      } catch (err) {
+        statusEl.textContent = 'Errore: ' + err.message;
+      }
+    }
+
+    // bind pulsanti
     $('#downloadBtn').addEventListener('click', download);
     $('#viewBtn').addEventListener('click', view);
     $('#refreshBtn').addEventListener('click', refreshList);
+    const delBtn = $('#deleteBtn');
+    if (delBtn) delBtn.addEventListener('click', delFile);
 
     // aggiorna subito alla prima apertura
     refreshList();

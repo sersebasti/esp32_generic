@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ESP32 FS Toolbox</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Arial, sans-serif; }
+    body { margin: 20px; }
+    h1 { font-size: 22px; margin: 0 0 14px; }
+    h2 { font-size: 16px; margin: 18px 0 8px; }
+    .row { display: flex; gap: 8px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
+    input[type="text"], select { padding: 8px; min-width: 220px; }
+    input[type="file"] { padding: 6px; }
+    button { padding: 8px 12px; border-radius: 10px; border: 1px solid #ccc; cursor: pointer; }
+    button.danger { background:#ffe9e9; border-color:#f2b5b5 }
+    .muted { color: #666; font-size: 12px; }
+    pre { background: #f7f7f7; padding: 12px; border-radius: 8px; max-height: 50vh; overflow: auto; white-space: pre-wrap; }
+    code { background:#f0f0f0; padding:2px 6px; border-radius:6px; }
+    .card { border:1px solid #eee; border-radius:12px; padding:12px; margin:12px 0; }
+    .cols { display:grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 900px) {
+      .cols { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <h1>ESP32 FS Toolbox</h1>
+
+  <!-- Barra IP + utilità -->
+  <div class="card">
+    <div class="row">
+      <label for="ip">IP ESP32:</label>
+      <input id="ip" type="text" value="192.168.1.10" placeholder="es. 192.168.1.10" />
+      <button id="statusBtn">Status</button>
+      <button id="rebootBtn">Reboot</button>
+    </div>
+    <div class="row"><span class="muted">URL:</span> <code id="url"></code></div>
+    <div class="row"><span id="status" class="muted">Pronto.</span></div>
+  </div>
+
+  <div class="cols">
+    <!-- Sezione Viewer/Download/Delete -->
+    <div class="card">
+      <h2>File viewer</h2>
+
+      <div class="row">
+        <button id="refreshBtn">Aggiorna lista file</button>
+        <span class="muted">Ammessi in lista: .txt, .py, .json, .1</span>
+      </div>
+
+      <div class="row">
+        <label for="fname">File:</label>
+        <select id="fname"></select>
+      </div>
+
+      <div class="row">
+        <button id="viewBtn">Visualizza</button>
+        <button id="downloadBtn">Scarica</button>
+        <button id="deleteBtn" class="danger">Elimina</button>
+      </div>
+
+      <h2>Anteprima</h2>
+      <pre id="preview">(contenuto)</pre>
+    </div>
+
+    <!-- Sezione Upload -->
+    <div class="card">
+      <h2>Upload file</h2>
+      <div class="row">
+        <input id="fileInput" type="file" />
+        <button id="uploadBtn">Upload</button>
+      </div>
+    </div>
+
+    <!-- Sezione Upload -->
+    <div class="card">
+      <h2>Risultato</h2>
+      <pre id="result">(nessuna azione ancora)</pre>
+    </div>
+  </div>
+  
+  
+
+
+
+  <script>
+    // ---- Helpers comuni ----
+    const $ = (sel) => document.querySelector(sel);
+    const ipEl = $('#ip');
+    const urlEl = $('#url');
+    const statusEl = $('#status');
+
+    // Viewer refs
+    const fnameEl = $('#fname');
+    const previewEl = $('#preview');
+
+    // Uploader refs
+    const fileEl = $('#fileInput');
+    const resultEl = $('#result');
+
+    function base() {
+      const ip = ipEl.value.trim();
+      if (!ip) throw new Error('IP non valido');
+      return `http://${ip}`;
+    }
+
+    function setURL(u) { urlEl.textContent = u || ''; }
+
+    function sanitizeName(path) {
+      return (path || '').replace(/^\/+/, '');
+    }
+
+    function allowed(path) {
+      const name = sanitizeName(path);
+      // Mostra solo alcuni tipi nel viewer, ma l'upload può inviare qualunque file
+      return /\.(txt|py|json|1)$/i.test(name);
+    }
+
+    async function fetchText(url, opts={}) {
+      setURL(url);
+      const r = await fetch(url, opts);
+      const txt = await r.text();
+      if (!r.ok) throw new Error("HTTP " + r.status + " " + txt);
+      return txt;
+    }
+
+    // ---- Viewer / Download / Delete ----
+    async function refreshList() {
+      try {
+        statusEl.textContent = 'Carico lista file...';
+        fnameEl.innerHTML = "";
+        const url = `${base()}/fs/list`;
+        const txt = await fetchText(url);
+        const data = JSON.parse(txt);
+        if (!data.ok) throw new Error("Lista non valida");
+
+        const files = (data.files || []).filter(f => allowed("/" + f.name));
+        if (files.length === 0) {
+          const opt = document.createElement("option");
+          opt.textContent = "(nessun file .txt/.py/.json/.1 trovato)";
+          opt.value = "";
+          fnameEl.appendChild(opt);
+        } else {
+          for (const f of files) {
+            const opt = document.createElement("option");
+            opt.value = "/" + f.name; // path con slash
+            opt.textContent = `${f.name} (${f.size || 0} B)`;
+            fnameEl.appendChild(opt);
+          }
+        }
+        statusEl.textContent = 'Lista aggiornata';
+      } catch (err) {
+        statusEl.textContent = 'Errore: ' + err.message;
+      }
+    }
+
+    async function view() {
+      try {
+        const path = fnameEl.value;
+        if (!path) throw new Error('Seleziona un file');
+        if (!allowed(path)) throw new Error('Estensione non ammessa');
+        statusEl.textContent = 'Carico ' + path + '...';
+        const url = `${base()}/fs/download?path=${encodeURIComponent(path)}`;
+        const text = await fetchText(url);
+        previewEl.textContent = text;
+        statusEl.textContent = 'Mostrato ' + path;
+      } catch (err) {
+        statusEl.textContent = 'Errore: ' + err.message;
+      }
+    }
+
+    async function download() {
+      try {
+        const path = fnameEl.value;
+        if (!path) throw new Error('Seleziona un file');
+        if (!allowed(path)) throw new Error('Estensione non ammessa');
+
+        statusEl.textContent = 'Scarico ' + path + '...';
+        const url = `${base()}/fs/download?path=${encodeURIComponent(path)}`;
+        setURL(url);
+
+        const r = await fetch(url, { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+
+        const blob = await r.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = sanitizeName(path);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(a.href);
+
+        statusEl.textContent = 'Scaricato ' + path;
+      } catch (err) {
+        statusEl.textContent = 'Errore: ' + err.message;
+      }
+    }
+
+    function protect(path) {
+      const name = sanitizeName(path).toLowerCase();
+      const protectedList = [
+        "boot.py","main.py","wifi_manager.py",
+        "fs_api.py","uftpd.py","server.py","wifi.json"
+      ];
+      return protectedList.includes(name);
+    }
+
+    async function delFile() {
+      try {
+        const path = fnameEl.value;
+        if (!path) throw new Error('Seleziona un file');
+        if (!allowed(path)) throw new Error('Estensione non ammessa');
+        if (protect(path)) throw new Error('File protetto (non eliminabile)');
+        if (!confirm(`Eliminare definitivamente ${path}?`)) return;
+
+        statusEl.textContent = 'Elimino ' + path + '...';
+        const url = `${base()}/fs/delete`;
+        setURL(url);
+
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ path })
+        });
+        const txt = await r.text();
+        let data = {};
+        try { data = JSON.parse(txt); } catch(_) {}
+        if (!r.ok || !data.ok) {
+          const err = (data && data.err) ? data.err : ('HTTP ' + r.status);
+          throw new Error('Delete failed: ' + err);
+        }
+
+        statusEl.textContent = 'Eliminato ' + path;
+        await refreshList();
+        previewEl.textContent = '(contenuto)';
+      } catch (err) {
+        statusEl.textContent = 'Errore: ' + err.message;
+      }
+    }
+
+    // ---- Upload / Status / Reboot ----
+    async function upload() {
+      try {
+        const file = fileEl.files[0];
+        if (!file) {
+          alert("Seleziona un file locale prima!");
+          return;
+        }
+        const url = `${base()}/fs/upload?to=/${encodeURIComponent(file.name)}`;
+        statusEl.textContent = "Upload in corso...";
+        setURL(url);
+        const txt = await fetchText(url, { method: "POST", body: file });
+        resultEl.textContent = txt;
+        statusEl.textContent = "Upload completato.";
+        // rinfresca lista se il file caricato è tra quelli ammessi
+        if (allowed("/" + file.name)) {
+          await refreshList();
+        }
+      } catch (err) {
+        statusEl.textContent = "Errore: " + err.message;
+      }
+    }
+
+    async function getStatus() {
+      try {
+        statusEl.textContent = "Richiesta status...";
+        const txt = await fetchText(`${base()}/status`);
+        resultEl.textContent = txt;
+        statusEl.textContent = "Status ricevuto.";
+      } catch (err) {
+        statusEl.textContent = "Errore: " + err.message;
+      }
+    }
+
+    async function reboot() {
+      try {
+        if (!confirm("Confermi reboot del device?")) return;
+        statusEl.textContent = "Invio reboot...";
+        const txt = await fetchText(`${base()}/reboot`, { method: "POST" });
+        resultEl.textContent = txt;
+        statusEl.textContent = "Reboot inviato (il device si riavvierà).";
+      } catch (err) {
+        statusEl.textContent = "Errore: " + err.message;
+      }
+    }
+
+    // ---- Bind pulsanti ----
+    $('#refreshBtn').addEventListener('click', refreshList);
+    $('#viewBtn').addEventListener('click', view);
+    $('#downloadBtn').addEventListener('click', download);
+    $('#deleteBtn').addEventListener('click', delFile);
+
+    $('#uploadBtn').addEventListener('click', upload);
+    $('#statusBtn').addEventListener('click', getStatus);
+    $('#rebootBtn').addEventListener('click', reboot);
+
+    // Aggiorna subito la lista all’apertura
+    refreshList();
+  </script>
+</body>
+</html>
