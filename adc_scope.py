@@ -1,6 +1,6 @@
 # adc_scope.py  (solo counts, niente volt)
-from machine import ADC, Pin # type: ignore
-import time, ujson, math # type: ignore
+from machine import ADC, Pin
+import time, ujson, math
 
 ADC_PIN = 34
 ADC_ATTEN_DB = 11     # non influisce sui "counts_rms" come scala assoluta, ma evita saturazione

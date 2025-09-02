@@ -1,90 +1,167 @@
-[2025-09-02 12:01:16] I AP attivo su
-[2025-09-02 12:01:16] I Server già attivo, skip avvio.
-[t+2618ms] I Loop WiFiManager attivo
-[t+3285ms] I Tentativo di connessione a rete 'Vodafone-E34013225'...
-[t+4860ms] I Connesso alla rete 'Vodafone-E34013225' con IP 192.168.1.10
-[2025-09-02 12:01:46] I FTP server avviato su 192.168.1.10:21
-[2025-09-02 12:01:46] I Loop WiFiManager attivo
-[2025-09-02 12:01:51] I Loop WiFiManager attivo
-[2025-09-02 12:01:56] I Loop WiFiManager attivo
-[2025-09-02 12:02:01] I Loop WiFiManager attivo
-[2025-09-02 12:02:06] I Loop WiFiManager attivo
-[2025-09-02 12:02:12] I Loop WiFiManager attivo
-[2025-09-02 12:02:19] I Loop WiFiManager attivo
-[2025-09-02 12:02:24] I Loop WiFiManager attivo
-[2025-09-02 12:02:29] I Loop WiFiManager attivo
-[2025-09-02 12:02:34] I Loop WiFiManager attivo
-[2025-09-02 12:02:39] I Loop WiFiManager attivo
-[2025-09-02 12:02:44] I Loop WiFiManager attivo
-[2025-09-02 12:02:49] I Loop WiFiManager attivo
-[2025-09-02 12:02:54] I Loop WiFiManager attivo
-[2025-09-02 12:02:59] I Loop WiFiManager attivo
-[2025-09-02 12:03:05] I Loop WiFiManager attivo
-[2025-09-02 12:03:10] I Loop WiFiManager attivo
-[2025-09-02 12:03:15] I Loop WiFiManager attivo
-[2025-09-02 12:03:20] I Loop WiFiManager attivo
-[2025-09-02 12:03:25] I Loop WiFiManager attivo
-[2025-09-02 12:03:30] I Loop WiFiManager attivo
-[2025-09-02 12:03:35] I Loop WiFiManager attivo
-[2025-09-02 12:03:40] I Loop WiFiManager attivo
-[2025-09-02 12:03:45] I Loop WiFiManager attivo
-[2025-09-02 12:03:50] I Loop WiFiManager attivo
-[2025-09-02 12:03:55] I Loop WiFiManager attivo
-[2025-09-02 12:04:01] I Loop WiFiManager attivo
-[2025-09-02 12:04:06] I Loop WiFiManager attivo
-[2025-09-02 12:04:11] I Loop WiFiManager attivo
-[2025-09-02 12:04:16] I Loop WiFiManager attivo
-[2025-09-02 12:04:21] I Loop WiFiManager attivo
-[2025-09-02 12:04:25] I Loop WiFiManager attivo
-[2025-09-02 12:04:25] I Tentativo di connessione a rete 'Vodafone-E34013225'...
-[2025-09-02 12:04:29] I Connesso alla rete 'Vodafone-E34013225' con IP 192.168.1.10
-[2025-09-02 12:04:30] I FTP server avviato su 192.168.1.10:21
-[2025-09-02 12:04:30] I Loop WiFiManager attivo
-[2025-09-02 12:04:35] I Loop WiFiManager attivo
-[2025-09-02 12:04:40] I Loop WiFiManager attivo
-[2025-09-02 12:04:45] I Loop WiFiManager attivo
-[2025-09-02 12:04:51] I Loop WiFiManager attivo
-[2025-09-02 12:04:56] I Loop WiFiManager attivo
-[2025-09-02 12:05:01] I Loop WiFiManager attivo
-[2025-09-02 12:05:06] I Loop WiFiManager attivo
-[2025-09-02 12:05:12] I Loop WiFiManager attivo
-[2025-09-02 12:05:12] I Tentativo di connessione a rete 'Vodafone-E34013225'...
-[2025-09-02 12:05:14] I Connesso alla rete 'Vodafone-E34013225' con IP 192.168.1.10
-[2025-09-02 12:05:15] I FTP server avviato su 192.168.1.10:21
-[2025-09-02 12:05:15] I Loop WiFiManager attivo
-[2025-09-02 12:05:20] I Loop WiFiManager attivo
-[2025-09-02 12:05:25] I Loop WiFiManager attivo
-[2025-09-02 12:05:31] I Loop WiFiManager attivo
-[2025-09-02 12:05:36] I Loop WiFiManager attivo
-[2025-09-02 12:05:41] I Loop WiFiManager attivo
-[2025-09-02 12:05:46] I Loop WiFiManager attivo
-[2025-09-02 12:05:53] I Loop WiFiManager attivo
-[2025-09-02 12:05:58] I Loop WiFiManager attivo
-[2025-09-02 12:06:03] I Loop WiFiManager attivo
-[2025-09-02 12:06:09] I Loop WiFiManager attivo
-[2025-09-02 12:06:14] I Loop WiFiManager attivo
-[2025-09-02 12:06:19] I Loop WiFiManager attivo
-[2025-09-02 12:06:24] I Loop WiFiManager attivo
-[2025-09-02 12:06:29] I Loop WiFiManager attivo
-[2025-09-02 12:06:34] I Loop WiFiManager attivo
-[2025-09-02 12:06:39] I Loop WiFiManager attivo
-[2025-09-02 12:06:44] I Loop WiFiManager attivo
-[2025-09-02 12:06:50] I Loop WiFiManager attivo
-[2025-09-02 12:06:55] I Loop WiFiManager attivo
-[2025-09-02 12:07:00] I Loop WiFiManager attivo
-[2025-09-02 12:07:05] I Loop WiFiManager attivo
-[2025-09-02 12:07:10] I Loop WiFiManager attivo
-[2025-09-02 12:07:15] I Loop WiFiManager attivo
-[2025-09-02 12:07:20] I Loop WiFiManager attivo
-[2025-09-02 12:07:25] I Loop WiFiManager attivo
-[2025-09-02 12:07:31] I Loop WiFiManager attivo
-[2025-09-02 12:07:36] I Loop WiFiManager attivo
-[2025-09-02 12:07:41] I Loop WiFiManager attivo
-[2025-09-02 12:07:46] I Loop WiFiManager attivo
-[2025-09-02 12:07:51] I Loop WiFiManager attivo
-[2025-09-02 12:07:56] I Loop WiFiManager attivo
-[2025-09-02 12:08:01] I Loop WiFiManager attivo
-[2025-09-02 12:08:06] I Loop WiFiManager attivo
-[2025-09-02 12:08:11] I Loop WiFiManager attivo
-[2025-09-02 12:08:16] I Loop WiFiManager attivo
-[2025-09-02 12:08:22] I Loop WiFiManager attivo
+[2025-09-02 21:47:26] I Loop WiFiManager attivo
+[2025-09-02 21:47:26] I Wi-Fi non connesso provo a connettermi...
+[2025-09-02 21:47:27] I Provo rete 'Vodafone-E34013225'...
+[2025-09-02 21:47:27] I Tentativo di connessione a rete 'Vodafone-E34013225'...
+[2025-09-02 21:47:31] I Connesso alla rete 'Vodafone-E34013225' con IP 192.168.1.10
+[2025-09-02 21:47:32] I RTC sincronizzato: UTC=(2025, 9, 2, 21, 47, 32, 1, 245)
+[2025-09-02 21:47:32] I FTP server avviato su 192.168.1.10:21
+[2025-09-02 21:47:32] I Loop WiFiManager attivo
+[2025-09-02 21:47:39] I Loop WiFiManager attivo
+[2025-09-02 21:47:44] I Loop WiFiManager attivo
+[2025-09-02 21:47:49] I Loop WiFiManager attivo
+[2025-09-02 21:47:54] I Loop WiFiManager attivo
+[2025-09-02 21:47:59] I Loop WiFiManager attivo
+[2025-09-02 21:48:05] I Loop WiFiManager attivo
+[2025-09-02 21:48:10] I Loop WiFiManager attivo
+[2025-09-02 21:48:15] I Loop WiFiManager attivo
+:44:31] I Loop WiFiManager attivo
+[2025-09-02 21:44:36] I Loop WiFiManager attivo
+[2025-09-02 21:44:41] I Loop WiFiManager attivo
+[2025-09-02 21:44:46] I Loop WiFiManager attivo
+[2025-09-02 21:44:52] I Loop WiFiManager attivo
+[2025-09-02 21:44:57] I Loop WiFiManager attivo
+[2025-09-02 21:45:02] I Loop WiFiManager attivo
+[2025-09-02 21:45:07] I Loop WiFiManager attivo
+[2025-09-02 21:45:13] I Loop WiFiManager attivo
+[2025-09-02 21:45:18] I Loop WiFiManager attivo
+[2025-09-02 21:45:23] I Loop WiFiManager attivo
+[2025-09-02 21:45:28] I Loop WiFiManager attivo
+[2025-09-02 21:45:35] I Loop WiFiManager attivo
+[2025-09-02 21:45:40] I Loop WiFiManager attivo
+[2025-09-02 21:45:48] I Loop WiFiManager attivo
+[2025-09-02 21:45:53] I Loop WiFiManager attivo
+[2025-09-02 21:45:58] I Loop WiFiManager attivo
+[2025-09-02 21:46:04] I Loop WiFiManager attivo
+[2025-09-02 21:46:09] I Loop WiFiManager attivo
+[2025-09-02 21:46:14] I Loop WiFiManager attivo
+[2025-09-02 21:46:19] I Loop WiFiManager attivo
+[2025-09-02 21:46:24] I Loop WiFiManager attivo
+[2025-09-02 21:46:30] I Loop WiFiManager attivo
+[2025-09-02 21:46:35] I Loop WiFiManager attivo
+[2025-09-02 21:46:40] I Loop WiFiManager attivo
+[2025-09-02 21:46:45] I Loop WiFiManager attivo
+[2025-09-02 21:46:50] I Loop WiFiManager attivo
+[2025-09-02 21:46:56] I Loop WiFiManager attivo
+[2025-09-02 21:47:01] I Loop WiFiManager attivo
+[2025-09-02 21:47:06] I Loop WiFiManager attivo
+[2025-09-02 21:47:12] I Loop WiFiManager attivo
+[2025-09-02 21:47:17] I Loop WiFiManager attivo
+[2025-09-02 21:47:22] I Loop WiFiManager attivo
+oop Access Point attivo
+[2025-09-02 21:37:59] I Loop Access Point attivo
+[2025-09-02 21:38:00] I Loop Access Point attivo
+[2025-09-02 21:38:02] I Loop Access Point attivo
+[2025-09-02 21:38:03] I Loop Access Point attivo
+[2025-09-02 21:38:04] I Loop Access Point attivo
+[2025-09-02 21:38:05] I Loop Access Point attivo
+[2025-09-02 21:38:06] I Loop Access Point attivo
+[2025-09-02 21:38:07] I Loop Access Point attivo
+[2025-09-02 21:38:08] I Loop Access Point attivo
+[2025-09-02 21:38:10] I Loop Access Point attivo
+[2025-09-02 21:38:14] I Loop Access Point attivo
+[2025-09-02 21:38:15] I Loop Access Point attivo
+[2025-09-02 21:38:16] I Loop Access Point attivo
+[2025-09-02 21:38:17] I Loop Access Point attivo
+[2025-09-02 21:38:18] I Loop Access Point attivo
+[2025-09-02 21:38:19] I Loop Access Point attivo
+[2025-09-02 21:38:20] I Loop Access Point attivo
+[2025-09-02 21:38:22] I Loop Access Point attivo
+[2025-09-02 21:38:23] I Loop Access Point attivo
+[2025-09-02 21:38:24] I Loop Access Point attivo
+[2025-09-02 21:38:25] I Loop Access Point attivo
+[2025-09-02 21:38:26] I Loop Access Point attivo
+[2025-09-02 21:38:27] I Loop Access Point attivo
+[2025-09-02 21:38:28] I Loop Access Point attivo
+[2025-09-02 21:38:30] I Loop Access Point attivo
+[2025-09-02 21:38:31] I Loop Access Point attivo
+[2025-09-02 21:38:32] I Loop Access Point attivo
+[2025-09-02 21:38:33] I Loop Access Point attivo
+[2025-09-02 21:38:34] I Loop Access Point attivo
+[2025-09-02 21:38:35] I Loop Access Point attivo
+[2025-09-02 21:38:37] I Loop Access Point attivo
+[2025-09-02 21:38:38] I Loop Access Point attivo
+[2025-09-02 21:38:39] I Loop Access Point attivo
+[2025-09-02 21:38:40] I Loop Access Point attivo
+[2025-09-02 21:38:41] I Loop Access Point attivo
+[2025-09-02 21:38:42] I Loop Access Point attivo
+[2025-09-02 21:38:43] I Loop Access Point attivo
+[2025-09-02 21:38:45] I Loop Access Point attivo
+[2025-09-02 21:38:46] I Loop Access Point attivo
+[2025-09-02 21:38:47] I Loop Access Point attivo
+[2025-09-02 21:38:48] I Loop Access Point attivo
+[2025-09-02 21:38:49] I Loop Access Point attivo
+[2025-09-02 21:38:50] I Loop Access Point attivo
+[2025-09-02 21:38:51] I Loop Access Point attivo
+[2025-09-02 21:38:52] I Loop Access Point attivo
+[2025-09-02 21:38:54] I Loop Access Point attivo
+[2025-09-02 21:38:55] I Loop Access Point attivo
+[2025-09-02 21:38:56] I Loop Access Point attivo
+[2025-09-02 21:38:57] I Loop Access Point attivo
+[2025-09-02 21:38:58] I Loop Access Point attivo
+[2025-09-02 21:38:59] I Loop Access Point attivo
+[2025-09-02 21:39:00] I Loop Access Point attivo
+[2025-09-02 21:39:01] I Loop Access Point attivo
+[2025-09-02 21:39:02] I Loop Access Point attivo
+[2025-09-02 21:39:03] I Loop Access Point attivo
+[2025-09-02 21:39:07] I Loop Access Point attivo
+[2025-09-02 21:39:08] I Loop Access Point attivo
+[2025-09-02 21:39:09] I Loop Access Point attivo
+[2025-09-02 21:39:11] I Loop Access Point attivo
+[2025-09-02 21:39:12] I Loop Access Point attivo
+[2025-09-02 21:39:13] I Loop Access Point attivo
+[2025-09-02 21:39:14] I Loop Access Point attivo
+[2025-09-02 21:39:15] I Loop Access Point attivo
+[2025-09-02 21:39:16] I Loop Access Point attivo
+[2025-09-02 21:39:17] I Loop Access Point attivo
+[2025-09-02 21:39:18] I Loop Access Point attivo
+[2025-09-02 21:39:19] I Loop Access Point attivo
+[2025-09-02 21:39:20] I Loop Access Point attivo
+[2025-09-02 21:39:21] I Loop Access Point attivo
+[2025-09-02 21:39:22] I Loop Access Point attivo
+[2025-09-02 21:39:24] I Loop Access Point attivo
+[2025-09-02 21:39:25] I Loop Access Point attivo
+[2025-09-02 21:39:26] I Loop Access Point attivo
+[2025-09-02 21:39:27] I Loop Access Point attivo
+[2025-09-02 21:39:28] I Loop Access Point attivo
+[2025-09-02 21:39:29] I Loop Access Point attivo
+[2025-09-02 21:39:30] I Loop Access Point attivo
+[2025-09-02 21:39:31] I Loop Access Point attivo
+[2025-09-02 21:39:32] I Loop Access Point attivo
+[2025-09-02 21:39:33] I Loop Access Point attivo
+[2025-09-02 21:39:34] I Loop Access Point attivo
+[2025-09-02 21:39:36] I Loop Access Point attivo
+[2025-09-02 21:39:37] I Loop Access Point attivo
+[2025-09-02 21:39:38] I Loop Access Point attivo
+[2025-09-02 21:39:39] I Loop Access Point attivo
+[2025-09-02 21:39:40] I Loop Access Point attivo
+[2025-09-02 21:39:41] I Loop Access Point attivo
+[2025-09-02 21:39:42] I Loop Access Point attivo
+[2025-09-02 21:39:43] I Loop Access Point attivo
+[2025-09-02 21:39:44] I Loop Access Point attivo
+[2025-09-02 21:39:46] I Loop Access Point attivo
+[2025-09-02 21:39:47] I Loop Access Point attivo
+[2025-09-02 21:39:48] I Loop Access Point attivo
+[2025-09-02 21:39:49] I Loop Access Point attivo
+[2025-09-02 21:39:50] I Loop Access Point attivo
+[2025-09-02 21:39:51] I Loop Access Point attivo
+[2025-09-02 21:39:52] I Loop Access Point attivo
+[2025-09-02 21:39:54] I Loop Access Point attivo
+[2025-09-02 21:39:55] I Loop Access Point attivo
+[2025-09-02 21:39:56] I Loop Access Point attivo
+[2025-09-02 21:40:00] I Loop Access Point attivo
+[2025-09-02 21:40:01] I Loop Access Point attivo
+[2025-09-02 21:40:02] I Loop Access Point attivo
+[2025-09-02 21:40:03] I Loop Access Point attivo
+[2025-09-02 21:40:04] I Loop Access Point attivo
+[2025-09-02 21:40:05] I Loop Access Point attivo
+[2025-09-02 21:40:06] I Loop Access Point attivo
+[2025-09-02 21:40:07] I Loop Access Point attivo
+[2025-09-02 21:40:08] I Loop Access Point attivo
+[2025-09-02 21:40:09] I Loop Access Point attivo
+[2025-09-02 21:40:10] I Loop Access Point attivo
+[2025-09-02 21:40:11] I Loop Access Point attivo
+[2025-09-02 21:40:13] I Loop Access Point attivo
+[2025-09-02 21:40:14] I Loop Access Point attivo
+[2025-09-02 21:40:15] I Loop Access Point attivo
+[2025-09-02 21:40:16] I Loop Access Point attivo
+[2025-09-02 21:40:17] I Loop Access Point attivo
