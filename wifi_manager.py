@@ -18,30 +18,11 @@ except Exception:
     start_server = None
 
 
-# ---------------- Logger compatibile con stile logging (%s, *args) ----------------
-class _PrintLogger:
-    def _fmt(self, msg, args):
-        try:
-            return (msg % args) if args else msg
-        except Exception:
-            # fallback se placeholder non combaciano
-            return " ".join([str(msg)] + [str(a) for a in args])
-
-    def info(self, msg, *args):
-        print("[I]", self._fmt(msg, args))
-
-    def warn(self, msg, *args):
-        print("[W]", self._fmt(msg, args))
-
-    def error(self, msg, *args):
-        print("[E]", self._fmt(msg, args))
-
-
 # ---------------- Classe principale ----------------
 class WiFiManager:
     def __init__(self, wifi_json="wifi.json", log=None):
         self.wifi_json = wifi_json
-        self.log = log or _PrintLogger()
+        self.log = log
         self.leds = LedStatus() if LedStatus else _NullLed()
         self._rtc_synced = False
         self._setup_mode = False  # one-shot finché non si riavvia
@@ -55,7 +36,7 @@ class WiFiManager:
             # active-low → premuto = GND
             self._btn.irq(trigger=machine.Pin.IRQ_FALLING, handler=self._irq_button)
         except Exception as e:
-            self.log.info("Button init failed: %r" % e)
+            self.log.info(f"Button init failed: {e!r}")
             self._btn = None
 
 
@@ -82,11 +63,11 @@ def _sync_time_once(self):
         ntptime.settime()               # setta l'RTC a UTC
         self._rtc_synced = True
         try:
-            self.log.info("RTC sincronizzato: UTC=%r" % time.gmtime())
+            self.log.info(f"RTC sincronizzato: UTC={time.gmtime()!r}")
         except Exception:
             pass
     except Exception as e:
-        self.log.info("NTP sync fallita: %r" % e)
+        self.log.info(f"NTP sync fallita: {e!r}")
 
 
 def _networks_from_cfg(cfg):
@@ -136,11 +117,11 @@ def _load_networks(self):
         with open(self.wifi_json) as f:
             cfg = json.load(f)
     except Exception as e:
-        self.log.info("Impossibile leggere %s: %r" % (self.wifi_json, e))
+        self.log.info(f"Impossibile leggere {self.wifi_json}: {e!r}")
         return []
     nets = _networks_from_cfg(cfg)
     if not nets:
-        self.log.info("Nessuna rete trovata in %s" % self.wifi_json)
+        self.log.info(f"Nessuna rete trovata in {self.wifi_json}")
     return nets
 
 
@@ -202,7 +183,7 @@ def _ap_disable(self):
             ap.active(False)
             self.log.info("AP disattivato")
     except Exception as e:
-        self.log.info("AP disable fallito: %r" % e)
+        self.log.info(f"AP disable fallito: {e!r}")
 
 
 def _enter_setup_once(self):
@@ -243,7 +224,7 @@ def _enter_setup_once(self):
     try:
         self._start_server(port=80)
     except Exception as e:
-        self.log.info("Start server fallito: %r" % e)
+        self.log.info(f"Start server fallito: {e!r}")
         
     if not ip_ap:
         ip_ap = "192.168.4.1"
@@ -269,12 +250,12 @@ def _try_connect(self, ssid, pwd, timeout_s=15, cancel_cb=None):
     except Exception:
         pass
 
-    self.log.info("Tentativo di connessione a rete '%s'..." % ssid)
+    self.log.info(f"Tentativo di connessione a rete '{ssid}'...")
 
     try:
         sta.connect(ssid, pwd)
     except Exception as e:
-        self.log.info("Errore connect(): %r" % e)
+        self.log.info(f"Errore connect(): {e!r}")
         return (False, None, "error")
 
     t0 = time.ticks_ms()
@@ -348,7 +329,7 @@ def _start_server(self, port=80):
         _thread.start_new_thread(_runner, ())
         return True
     except Exception as e:
-        self.log.info("Thread server non disponibile (%r); provo in foreground" % e)
+        self.log.info(f"Thread server non disponibile ({e!r}); provo in foreground")
         # foreground (bloccante): solo per debug!
         try:
             _runner()
@@ -356,12 +337,12 @@ def _start_server(self, port=80):
         except OSError as oe:
             # EADDRINUSE: consideriamo "ok" (codice può variare, es. 98/112)
             if getattr(oe, 'args', [None])[0] in (98, 112):
-                self.log.info("Porta %d occupata: presumo server già su." % port)
+                self.log.info(f"Porta {port} occupata: presumo server già su.")
                 return True
-            self.log.info("Avvio server fallito: %r" % oe)
+            self.log.info(f"Avvio server fallito: {oe!r}")
             return False
         except Exception as e2:
-            self.log.info("Avvio server fallito: %r" % e2)
+            self.log.info(f"Avvio server fallito: {e2!r}")
             return False
 
 
@@ -497,7 +478,7 @@ def run(self):
         print("Stato WiFi+server: %s" % (result,))
 
         if not result["wifi_ok"]:
-            # non connesso → reset + tentativi
+            self.log.info("Wi-Fi non connesso provo a connettermi...")
             self._reset_wifi()
             try:
                 self.leds.show_connecting()
@@ -506,7 +487,7 @@ def run(self):
 
             nets = self._load_networks()
             if not nets:
-                self.log.info("Nessuna rete configurata in %s; attendo configurazione." % self.wifi_json)
+                self.log.info(f"Nessuna rete configurata in {self.wifi_json}; attendo configurazione: ")
                 time.sleep(BACKOFF_NO_NET_S)
                 continue
 
@@ -514,10 +495,11 @@ def run(self):
 
             for ssid, pwd in nets or []:
 
+                self.log.info(f"Provo rete '{ssid}'...")
+
                 # 2) Bottone premuto prima del tentativo → setup e TERMINA
                 if self.button_pressed(clear=False):
-                    self.log.info("🔘 Bottone premuto prima del tentativo → entro in setup")
-                    #self._enter_setup_once()
+                    self.log.info("🔘 Bottone Access Point premuto premuto → entro in setup")
                     break  # esce dal for e dal while
 
                 ok, ip, reason = self._try_connect(
@@ -532,19 +514,19 @@ def run(self):
                     except Exception:
                         self.log.info("Errore LED connected")
 
-                    self.log.info("Connesso alla rete '%s' con IP %s" % (ssid, ip))
+                    self.log.info(f"Connesso alla rete '{ssid}' con IP {ip}")
                     print("✅ Connesso alla rete '%s' con IP %s" % (ssid, ip))
                     
 
                     try:
                         self._sync_time_once()   # sincronizza RTC una volta
                     except Exception as e:
-                        self.log.info("NTP sync fallita: %r" % e)
+                        self.log.info(f"NTP sync fallita: {e!r}")
 
                     try:
                         self._start_server(port=SERVER_PORT)
                     except Exception as e:
-                        self.log.info("Start server fallito: %r" % e)
+                        self.log.info(f"Start server fallito: {e!r}")
 
                     # try:
                     #     import uftpd
@@ -582,12 +564,12 @@ def run(self):
                         if again.get("server_ok"):
                             print("✅ Server avviato con successo.")
                         else:
-                            self.log.info("Server non raggiungibile dopo avvio: %s" % again.get("error"))
+                            self.log.info(f"Server non raggiungibile dopo avvio: {again.get('error')}")
                     except Exception as e:
-                        self.log.info("Errore avvio server: %s" % e)
+                        self.log.info(f"Errore avvio server: {e}")
                 else:
                     # porta aperta ma /health KO: ritenta più tardi
-                    self.log.info("Porta %d aperta ma /health KO; ritento più tardi." % SERVER_PORT)
+                    self.log.info(f"Porta {SERVER_PORT} aperta ma /health KO; ritento più tardi.")
                     time.sleep(3)
                     continue
             else:
@@ -611,6 +593,7 @@ def run(self):
     self._enter_setup_once()
 
     while True:
+        self.log.info("Loop Access Point attivo")
         print("Sono in AP mode\n")
         time.sleep(1) 
 
