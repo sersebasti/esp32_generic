@@ -546,6 +546,12 @@ def run(self):
                     except Exception as e:
                         self.log.info("Start server fallito: %r" % e)
 
+                    try:
+                        import uftpd
+                        self.log.info("FTP server avviato su %s:21" % ip)
+                    except Exception as e:
+                        self.log.error("Errore avvio FTP: %s" % e)    
+
                     connected = True
                     break
                 else:
@@ -605,6 +611,7 @@ def run(self):
     self._enter_setup_once()
 
     while True:
+        print("Sono in AP mode\n")
         time.sleep(1) 
 
 
