@@ -503,6 +503,56 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                         finally:
                             BUSY["v"] = False
 
+                
+                elif method == "POST" and path.startswith("/calibrate/delete"):
+                    try:
+                        body = _read_post_json(req, cl)
+                        idx = body.get("index", None)
+                        amp = body.get("amps", None)
+                        rms = body.get("rms_counts", None)
+
+                        cal = _cal_load()
+                        pts = cal.get("points", []) or []
+
+                        removed = None
+
+                        # 1) remove by index if provided
+                        if isinstance(idx, int) and 0 <= idx < len(pts):
+                            removed = pts.pop(idx)
+                        # 2) fallback: remove by exact pair match
+                        elif (amp is not None) and (rms is not None):
+                            for i, p in enumerate(pts):
+                                try:
+                                    if float(p.get("amps")) == float(amp) and float(p.get("rms_counts")) == float(rms):
+                                        removed = pts.pop(i)
+                                        break
+                                except Exception:
+                                    pass
+
+                        if removed is None:
+                            cl.send(_HTTP_200_JSON_CORS + ujson.dumps({"ok": False, "err": "not_found"}).encode())
+                        else:
+                            # recompute k if points remain
+                            cal["points"] = pts
+                            if pts:
+                                k = _fit_k(pts)
+                                cal["k_A_per_count"] = round(k, 9)
+                            else:
+                                cal["k_A_per_count"] = 0.0
+                            _cal_save(cal)
+                            resp = {
+                                "ok": True,
+                                "removed": removed,
+                                "num_points": len(pts),
+                                "k_A_per_count": cal.get("k_A_per_count", 0.0)
+                            }
+                            cl.send(_HTTP_200_JSON_CORS + ujson.dumps(resp).encode())
+                    except Exception:
+                        try:
+                            cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"invalid_request"}')
+                        except Exception:
+                            pass
+
                 elif method == "POST" and path.startswith("/calibrate/reset"):
                     try:
                         import os
@@ -510,69 +560,6 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                     except:
                         pass
                     cl.send(_HTTP_200_JSON + b'{"ok":true}')
-
-
-
-                # --- Upload (POST/PUT) ---
-                elif method in ("POST", "PUT") and path.startswith("/upload"):
-                    cl.settimeout(5.0)
-                    if BUSY["v"]:
-                        cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"busy"}')
-                    else:
-                        BUSY["v"] = True
-                        try:
-                            # Estrai ?to=
-                            to_path = None
-                            if "?" in path:
-                                q = path.split("?", 1)[1]
-                                for p in q.split("&"):
-                                    if "=" in p:
-                                        k, v = p.split("=", 1)
-                                        if k in ("to","path","filename"):
-                                            to_path = v if v.startswith("/") else ("/" + v)
-
-                            # sanity sul path
-                            if (not to_path) or to_path.endswith("/") or (".." in to_path) or (not to_path.startswith("/")):
-                                cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"bad_path"}')
-                            else:
-                                # Content-Length + porzione di body già letta
-                                body0, total = _body_initial_and_len(req)
-                                if body0 is None or total is None:
-                                    cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"no_content_length"}')
-                                elif total <= 0:
-                                    cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"empty"}')
-                                elif total > 512*1024:
-                                    cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"too_big"}')
-                                else:
-                                    # (opz) crea dir un livello
-                                    try:
-                                        import os
-                                        dname = to_path.rsplit("/", 1)[0]
-                                        if dname and dname not in ("", "/"):
-                                            try: os.mkdir(dname)
-                                            except: pass
-                                    except: pass
-
-                                    written = 0
-                                    with open(to_path, "wb") as f:
-                                        if body0:
-                                            f.write(body0); written += len(body0)
-                                        while written < total:
-                                            chunk = cl.recv(min(1024, total - written))
-                                            if not chunk: break
-                                            f.write(chunk); written += len(chunk)
-
-                                
-                                    gc.collect()
-                                    ok = (written == total)
-                                    resp = ujson.dumps({"ok": ok, "path": to_path, "size": written})
-                                    cl.send(_HTTP_200_JSON_CORS + resp.encode())
-                        except Exception:
-                            try: cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"upload_failed"}')
-                            except: pass
-                        finally:
-                            BUSY["v"] = False
-
 
                 elif path.startswith("/fs/"):
                     # delega a fs_api
