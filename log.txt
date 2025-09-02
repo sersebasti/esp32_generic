@@ -1,0 +1,90 @@
+[2025-09-02 12:01:16] I AP attivo su
+[2025-09-02 12:01:16] I Server già attivo, skip avvio.
+[t+2618ms] I Loop WiFiManager attivo
+[t+3285ms] I Tentativo di connessione a rete 'Vodafone-E34013225'...
+[t+4860ms] I Connesso alla rete 'Vodafone-E34013225' con IP 192.168.1.10
+[2025-09-02 12:01:46] I FTP server avviato su 192.168.1.10:21
+[2025-09-02 12:01:46] I Loop WiFiManager attivo
+[2025-09-02 12:01:51] I Loop WiFiManager attivo
+[2025-09-02 12:01:56] I Loop WiFiManager attivo
+[2025-09-02 12:02:01] I Loop WiFiManager attivo
+[2025-09-02 12:02:06] I Loop WiFiManager attivo
+[2025-09-02 12:02:12] I Loop WiFiManager attivo
+[2025-09-02 12:02:19] I Loop WiFiManager attivo
+[2025-09-02 12:02:24] I Loop WiFiManager attivo
+[2025-09-02 12:02:29] I Loop WiFiManager attivo
+[2025-09-02 12:02:34] I Loop WiFiManager attivo
+[2025-09-02 12:02:39] I Loop WiFiManager attivo
+[2025-09-02 12:02:44] I Loop WiFiManager attivo
+[2025-09-02 12:02:49] I Loop WiFiManager attivo
+[2025-09-02 12:02:54] I Loop WiFiManager attivo
+[2025-09-02 12:02:59] I Loop WiFiManager attivo
+[2025-09-02 12:03:05] I Loop WiFiManager attivo
+[2025-09-02 12:03:10] I Loop WiFiManager attivo
+[2025-09-02 12:03:15] I Loop WiFiManager attivo
+[2025-09-02 12:03:20] I Loop WiFiManager attivo
+[2025-09-02 12:03:25] I Loop WiFiManager attivo
+[2025-09-02 12:03:30] I Loop WiFiManager attivo
+[2025-09-02 12:03:35] I Loop WiFiManager attivo
+[2025-09-02 12:03:40] I Loop WiFiManager attivo
+[2025-09-02 12:03:45] I Loop WiFiManager attivo
+[2025-09-02 12:03:50] I Loop WiFiManager attivo
+[2025-09-02 12:03:55] I Loop WiFiManager attivo
+[2025-09-02 12:04:01] I Loop WiFiManager attivo
+[2025-09-02 12:04:06] I Loop WiFiManager attivo
+[2025-09-02 12:04:11] I Loop WiFiManager attivo
+[2025-09-02 12:04:16] I Loop WiFiManager attivo
+[2025-09-02 12:04:21] I Loop WiFiManager attivo
+[2025-09-02 12:04:25] I Loop WiFiManager attivo
+[2025-09-02 12:04:25] I Tentativo di connessione a rete 'Vodafone-E34013225'...
+[2025-09-02 12:04:29] I Connesso alla rete 'Vodafone-E34013225' con IP 192.168.1.10
+[2025-09-02 12:04:30] I FTP server avviato su 192.168.1.10:21
+[2025-09-02 12:04:30] I Loop WiFiManager attivo
+[2025-09-02 12:04:35] I Loop WiFiManager attivo
+[2025-09-02 12:04:40] I Loop WiFiManager attivo
+[2025-09-02 12:04:45] I Loop WiFiManager attivo
+[2025-09-02 12:04:51] I Loop WiFiManager attivo
+[2025-09-02 12:04:56] I Loop WiFiManager attivo
+[2025-09-02 12:05:01] I Loop WiFiManager attivo
+[2025-09-02 12:05:06] I Loop WiFiManager attivo
+[2025-09-02 12:05:12] I Loop WiFiManager attivo
+[2025-09-02 12:05:12] I Tentativo di connessione a rete 'Vodafone-E34013225'...
+[2025-09-02 12:05:14] I Connesso alla rete 'Vodafone-E34013225' con IP 192.168.1.10
+[2025-09-02 12:05:15] I FTP server avviato su 192.168.1.10:21
+[2025-09-02 12:05:15] I Loop WiFiManager attivo
+[2025-09-02 12:05:20] I Loop WiFiManager attivo
+[2025-09-02 12:05:25] I Loop WiFiManager attivo
+[2025-09-02 12:05:31] I Loop WiFiManager attivo
+[2025-09-02 12:05:36] I Loop WiFiManager attivo
+[2025-09-02 12:05:41] I Loop WiFiManager attivo
+[2025-09-02 12:05:46] I Loop WiFiManager attivo
+[2025-09-02 12:05:53] I Loop WiFiManager attivo
+[2025-09-02 12:05:58] I Loop WiFiManager attivo
+[2025-09-02 12:06:03] I Loop WiFiManager attivo
+[2025-09-02 12:06:09] I Loop WiFiManager attivo
+[2025-09-02 12:06:14] I Loop WiFiManager attivo
+[2025-09-02 12:06:19] I Loop WiFiManager attivo
+[2025-09-02 12:06:24] I Loop WiFiManager attivo
+[2025-09-02 12:06:29] I Loop WiFiManager attivo
+[2025-09-02 12:06:34] I Loop WiFiManager attivo
+[2025-09-02 12:06:39] I Loop WiFiManager attivo
+[2025-09-02 12:06:44] I Loop WiFiManager attivo
+[2025-09-02 12:06:50] I Loop WiFiManager attivo
+[2025-09-02 12:06:55] I Loop WiFiManager attivo
+[2025-09-02 12:07:00] I Loop WiFiManager attivo
+[2025-09-02 12:07:05] I Loop WiFiManager attivo
+[2025-09-02 12:07:10] I Loop WiFiManager attivo
+[2025-09-02 12:07:15] I Loop WiFiManager attivo
+[2025-09-02 12:07:20] I Loop WiFiManager attivo
+[2025-09-02 12:07:25] I Loop WiFiManager attivo
+[2025-09-02 12:07:31] I Loop WiFiManager attivo
+[2025-09-02 12:07:36] I Loop WiFiManager attivo
+[2025-09-02 12:07:41] I Loop WiFiManager attivo
+[2025-09-02 12:07:46] I Loop WiFiManager attivo
+[2025-09-02 12:07:51] I Loop WiFiManager attivo
+[2025-09-02 12:07:56] I Loop WiFiManager attivo
+[2025-09-02 12:08:01] I Loop WiFiManager attivo
+[2025-09-02 12:08:06] I Loop WiFiManager attivo
+[2025-09-02 12:08:11] I Loop WiFiManager attivo
+[2025-09-02 12:08:16] I Loop WiFiManager attivo
+[2025-09-02 12:08:22] I Loop WiFiManager attivo

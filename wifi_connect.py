@@ -1,8 +1,8 @@
 # filename: wifi_connect.py
 import network, time, json # type: ignore
-from logger import RollingLogger
+from logger import CircularLogger
 
-_log = RollingLogger(path="log.txt", max_bytes=8*1024, backups=1)
+_log = CircularLogger(path="log.txt", max_bytes=8*1024, echo=True)
 
 # -------- util --------
 _STAT_MAP = {
