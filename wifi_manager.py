@@ -53,6 +53,27 @@ WiFiManager._NullLed = _NullLed
 
 
 # ------------------ Metodi interni (def → bind a fondo) ------------------
+def _mac_hex_upper():
+    """Ritorna il MAC STA come stringa es: 'A1B2C3D4E5F6' (o None se non disponibile)."""
+    try:
+        import ubinascii, network
+        mac = network.WLAN(network.STA_IF).config('mac')  # bytes(6)
+        return ubinascii.hexlify(mac).decode().upper()
+    except Exception:
+        return None
+
+def _ssid_from_mac(prefix="ESP32_", fallback="ESP-SETUP", max_len=32):
+    """Costruisce un SSID dal MAC. Se troppo lungo, usa gli ultimi 6 hex; altrimenti fallback."""
+    mac_hex = _mac_hex_upper()
+    if not mac_hex:
+        return fallback
+    full = prefix + mac_hex                 # es. ESP32_A1B2C3D4E5F6
+    if len(full) <= max_len:
+        return full
+    short = prefix + mac_hex[-6:]           # es. ESP32_D4E5F6
+    return short[:max_len]
+
+
 
 def _sync_time_once(self):
     if self._rtc_synced:
@@ -149,6 +170,13 @@ def _reset_wifi(self):
 
 def _ap_enable(self, essid="ESP-SETUP", password="12345678"):
     try:
+        # Se non è stato passato un SSID custom, usa quello basato su MAC
+        if not essid or essid == "ESP-SETUP":
+            try:
+                essid = _ssid_from_mac(prefix="ESP32_", fallback="ESP-SETUP", max_len=32)
+            except Exception:
+                pass
+
         ap = network.WLAN(network.AP_IF)
         ap.active(True)
 
@@ -170,11 +198,13 @@ def _ap_enable(self, essid="ESP-SETUP", password="12345678"):
                 pass
 
         ip = ap.ifconfig()[0]
-        self.log.info("AP attivo su")
+        # log più informativo
+        self.log.info(f"AP attivo: SSID={essid}, IP={ip}")
         return ip
     except Exception as e:
-        self.log.info("AP enable fallito")
+        self.log.info(f"AP enable fallito: {e!r}")
         return None
+
 
 def _ap_disable(self):
     try:
