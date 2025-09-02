@@ -1,12 +1,12 @@
 # status_server.py (MicroPython)
-import socket, time, ujson, network, ubinascii, gc, math, adc_scope, wifi_ui
+import socket, time, ujson, network, ubinascii, gc, fs_api, adc_scope, wifi_ui
 import wifi_config as wcfg
 
 from http_consts import (
     _HTTP_200_JSON, _HTTP_200_HTML, _HTTP_400,
     _HTTP_204_CORS, _HTTP_200_JSON_CORS
 )
-import fs_api
+
 
 BUSY = {"v": False}   # lock globale anti-overlap, mutabile
 version = "1.0.0"
@@ -97,61 +97,7 @@ def _read_post_json(req, cl, max_len=4096):
         raise ValueError("empty_body")
     return ujson.loads(body.decode())
 
-def _cfg_read_all():
-    try:
-        with open("wifi.json") as f:
-            return ujson.load(f)
-    except Exception:
-        return {}
 
-def _cfg_write_all(cfg):
-    with open("wifi.json", "w") as f:
-        ujson.dump(cfg, f)
-
-def _cfg_format(cfg):
-    return "networks" if isinstance(cfg.get("networks"), list) else "legacy"
-
-def _cfg_get_list(cfg):
-    """Ritorna lista [(ssid,pwd)] e formato."""
-    fmt = _cfg_format(cfg)
-    lst = []
-    if fmt == "networks":
-        for n in (cfg.get("networks") or []):
-            ssid = (n.get("ssid") or "").strip()
-            pwd  = n.get("password") or ""
-            if ssid:
-                lst.append((ssid, pwd))
-    else:
-        pairs = []
-        for k in cfg.keys():
-            if isinstance(k, str) and k.startswith("ssid_"):
-                try: idx = int(k.split("_",1)[1])
-                except: idx = 0
-                ssid = (cfg.get(k) or "").strip()
-                if ssid:
-                    pwd = cfg.get("password_%d" % idx, "")
-                    pairs.append((idx, ssid, pwd))
-        pairs.sort(key=lambda t: t[0] or 0)
-        lst = [(ssid, pwd) for _, ssid, pwd in pairs]
-    return fmt, lst
-
-def _cfg_set_list(cfg, fmt, items):
-    """items = [(ssid,pwd)] riscrive nel formato originale senza toccare altri campi."""
-    if fmt == "networks":
-        cfg["networks"] = [{"ssid": s, "password": p} for (s, p) in items]
-    else:
-        # pulisci vecchie chiavi ssid_N/password_N
-        to_del = []
-        for k in list(cfg.keys()):
-            if isinstance(k, str) and (k.startswith("ssid_") or k.startswith("password_")):
-                to_del.append(k)
-        for k in to_del:
-            try: del cfg[k]
-            except: pass
-        # riscrivi contiguo da 1..N
-        for i, (s, p) in enumerate(items, start=1):
-            cfg["ssid_%d" % i] = s
-            cfg["password_%d" % i] = p
 
 def _hdr_get(req_bytes, name_lower):
     """Estrae il valore dell'header (in minuscolo), es. b'content-length'."""
