@@ -461,18 +461,43 @@ def check_wifi_and_server(self, host=None, port=80, timeout=2.0, retries=2):
 
 def _irq_button(self, pin):
     now = time.ticks_ms()
-    if time.ticks_diff(now, self._btn_last_ms) > 200:  # debounce
+    # debounce IRQ
+    if time.ticks_diff(now, self._btn_last_ms) > 50:
         self._btn_last_ms = now
-        self._btn_flag = True
-        # niente print qui dentro!
+        # registro un timestamp di "caduta"
+        try:
+            self._btn_press_start = now
+        except Exception:
+            self._btn_press_start = now
 
 
-def button_pressed(self, clear=True):
-    """Ritorna True se è stato premuto; se clear=True azzera il flag."""
-    if self._btn_flag:
-        if clear:
-            self._btn_flag = False
-        return True
+def button_pressed(self, clear=True, long_ms=800):
+    """
+    Ritorna True se il pulsante è stato tenuto premuto per >= long_ms.
+    Consuma l'evento se clear=True.
+    Implementazione 'polling': considera premuto se il pin è LOW per long_ms.
+    """
+    if not getattr(self, "_btn", None):
+        return False
+    try:
+        # active-low
+        if self._btn.value() == 0:
+            # se sto tenendo premuto, verifica durata
+            start = getattr(self, "_btn_press_start", None)
+            if start is None:
+                self._btn_press_start = time.ticks_ms()
+                return False
+            dur = time.ticks_diff(time.ticks_ms(), start)
+            if dur >= long_ms:
+                if clear:
+                    # resetta marker finché non rilascio
+                    self._btn_press_start = None
+                return True
+        else:
+            # rilascio: resetto il marker
+            self._btn_press_start = None
+    except Exception:
+        return False
     return False
 
 
@@ -480,99 +505,80 @@ def button_pressed(self, clear=True):
 
 def run(self):
     """
-    Ciclo di sorveglianza:
-      - se Wi-Fi non connesso → prova reti da wifi.json
-      - se Wi-Fi ok ma server KO → prova ad avviare server senza toccare il Wi-Fi
-      - se tutto ok → LED connected e pausa più lunga
-      - bottone one-shot → entra in setup e termina
+    Politica:
+    - Mai AP automatico.
+    - All’avvio e quando cade il Wi-Fi: tenta sempre le reti (LED blu lampeggiante).
+    - Connesso: LED verde.
+    - Solo long-press del pulsante → setup + AP.
     """
-    BACKOFF_RETRY_MS = 500        # tra tentativi sulla stessa rete
-    BACKOFF_NO_NET_S = 5          # nessuna rete configurata
-    BACKOFF_ALL_FAIL_S = 2        # tutte le reti fallite
-    HEALTH_OK_SLEEP_S = 5         # tutto ok → ricontrollo tra N secondi
-    SERVER_PORT = 80
+    BACKOFF_RETRY_MS   = 500   # tra tentativi sulla stessa rete
+    BACKOFF_NO_NET_S   = 5     # nessuna rete configurata → attendo e ritento
+    BACKOFF_ALL_FAIL_S = 2     # tutte le reti fallite → breve pausa
+    HEALTH_OK_SLEEP_S  = 5
+    SERVER_PORT        = 80
+
+    self.log.info("WiFiManager avviato: modalità 'never auto-AP'")
 
     while True:
+        # 1) Long-press del pulsante → entra in setup e termina loop
+        if (not self._setup_mode) and self.button_pressed(clear=True, long_ms=800):
+            self.log.info("🔘 Pulsante (long-press) → setup mode")
+            break
 
-        self.log.info("Loop WiFiManager attivo")
-
-        # 1) Bottone premuto subito → entra in setup e TERMINA
-        if (not self._setup_mode) and self.button_pressed(clear=False):
-            self.log.info("🔘 Bottone premuto all'inizio loop → entro in setup")
-            #self._enter_setup_once()
-            break  # uscita dal while
-
+        # Stato WiFi/server
         result = self.check_wifi_and_server(port=SERVER_PORT)
-        print("Stato WiFi+server: %s" % (result,))
+        wifi_ok  = result.get("wifi_ok")
+        ip       = result.get("ip")
+        srv_ok   = result.get("server_ok")
 
-        if not result["wifi_ok"]:
-            self.log.info("Wi-Fi non connesso provo a connettermi...")
-            self._reset_wifi()
+        if not wifi_ok:
+            # Wi-Fi non connesso → prova a connettere (LED blu lampeggiante)
             try:
                 self.leds.show_connecting()
             except Exception:
                 pass
 
+            self._reset_wifi()
+
             nets = self._load_networks()
             if not nets:
-                self.log.info(f"Nessuna rete configurata in {self.wifi_json}; attendo configurazione: ")
+                # Nessuna rete: MAI AP. Restiamo in attesa e ritentiamo.
+                self.log.info(f"Nessuna rete in {self.wifi_json}. Riprovo tra {BACKOFF_NO_NET_S}s.")
                 time.sleep(BACKOFF_NO_NET_S)
                 continue
 
             connected = False
+            for ssid, pwd in nets:
+                # Long-press durante selezione → setup
+                if self.button_pressed(clear=True, long_ms=800):
+                    self.log.info("🔘 Pulsante durante tentativi → setup mode")
+                    connected = False
+                    break
 
-            for ssid, pwd in nets or []:
-
-                self.log.info(f"Provo rete '{ssid}'...")
-
-                # 2) Bottone premuto prima del tentativo → setup e TERMINA
-                if self.button_pressed(clear=False):
-                    self.log.info("🔘 Bottone Access Point premuto premuto → entro in setup")
-                    break  # esce dal for e dal while
-
-                ok, ip, reason = self._try_connect(
+                ok, ip_new, reason = self._try_connect(
                     ssid, pwd, timeout_s=15,
-                    # peek: non consumare qui, decide _try_connect
-                    cancel_cb=lambda: self.button_pressed(clear=False)
+                    cancel_cb=lambda: self.button_pressed(clear=False, long_ms=800)
                 )
-
                 if ok:
+                    # Se c'era un AP acceso da prima, spegnilo sempre
+                    self._ap_disable()
                     try:
                         self.leds.show_connected()
                     except Exception:
-                        self.log.info("Errore LED connected")
-
-                    self.log.info(f"Connesso alla rete '{ssid}' con IP {ip}")
-                    print("✅ Connesso alla rete '%s' con IP %s" % (ssid, ip))
-                    
-
+                        pass
+                    self.log.info(f"Connesso a '{ssid}' con IP {ip_new}")
                     try:
-                        self._sync_time_once()   # sincronizza RTC una volta
-                    except Exception as e:
-                        self.log.info(f"NTP sync fallita: {e!r}")
-
+                        self._sync_time_once()
+                    except Exception:
+                        pass
                     try:
                         self._start_server(port=SERVER_PORT)
                     except Exception as e:
                         self.log.info(f"Start server fallito: {e!r}")
-
-                    # try:
-                    #     import uftpd
-                    #     self.log.info("FTP server avviato su %s:21" % ip)
-                    # except Exception as e:
-                    #     self.log.error("Errore avvio FTP: %s" % e)    
-
                     connected = True
                     break
                 else:
-                    # 3) Tentativo annullato dal bottone → setup e TERMINA
-                    if reason == "cancelled":
-                        self.log.info("Connessione annullata dal pulsante → entro in setup")
-                        #self._enter_setup_once()
-                        break  # esce dal for e dal while
-
-                    print("❌ Connessione fallita a '%s' (%s)" % (ssid, reason or "fail"))
-                    #self.log.info("Connessione fallita a '%s' (%s)", ssid, reason)
+                    self.log.info(f"Connessione fallita a '{ssid}' ({reason or 'fail'})")
                     time.sleep_ms(BACKOFF_RETRY_MS)
 
             if not connected:
@@ -580,50 +586,44 @@ def run(self):
                 continue
 
         else:
-            # Wi-Fi OK
-            ip = result.get("ip")
-            if not result["server_ok"]:
-                # server KO → prova ad avviare se la porta non risulta già aperta
+            # Wi-Fi OK → assicura AP spento (politica 'never auto-AP')
+            self._ap_disable()
+
+            if not srv_ok:
+                # prova a (ri)avviare server solo se porta non già in ascolto
                 if ip and not self._port_open(ip, SERVER_PORT):
                     try:
                         self._start_server(port=SERVER_PORT)
                         time.sleep(1)
                         again = self.check_wifi_and_server(port=SERVER_PORT)
-                        if again.get("server_ok"):
-                            print("✅ Server avviato con successo.")
-                        else:
-                            self.log.info(f"Server non raggiungibile dopo avvio: {again.get('error')}")
+                        if not again.get("server_ok"):
+                            self.log.info(f"Server ancora KO: {again.get('error')}")
                     except Exception as e:
-                        self.log.info(f"Errore avvio server: {e}")
-                else:
-                    # porta aperta ma /health KO: ritenta più tardi
-                    self.log.info(f"Porta {SERVER_PORT} aperta ma /health KO; ritento più tardi.")
-                    time.sleep(3)
-                    continue
+                        self.log.info(f"Errore avvio server: {e!r}")
             else:
-                print("✅ WiFi e server OK. IP: %s" % result["ip"])
                 try:
                     self.leds.show_connected()
                 except Exception:
                     pass
 
-                for rem in range(HEALTH_OK_SLEEP_S, 0, -1):
-                    print("sleeping... %s" % (rem,))
-                    # 4) Bottone premuto durante lo sleep → setup e TERMINA
-                    if self.button_pressed(clear=False):
-                        self.log.info("🔘 Bottone premuto durante lo sleep → entro in setup")
-                        #self._enter_setup_once()
+                # Durante lo sleep il pulsante può richiudere il loop verso setup
+                for _ in range(HEALTH_OK_SLEEP_S):
+                    if self.button_pressed(clear=True, long_ms=800):
+                        self.log.info("🔘 Pulsante durante idle → setup mode")
+                        wifi_ok = False
                         break
                     time.sleep(1)
-                continue
+                else:
+                    # nessun long-press → continua loop
+                    continue
+                # se esco dal for per pulsante → break dal while
+                break
 
-    print("---- fine ciclo while----\n")
+    # Uscito dal while: entra in setup (one-shot) e NON torna al loop
     self._enter_setup_once()
-
     while True:
-        self.log.info("Loop Access Point attivo")
-        print("Sono in AP mode\n")
-        time.sleep(1) 
+        self.log.info("Loop Access Point attivo (setup)")
+        time.sleep(1)
 
 
 
