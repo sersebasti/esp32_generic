@@ -1,10 +1,5 @@
-# server.py (modular, stesso comportamento)
-import socket, gc
-import ujson
-import network
+import socket, gc, ujson, network
 from http_consts import (_HTTP_200_JSON, _HTTP_200_HTML, _HTTP_400, _HTTP_204_CORS)
-
-# Lock condiviso (stesso oggetto usato dagli endpoint)
 from busy_lock import BUSY
 
 # Moduli endpoint (replicano la logica originale)
