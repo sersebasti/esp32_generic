@@ -765,6 +765,8 @@ WiFiManager._irq_button = _irq_button
 WiFiManager.button_pressed = button_pressed
 WiFiManager.run = run
 WiFiManager._apply_sta_hostname = _apply_sta_hostname
+WiFiManager._prioritize_by_scan = _prioritize_by_scan
+WiFiManager._scan_rssi_map = _scan_rssi_map
 
 
 # --------- Esempio di esecuzione diretta ---------
