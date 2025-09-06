@@ -552,43 +552,64 @@ def button_pressed(self, clear=True, long_ms=800):
         return False
     return False
 
-
-def _start_ftp(self):
+def _scan_rssi_map(self, timeout_ms=2500):
     """
-    Avvia uftpd una sola volta. Non blocca. Funziona sia in STA sia in AP.
-    Ritorna True se l'FTP risulta attivo o già avviato, False se non disponibile.
+    Ritorna {ssid_str: best_rssi_int} usando STA.scan().
+    RSSI: numeri negativi (es. -40 è migliore di -80).
+    Tollerante ad errori e timeouts.
     """
-    if self._ftp_started:
-        return True
-    if _FTP_MOD is None:
-        self.log.info("FTP non disponibile: modulo uftpd mancante")
-        return False
-
-    # opzionale: controlla che ci sia almeno una interfaccia attiva con IP valido
-    ip = None
+    rssi_map = {}
     try:
         sta = network.WLAN(network.STA_IF)
-        if sta.isconnected():
-            ip = sta.ifconfig()[0]
+        sta.active(True)
+        t0 = time.ticks_ms()
+        # Alcune build eseguono lo scan sincrono, altre richiedono attese brevi
+        res = sta.scan()  # [(ssid,bssid,channel,RSSI,authmode,hidden), ...]
+        # Se la build restituisce subito, ok; altrimenti fai un piccolo polling
+        while res is None and time.ticks_diff(time.ticks_ms(), t0) < timeout_ms:
+            time.sleep_ms(100)
+            try: res = sta.scan()
+            except Exception: break
+        if not res:
+            return rssi_map
+        for tup in res:
+            try:
+                ssid_bytes = tup[0]
+                rssi = int(tup[3])
+                ssid = ssid_bytes.decode() if isinstance(ssid_bytes, (bytes, bytearray)) else str(ssid_bytes)
+                # tieni il migliore (valore più alto, es. -40 > -70)
+                if (ssid not in rssi_map) or (rssi > rssi_map[ssid]):
+                    rssi_map[ssid] = rssi
+            except Exception:
+                continue
     except Exception:
         pass
-    if not ip:
-        try:
-            ap = network.WLAN(network.AP_IF)
-            if ap.active():
-                ip = ap.ifconfig()[0]
-        except Exception:
-            pass
+    return rssi_map
 
-    try:
-        # uftpd gira in background; su molte build basta .start() senza argomenti
-        _FTP_MOD.start()
-        self._ftp_started = True
-        self.log.info("FTP avviato su %s:21 (uftpd)", ip or "0.0.0.0")
-        return True
-    except Exception as e:
-        self.log.info(f"FTP start fallito: {e!r}")
-        return False
+
+def _prioritize_by_scan(self, nets):
+    """
+    Riordina la lista [(ssid,pwd), ...] per RSSI decrescente sulla base dello scan corrente.
+    Mantiene in coda gli SSID non visti allo scan, nell'ordine originale.
+    """
+    rssi_map = self._scan_rssi_map()
+    if not rssi_map:
+        return nets  # nessun dato → lascia ordine originale
+
+    with_rssi = []
+    without_rssi = []
+    for ssid, pwd in nets:
+        if ssid in rssi_map:
+            with_rssi.append((ssid, pwd, rssi_map[ssid]))
+        else:
+            without_rssi.append((ssid, pwd))
+
+    # Ordina per RSSI decrescente (es. -35 prima di -60)
+    with_rssi.sort(key=lambda t: t[2], reverse=True)
+
+    # Ricostruisci: prima visti allo scan, poi gli altri
+    prioritized = [(s, p) for (s, p, _) in with_rssi] + without_rssi
+    return prioritized
 
 
 
@@ -643,6 +664,8 @@ def run(self):
                 self.log.info(f"Nessuna rete in {self.wifi_json}. Riprovo tra {BACKOFF_NO_NET_S}s.")
                 time.sleep(BACKOFF_NO_NET_S)
                 continue
+            
+            nets = self._prioritize_by_scan(nets)
 
             connected = False
             for ssid, pwd in nets:
