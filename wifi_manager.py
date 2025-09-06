@@ -5,6 +5,14 @@
 
 import network, time, json, socket, machine, micropython  # type: ignore
 
+# --- Logger nullo (fallback) ---
+class _NullLog:
+    def info(self, *a, **k):
+        try: print(*a)
+        except: pass
+    warn = info
+    error = info
+
 # LED di stato (facoltativo)
 try:
     from led_status import LedStatus
@@ -22,15 +30,14 @@ except Exception:
 class WiFiManager:
     def __init__(self, wifi_json="wifi.json", log=None):
         self.wifi_json = wifi_json
-        self.log = log
+        self.log = log or _NullLog()
         self.leds = LedStatus() if LedStatus else _NullLed()
         self._rtc_synced = False
         self._setup_mode = False  # one-shot finché non si riavvia
 
         # --- PULSANTE ---
         self._btn_pin_num = 32  # cambia se necessario
-        self._btn_flag = False
-        self._btn_last_ms = 0  # per debounce
+        self._btn_last_ms = 0   # per debounce
         try:
             self._btn = machine.Pin(self._btn_pin_num, machine.Pin.IN, machine.Pin.PULL_UP)
             # active-low → premuto = GND
@@ -73,6 +80,58 @@ def _ssid_from_mac(prefix="ESP32_", fallback="ESP-SETUP", max_len=32):
     short = prefix + mac_hex[-6:]           # es. ESP32_D4E5F6
     return short[:max_len]
 
+def _device_name_from_mac(prefix="ESP32_", fallback="ESP-SETUP", max_len=32):
+    """Ritorna un nome dispositivo coerente con l'SSID: prefix + MAC (o fallback)."""
+    return _ssid_from_mac(prefix=prefix, fallback=fallback, max_len=max_len)
+
+def _apply_sta_hostname(self, name=None):
+    """
+    Imposta l'hostname DHCP della STA in modo robusto (dipende dalla build).
+    Prova: WLAN.config(dhcp_hostname=...), WLAN.config(hostname=...), network.hostname(...)
+    """
+    try:
+        sta = network.WLAN(network.STA_IF)
+    except Exception:
+        sta = None
+
+    if not sta:
+        return False
+
+    if not name:
+        name = _device_name_from_mac(prefix="ESP32_", fallback="ESP-SETUP", max_len=32)
+
+    ok = False
+    try:
+        sta.active(True)  # alcune build vogliono STA attiva
+    except Exception:
+        pass
+
+    try:
+        sta.config(dhcp_hostname=name); ok = True
+    except Exception:
+        pass
+
+    if not ok:
+        try:
+            sta.config(hostname=name); ok = True
+        except Exception:
+            pass
+
+    if not ok:
+        try:
+            network.hostname(name)  # type: ignore
+            ok = True
+        except Exception:
+            pass
+
+    if ok:
+        try: self.log.info(f"Hostname STA impostato: {name}")
+        except Exception: pass
+    else:
+        try: self.log.info("Impostazione hostname STA non supportata su questa build")
+        except Exception: pass
+
+    return ok
 
 def _sync_time_once(self):
     if self._rtc_synced:
@@ -88,7 +147,6 @@ def _sync_time_once(self):
             pass
     except Exception as e:
         self.log.info(f"NTP sync fallita: {e!r}")
-
 
 def _networks_from_cfg(cfg):
     """
@@ -131,7 +189,6 @@ def _networks_from_cfg(cfg):
             seen.add(ssid)
     return out
 
-
 def _load_networks(self):
     try:
         with open(self.wifi_json) as f:
@@ -143,7 +200,6 @@ def _load_networks(self):
     if not nets:
         self.log.info(f"Nessuna rete trovata in {self.wifi_json}")
     return nets
-
 
 def _reset_wifi(self):
     # STA
@@ -166,7 +222,6 @@ def _reset_wifi(self):
     except Exception:
         pass
 
-
 def _ap_enable(self, essid="ESP-SETUP", password="12345678"):
     try:
         # Se usi il default, genera SSID basato su MAC; se passi un nome custom, lo mantengo
@@ -181,7 +236,7 @@ def _ap_enable(self, essid="ESP-SETUP", password="12345678"):
 
         # Imposta un'opzione per volta: alcune build non accettano più kwargs insieme
         ap.config(essid=essid)
-        if password:
+        if password and len(password) >= 8:
             # WPA2-PSK se password presente (>=8 char in genere)
             ap.config(password=password)
             try:
@@ -197,11 +252,10 @@ def _ap_enable(self, essid="ESP-SETUP", password="12345678"):
                 pass
 
         ip = ap.ifconfig()[0]
-        # mantengo il logging com'era per non cambiare il comportamento/format
-        self.log.info("AP attivo su")
+        self.log.info(f"AP attivo: SSID='{essid}' IP={ip}")
         return ip
     except Exception as e:
-        self.log.info("AP enable fallito")
+        self.log.info(f"AP enable fallito: {e!r}")
         return None
 
 def _ap_disable(self):
@@ -213,7 +267,6 @@ def _ap_disable(self):
     except Exception as e:
         self.log.info(f"AP disable fallito: {e!r}")
 
-
 def _enter_setup_once(self):
     """
     Entra in setup mode una sola volta: LED verde OFF, blu fisso; STA OFF; AP ON; server ON.
@@ -223,13 +276,11 @@ def _enter_setup_once(self):
         return
     self._setup_mode = True
     self.log.info("🔧 Setup mode → STA OFF, AP ON, server attivo")
-    
 
     # LED: verde OFF, blu fisso (se disponibili)
     try:
         if hasattr(self.leds, "show_ap"):
             self.leds.show_ap()
-
     except Exception:
         pass
     print("LED: verde OFF, blu fisso")
@@ -250,15 +301,14 @@ def _enter_setup_once(self):
     # Accendi AP + server
     ip_ap = self._ap_enable()
     try:
-        self._start_server(port=80)
+        self._start_server(port=80, allow_foreground=False)
     except Exception as e:
         self.log.info(f"Start server fallito: {e!r}")
-        
+
     if not ip_ap:
         ip_ap = "192.168.4.1"
-        
-    print("UI WiFi: http://%s/wifi/ui" % ip_ap)
 
+    print("UI WiFi: http://%s/wifi/ui" % ip_ap)
 
 def _try_connect(self, ssid, pwd, timeout_s=15, cancel_cb=None):
     """
@@ -275,6 +325,12 @@ def _try_connect(self, ssid, pwd, timeout_s=15, cancel_cb=None):
     # disconnessione preventiva
     try:
         sta.disconnect()
+    except Exception:
+        pass
+
+    # Hostname coerente (ESP32_xxxxxx)
+    try:
+        self._apply_sta_hostname(_device_name_from_mac(prefix="ESP32_", fallback="ESP-SETUP", max_len=32))
     except Exception:
         pass
 
@@ -305,7 +361,6 @@ def _try_connect(self, ssid, pwd, timeout_s=15, cancel_cb=None):
     ip = sta.ifconfig()[0]
     return (True, ip, None)
 
-
 def _port_open(self, ip, port, timeout_ms=500):
     try:
         s = socket.socket()
@@ -316,8 +371,7 @@ def _port_open(self, ip, port, timeout_ms=500):
     except Exception:
         return False
 
-
-def _start_server(self, port=80):
+def _start_server(self, port=80, allow_foreground=False):
     """Avvia il server HTTP se non già in ascolto. Tollera EADDRINUSE."""
     if start_server is None:
         self.log.info("server.py non disponibile: start_server=None")
@@ -357,8 +411,11 @@ def _start_server(self, port=80):
         _thread.start_new_thread(_runner, ())
         return True
     except Exception as e:
-        self.log.info(f"Thread server non disponibile ({e!r}); provo in foreground")
-        # foreground (bloccante): solo per debug!
+        self.log.info(f"Thread server non disponibile ({e!r})")
+        if not allow_foreground:
+            # Non bloccare in produzione
+            return False
+        # foreground (bloccante): SOLO per debug esplicito
         try:
             _runner()
             return True
@@ -374,9 +431,7 @@ def _start_server(self, port=80):
             return False
 
 
-
 # ------------------ HEALTH CHECK ------------------
-
 def check_wifi_and_server(self, host=None, port=80, timeout=2.0, retries=2):
     """
     Verifica:
@@ -462,14 +517,13 @@ def check_wifi_and_server(self, host=None, port=80, timeout=2.0, retries=2):
 def _irq_button(self, pin):
     now = time.ticks_ms()
     # debounce IRQ
-    if time.ticks_diff(now, self._btn_last_ms) > 50:
+    if time.ticks_diff(now, self._btn_last_ms) > 100:   # debounce più stabile
         self._btn_last_ms = now
         # registro un timestamp di "caduta"
         try:
             self._btn_press_start = now
         except Exception:
             self._btn_press_start = now
-
 
 def button_pressed(self, clear=True, long_ms=800):
     """
@@ -502,7 +556,6 @@ def button_pressed(self, clear=True, long_ms=800):
 
 
 # ------------------ LOOP PRINCIPALE ------------------
-
 def run(self):
     """
     Politica:
@@ -572,7 +625,7 @@ def run(self):
                     except Exception:
                         pass
                     try:
-                        self._start_server(port=SERVER_PORT)
+                        self._start_server(port=SERVER_PORT, allow_foreground=False)
                     except Exception as e:
                         self.log.info(f"Start server fallito: {e!r}")
                     connected = True
@@ -593,7 +646,7 @@ def run(self):
                 # prova a (ri)avviare server solo se porta non già in ascolto
                 if ip and not self._port_open(ip, SERVER_PORT):
                     try:
-                        self._start_server(port=SERVER_PORT)
+                        self._start_server(port=SERVER_PORT, allow_foreground=False)
                         time.sleep(1)
                         again = self.check_wifi_and_server(port=SERVER_PORT)
                         if not again.get("server_ok"):
@@ -626,8 +679,6 @@ def run(self):
         time.sleep(1)
 
 
-
-
 # ------------------ Bind dei metodi alla classe ------------------
 WiFiManager._sync_time_once = _sync_time_once
 WiFiManager._networks_from_cfg = staticmethod(_networks_from_cfg)
@@ -643,9 +694,11 @@ WiFiManager.check_wifi_and_server = check_wifi_and_server
 WiFiManager._irq_button = _irq_button
 WiFiManager.button_pressed = button_pressed
 WiFiManager.run = run
+WiFiManager._apply_sta_hostname = _apply_sta_hostname
 
 
 # --------- Esempio di esecuzione diretta ---------
 if __name__ == "__main__":
     wm = WiFiManager()
     wm.run()
+
