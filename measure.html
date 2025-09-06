@@ -1,8 +1,7 @@
-<!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Misure ESP32 — Oscilloscopio + Calibrazione</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -28,52 +27,67 @@
     <h2>ADC Scope dal browser</h2>
     <div class="row">
       <label for="ip">IP ESP32:</label>
-      <input id="ip" type="text" placeholder="es. 192.168.1.10" />
+      <input id="ip" type="text" placeholder="es. 192.168.1.10">
       <label for="n">Campioni (n):</label>
-      <input id="n" type="number" min="64" max="4096" step="64" value="1024" />
+      <input id="n" type="number" min="64" max="4096" step="64" value="1024">
       <label for="sr">Sample rate (Hz):</label>
-      <input id="sr" type="number" min="100" max="20000" step="100" value="4000" />
+      <input id="sr" type="number" min="100" max="20000" step="100" value="4000">
       <button id="save">Salva</button>
       <button id="start">Start</button>
       <button id="stop" disabled>Stop</button>
     </div>
 
     <div class="row">
-      <span id="status" class="muted">Pronto.</span>
-      <span id="last" class="muted"></span>
+      <span id="status" class="muted">OK (1024 campioni, sr=4000 Hz)</span>
+      <span id="last" class="muted">Ultimo aggiornamento: —</span>
     </div>
     
     <!-- Riquadro Ampere live -->
     <div id="ampBox" class="mono" style="margin:8px 0 4px; padding:10px; border:1px solid #ddd; border-radius:10px; background:#fafafa;">
       <strong>Corrente RMS:</strong>
       <span id="ampVal">—</span>
-      <span id="ampState" class="pill">non calibrato</span>
+      <span id="ampState" class="pill">—</span>
       <span id="ampMeta" class="muted"></span>
     </div>
 
     <canvas id="chart"></canvas>
   </section>
 
-  <hr/>
+  <hr>
 
   <!-- ===== Sezione 2: Calibrazione ===== -->
   <section id="calib">
     <h2>Calibrazione CT — Grafico</h2>
     <div class="row">
       <label for="baseUrl">ESP32 base URL:</label>
-      <input id="baseUrl" type="text" placeholder="http://192.168.1.10" />
+      <input id="baseUrl" type="text" placeholder="http://192.168.1.10">
       <button id="btnLoad">Ricarica</button>
     </div>
 
-    <!-- Baseline (amp=0) sempre in cima -->
+    <!-- Baseline -->
     <div id="baselineBox" class="mono" style="margin:10px 0; padding:8px; border:1px dashed #bbb; border-radius:8px;">
       <strong>Baseline (amp = 0)</strong>
-      <span id="baselineVal" class="pill" title="baseline_mean calcolata">n/d</span>
+      <span id="baselineVal" class="pill">n/d</span>
       <span id="baselineMeta" class="muted"></span>
       <div class="row" style="margin-top:8px;">
-        <button id="btnBaseline">Misura baseline (POST /calibrate?amp=0)</button>
+        <button id="btnBaseline">Misura baseline (GET /calibrate?amp=0)</button>
         <button id="btnBaselineDel" title="Resetta TUTTA la calibrazione (baseline + punti)">Elimina baseline (reset)</button>
       </div>
+    </div>
+
+    <!-- Box: Aggiungi punto -->
+    <div id="addPointBox" class="mono" style="margin:10px 0; padding:8px; border:1px solid #ddd; border-radius:8px;">
+      <strong>Aggiungi punto di calibrazione</strong>
+      <div class="row" style="margin-top:6px;">
+        <label for="ampInput">Ampere (RMS):</label>
+        <input id="ampInput" type="number" step="0.1" min="0" placeholder="es. 6.0">
+        <label for="ampN">n:</label>
+        <input id="ampN" type="number" min="64" max="4096" step="64" value="1600">
+        <label for="ampSR">sr (Hz):</label>
+        <input id="ampSR" type="number" min="100" max="20000" step="100" value="4000">
+        <button id="btnAddPoint">Aggiungi punto (GET /calibrate?amp=...)</button>
+      </div>
+      <div id="addPointMeta" class="muted"></div>
     </div>
 
     <div id="meta" class="mono" style="margin-top:8px; color:#333; font-size:14px;"></div>
@@ -81,7 +95,7 @@
     <div id="pointsBox" class="mono">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
         <strong>Punti di calibrazione</strong>
-        <button id="btnReload" title="Ricarica dati">Ricarica</button>
+        <button id="btnReload">Ricarica</button>
       </div>
       <div id="pointsList" style="margin-top:8px; font-size:14px;"></div>
     </div>
@@ -90,7 +104,7 @@
     <div id="kinfo" class="mono" style="margin-top:8px;"></div>
   </section>
 
-  <!-- ===== Script Oscilloscopio ===== -->
+  <!-- Script Oscilloscopio -->
   <script>
   (function(){
     const ipEl = document.getElementById('ip');
@@ -101,8 +115,6 @@
     const stopBtn  = document.getElementById('stop');
     const statusEl = document.getElementById('status');
     const lastEl   = document.getElementById('last');
-    // Ampere UI
-    const ampBox   = document.getElementById('ampBox');
     const ampValEl = document.getElementById('ampVal');
     const ampState = document.getElementById('ampState');
     const ampMeta  = document.getElementById('ampMeta');
@@ -111,7 +123,6 @@
       ipEl.value = localStorage.getItem('adc.ip') || '192.168.1.10';
       nEl.value  = localStorage.getItem('adc.n')  || '1024';
       srEl.value = localStorage.getItem('adc.sr') || '4000';
-      // sync iniziale baseUrl se non presente
       const calUrl = localStorage.getItem('cal.baseUrl');
       if (!calUrl) document.getElementById('baseUrl').value = 'http://' + ipEl.value.trim();
     }
@@ -120,7 +131,6 @@
       localStorage.setItem('adc.ip', ip);
       localStorage.setItem('adc.n',  nEl.value);
       localStorage.setItem('adc.sr', srEl.value);
-      // ➜ sincronizza anche il campo Calibrazione
       const base = 'http://' + ip;
       document.getElementById('baseUrl').value = base;
       localStorage.setItem('cal.baseUrl', base);
@@ -149,6 +159,13 @@
       if (!ip) throw new Error('IP non valido');
       return `http://${ip}/adc/scope_counts?n=${n}&sr=${sr}`;
     }
+    function ampsUrl() {
+      const ip = ipEl.value.trim();
+      const n  = parseInt(nEl.value, 10)  || 1024;
+      const sr = parseInt(srEl.value, 10) || 4000;
+      if (!ip) throw new Error('IP non valido');
+      return `http://${ip}/amps?n=${n}&sr=${sr}`;
+    }
 
     async function fetchAndPlot() {
       try {
@@ -156,8 +173,6 @@
           fetch(url(),     { cache: 'no-store' }),
           fetch(ampsUrl(), { cache: 'no-store' }).catch(() => null)
         ]);
-
-        // --- grafico dai counts ---
         if (!respCounts || !respCounts.ok) throw new Error('HTTP ' + (respCounts && respCounts.status));
         const j = await respCounts.json();
         if (!j || !Array.isArray(j.counts)) throw new Error('Risposta counts non valida');
@@ -166,27 +181,22 @@
         chart.data.datasets[0].data = j.counts;
         chart.update('none');
 
-        // --- riquadro Ampere da /amps ---
         if (respAmps && respAmps.ok) {
           const a = await respAmps.json();
           if (a.ok) {
             ampState.textContent = 'calibrato';
-            ampValEl.textContent = (typeof a.amps === 'number') ? a.amps.toFixed(3) + ' A' : '—';
+            ampValEl.textContent = (typeof a.amps_rms === 'number') ? a.amps_rms.toFixed(3) + ' A' : '—';
             const rms = (typeof a.rms_counts === 'number') ? a.rms_counts.toFixed(2) : 'n/d';
             const sr  = a.sr || j.sample_rate_hz || srEl.value;
             ampMeta.textContent = ` (rms=${rms}, sr=${sr})`;
+          } else if (a.err === 'busy') {
+            ampState.textContent = 'busy'; ampValEl.textContent = '—'; ampMeta.textContent = '';
+          } else if (a.err === 'no_model') {
+            ampState.textContent = 'non calibrato'; ampValEl.textContent = '—';
+            ampMeta.textContent = ' — esegui la calibrazione nella sezione sotto';
           } else {
-            if (a.err === 'busy') {
-              ampState.textContent = 'busy'; ampValEl.textContent = '—'; ampMeta.textContent = '';
-            } else if (a.err === 'no_model') {
-              ampState.textContent = 'non calibrato'; ampValEl.textContent = '—';
-              ampMeta.textContent = ' — esegui la calibrazione nella sezione sotto';
-            } else {
-              ampState.textContent = '—'; ampValEl.textContent = '—'; ampMeta.textContent = '';
-            }
+            ampState.textContent = '—'; ampValEl.textContent = '—'; ampMeta.textContent = '';
           }
-        } else {
-          ampState.textContent = '—'; ampValEl.textContent = '—'; ampMeta.textContent = '';
         }
 
         setStatus(`OK (${j.counts.length} campioni, sr=${j.sample_rate_hz || srEl.value} Hz)`);
@@ -209,42 +219,33 @@
       setStatus('In pausa.');
     }
 
-    function ampsUrl() {
-      const ip = ipEl.value.trim();
-      const n  = parseInt(nEl.value, 10)  || 1024;
-      const sr = parseInt(srEl.value, 10) || 4000;
-      if (!ip) throw new Error('IP non valido');
-      return `http://${ip}/amps?n=${n}&sr=${sr}`;
-    }
-
     saveBtn.addEventListener('click', savePrefs);
     startBtn.addEventListener('click', start);
     stopBtn.addEventListener('click', stop);
-
     loadPrefs();
   })();
   </script>
 
-  <!-- ===== Script Calibrazione ===== -->
+  <!-- Script Calibrazione (con elenco + delete) -->
   <script>
-  (function() {
+  (function(){
     const baseUrlEl = document.getElementById("baseUrl");
     const btnLoad = document.getElementById("btnLoad");
+    const btnReload = document.getElementById("btnReload");
     const metaEl = document.getElementById("meta");
     const kinfoEl = document.getElementById("kinfo");
     const baselineValEl = document.getElementById("baselineVal");
     const baselineMetaEl = document.getElementById("baselineMeta");
     const btnBaseline = document.getElementById("btnBaseline");
     const btnBaselineDel = document.getElementById("btnBaselineDel");
+    const pointsListEl = document.getElementById("pointsList");
 
-    // preferenza URL
     baseUrlEl.value = localStorage.getItem('cal.baseUrl') || baseUrlEl.value || "http://192.168.1.10";
     baseUrlEl.addEventListener('change', () => {
       const v = baseUrlEl.value.replace(/\/+$/,'');
       localStorage.setItem('cal.baseUrl', v);
     });
 
-    // Chart
     const ctx = document.getElementById("chartCal").getContext("2d");
     const chart = new Chart(ctx, {
       type: "scatter",
@@ -255,13 +256,11 @@
           x: { title: { display: true, text: "RMS (counts ADC)" } },
           y: { title: { display: true, text: "Corrente RMS (A)" } }
         },
-        plugins: {
-          legend: { position: "top" },
-          tooltip: { mode: "nearest", intersect: false }
-        }
+        plugins: { legend: { position: "top" }, tooltip: { mode: "nearest", intersect: false } }
       }
     });
 
+    function dot(ax, ay) { let s=0; for (let i=0;i<ax.length;i++) s+=ax[i]*ay[i]; return s; }
     function r2Score(y, yhat) {
       const n = y.length; if (!n) return NaN;
       const ym = y.reduce((a,b)=>a+b,0)/n;
@@ -269,21 +268,18 @@
       for (let i=0;i<n;i++) { ssRes += (y[i]-yhat[i])**2; ssTot += (y[i]-ym)**2; }
       return ssTot === 0 ? 1 : (1 - ssRes/ssTot);
     }
-    function dot(ax, ay) { let s=0; for (let i=0;i<ax.length;i++) s+=ax[i]*ay[i]; return s; }
 
     async function renderPoints(base, cal) {
-      const listEl = document.getElementById("pointsList");
-      const pts = (cal.points || []).map((p, i) => ({ i, rms: Number(p.rms_counts), amps: Number(p.amps) }));
-
       // baseline box
       const bm = cal.baseline_mean;
       const n0 = cal.n0, sr0 = cal.sr0;
       baselineValEl.textContent = (bm == null) ? "n/d" : String(bm);
       baselineMetaEl.textContent = (n0 || sr0) ? `  (n0: ${n0 ?? "n/d"}, sr0: ${sr0 ?? "n/d"})` : "";
 
-      // lista punti (esclude baseline, che è mostrata sopra)
+      const pts = (cal.points || []).map((p,i)=>({ i, rms: Number(p.rms_counts), amps: Number(p.amps) }));
+      // lista
       if (!pts.length) {
-        listEl.innerHTML = "<em>Nessun punto salvato.</em>";
+        pointsListEl.innerHTML = "<em>Nessun punto salvato.</em>";
       } else {
         const ul = document.createElement("ul");
         ul.style.listStyle = "none"; ul.style.padding = "0"; ul.style.margin = "0";
@@ -306,13 +302,14 @@
             if (!confirm(`Confermi rimozione del punto #${p.i}?`)) return;
             try {
               const r = await fetch(base + "/calibrate/delete", {
-                method: "POST", mode: "cors",
+                method: "POST",
+                mode: "cors",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ index: p.i })
               });
               const j = await r.json();
               if (!j.ok) throw new Error(j.err || "operazione fallita");
-              await load(); // ricarica grafico + lista
+              await load(); // ricarica tutto
             } catch (e) { alert("Errore delete: " + e); }
           };
 
@@ -320,7 +317,7 @@
           li.appendChild(btn);
           ul.appendChild(li);
         });
-        listEl.innerHTML = ""; listEl.appendChild(ul);
+        pointsListEl.innerHTML = ""; pointsListEl.appendChild(ul);
       }
     }
 
@@ -333,12 +330,13 @@
         const r = await fetch(url, { cache: "no-store" });
         const j = await r.json();
         const cal = j.cal || j;
+
         const pts = (cal.points || []).map(p => ({x: Number(p.rms_counts), y: Number(p.amps)}));
         const xs = pts.map(p=>p.x), ys = pts.map(p=>p.y);
 
         const kSaved = Number(cal.k_A_per_count || 0);
         let kFit = 0;
-        if (xs.length && ys.length) {
+        if (xs.length) {
           const sxy = dot(xs, ys), sxx = dot(xs, xs);
           kFit = sxx > 0 ? (sxy / sxx) : 0;
         }
@@ -350,13 +348,8 @@
           lineX.push(x); lineYSaved.push(kSaved * x); lineYFit.push(kFit * x);
         }
 
-        const yhatSaved = xs.map(x => kSaved * x);
-        const yhatFit = xs.map(x => kFit * x);
-        const r2Saved = isFinite(kSaved)&&kSaved>0 ? r2Score(ys, yhatSaved) : NaN;
-        const r2Fit   = isFinite(kFit)  &&kFit>0   ? r2Score(ys, yhatFit)   : NaN;
-
         chart.data.datasets = [
-          { label: "Punti di calibrazione", data: pts, showLine: false, pointRadius: 4 }
+          { label: "Punti", data: pts, showLine: false, pointRadius: 4 }
         ];
         if (kSaved > 0) {
           chart.data.datasets.push({
@@ -374,14 +367,22 @@
 
         metaEl.textContent = `Punti: ${pts.length}  •  baseline_mean: ${cal.baseline_mean ?? "n/d"}  •  n0: ${cal.n0 ?? "n/d"}  •  sr0: ${cal.sr0 ?? "n/d"}`;
         await renderPoints(base, cal);
+
+        const yhatSaved = xs.map(x => kSaved * x);
+        const yhatFit   = xs.map(x => kFit * x);
+        const r2Saved = (kSaved>0 && xs.length) ? r2Score(ys, yhatSaved) : NaN;
+        const r2Fit   = (kFit>0   && xs.length) ? r2Score(ys, yhatFit)   : NaN;
         kinfoEl.textContent = `R²(k salvato) = ${isNaN(r2Saved)? "n/d" : r2Saved.toFixed(5)}   |   R²(k fit) = ${isNaN(r2Fit)? "n/d" : r2Fit.toFixed(5)}`;
-      } catch (e) {
-        metaEl.textContent = "Errore nel fetch: " + e;
+
+      } catch(e) {
+        metaEl.textContent = "Errore fetch: " + e;
         chart.data.datasets = []; chart.update();
+        pointsListEl.innerHTML = "";
+        kinfoEl.textContent = "";
       }
     }
 
-    // Baseline: misura (POST /calibrate?amp=0)
+    // baseline: misura (GET /calibrate?amp=0)
     btnBaseline.addEventListener("click", async () => {
       const base = baseUrlEl.value.replace(/\/+$/,"");
       try {
@@ -392,7 +393,7 @@
       } catch (e) { alert("Errore baseline: " + e); }
     });
 
-    // Baseline: elimina (RESET totale, endpoint esistente)
+    // baseline: reset totale
     btnBaselineDel.addEventListener("click", async () => {
       const base = baseUrlEl.value.replace(/\/+$/,"");
       if (!confirm("Questa operazione resetta TUTTA la calibrazione (baseline + punti). Procedere?")) return;
@@ -404,10 +405,35 @@
       } catch (e) { alert("Errore reset: " + e); }
     });
 
-    btnLoad.addEventListener("click", load);
-    document.getElementById("btnReload").addEventListener("click", load);
+    document.getElementById("btnAddPoint").addEventListener("click", async () => {
+      const base = baseUrlEl.value.replace(/\/+$/,"");
+      const A   = parseFloat(document.getElementById("ampInput").value);
+      const n   = parseInt(document.getElementById("ampN").value || "1600", 10);
+      const sr  = parseInt(document.getElementById("ampSR").value || "4000", 10);
+      const addMeta = document.getElementById("addPointMeta");
+      if (!isFinite(A) || A <= 0) { alert("Inserisci un valore di Ampere RMS > 0"); return; }
+      addMeta.textContent = "Misuro e salvo il punto...";
+      try {
+        const url = `${base}/calibrate?amp=${encodeURIComponent(A)}&n=${n}&sr=${sr}`;
+        const r = await fetch(url, { method: "GET", mode: "cors", cache: "no-store" });
+        const j = await r.json();
+        if (!j.ok) {
+          if (j.err === "busy") throw new Error("Dispositivo occupato, riprova tra poco");
+          throw new Error(j.err || "operazione fallita");
+        }
+        const clip = j.clipping ? ` ⚠️ clipping (min=${j.min}, max=${j.max})` : "";
+        addMeta.textContent = `✅ Punto aggiunto: A=${A}  |  rms=${j.added?.rms_counts ?? "n/d"}  |  k=${j.k_A_per_count}  |  baseline=${j.baseline_mean}${clip}`;
+        document.getElementById("ampInput").value = "";
+        await load();
+      } catch (e) {
+        addMeta.textContent = "❌ Errore add point: " + e;
+        console.log(e);
+      }
+    });
 
-    // autopopola da localStorage se presente
+    btnLoad.addEventListener("click", load);
+    btnReload.addEventListener("click", load);
+    // autopopola
     const maybe = localStorage.getItem('cal.baseUrl');
     if (maybe) baseUrlEl.value = maybe;
     load();
