@@ -54,7 +54,7 @@ small{color:#666}
   <h2>Aggiungi rete</h2>
   <label>SSID <input id="ssid" placeholder="Nome rete"></label>
   <label>Password <input id="pwd" placeholder="Password" type="password"></label>
-  <label>Priorità (1 = più alta) <input id="prio" type="number" min="1" step="1" placeholder="opzionale"></label>
+  <!--<label>Priorità (1 = più alta) <input id="prio" type="number" min="1" step="1" placeholder="opzionale"></label>-->
   <button id="btnAdd">➕ Aggiungi</button>
   <div id="addMsg"></div>
 </section>
