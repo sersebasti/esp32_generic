@@ -372,7 +372,8 @@ def _port_open(self, ip, port, timeout_ms=500):
         return False
 
 def _start_server(self, port=80, allow_foreground=False):
-    """Avvia il server HTTP se non già in ascolto. Tollera EADDRINUSE."""
+    """Avvia il server HTTP se non già in ascolto. Tollera EADDRINUSE.
+       Nota: server.start_server(preferred_port=..., fallback_port=8080, verbose=...)."""
     if start_server is None:
         self.log.info("server.py non disponibile: start_server=None")
         return True
@@ -394,17 +395,14 @@ def _start_server(self, port=80, allow_foreground=False):
     else:
         ip = "0.0.0.0"
 
-    # Se già aperto su quell'IP, non rilanciare
-    if ip != "0.0.0.0" and self._port_open(ip, port):
-        self.log.info("Server già attivo, skip avvio.")
+    # Se già aperto su quell'IP (80 o 8080), non rilanciare
+    if ip != "0.0.0.0" and (self._port_open(ip, port) or self._port_open(ip, 8080)):
+        self.log.info("Server già attivo (80/8080), skip avvio.")
         return True
 
     def _runner():
-        # Se il tuo server.py consente port=..., usalo; altrimenti prova senza
-        try:
-            start_server(port=port)
-        except TypeError:
-            start_server()
+        # server.py ha la firma preferred_port / fallback_port
+        start_server(preferred_port=port, fallback_port=8080, verbose=True)
 
     try:
         import _thread
@@ -422,7 +420,7 @@ def _start_server(self, port=80, allow_foreground=False):
         except OSError as oe:
             # EADDRINUSE: consideriamo "ok" (codice può variare, es. 98/112)
             if getattr(oe, 'args', [None])[0] in (98, 112):
-                self.log.info(f"Porta {port} occupata: presumo server già su.")
+                self.log.info(f"Porta occupata: presumo server già su.")
                 return True
             self.log.info(f"Avvio server fallito: {oe!r}")
             return False
@@ -555,6 +553,45 @@ def button_pressed(self, clear=True, long_ms=800):
     return False
 
 
+def _start_ftp(self):
+    """
+    Avvia uftpd una sola volta. Non blocca. Funziona sia in STA sia in AP.
+    Ritorna True se l'FTP risulta attivo o già avviato, False se non disponibile.
+    """
+    if self._ftp_started:
+        return True
+    if _FTP_MOD is None:
+        self.log.info("FTP non disponibile: modulo uftpd mancante")
+        return False
+
+    # opzionale: controlla che ci sia almeno una interfaccia attiva con IP valido
+    ip = None
+    try:
+        sta = network.WLAN(network.STA_IF)
+        if sta.isconnected():
+            ip = sta.ifconfig()[0]
+    except Exception:
+        pass
+    if not ip:
+        try:
+            ap = network.WLAN(network.AP_IF)
+            if ap.active():
+                ip = ap.ifconfig()[0]
+        except Exception:
+            pass
+
+    try:
+        # uftpd gira in background; su molte build basta .start() senza argomenti
+        _FTP_MOD.start()
+        self._ftp_started = True
+        self.log.info("FTP avviato su %s:21 (uftpd)", ip or "0.0.0.0")
+        return True
+    except Exception as e:
+        self.log.info(f"FTP start fallito: {e!r}")
+        return False
+
+
+
 # ------------------ LOOP PRINCIPALE ------------------
 def run(self):
     """
@@ -564,11 +601,12 @@ def run(self):
     - Connesso: LED verde.
     - Solo long-press del pulsante → setup + AP.
     """
+    SERVER_PORT        = 80
+    FALLBACK_PORT      = 8080
     BACKOFF_RETRY_MS   = 500   # tra tentativi sulla stessa rete
     BACKOFF_NO_NET_S   = 5     # nessuna rete configurata → attendo e ritento
     BACKOFF_ALL_FAIL_S = 2     # tutte le reti fallite → breve pausa
     HEALTH_OK_SLEEP_S  = 5
-    SERVER_PORT        = 80
 
     self.log.info("WiFiManager avviato: modalità 'never auto-AP'")
 
@@ -578,8 +616,14 @@ def run(self):
             self.log.info("🔘 Pulsante (long-press) → setup mode")
             break
 
-        # Stato WiFi/server
+        # Stato WiFi/server (prova 80 poi 8080)
         result = self.check_wifi_and_server(port=SERVER_PORT)
+        if not result.get("server_ok"):
+            fallback_res = self.check_wifi_and_server(port=FALLBACK_PORT)
+            # unisci info migliori
+            if fallback_res.get("server_ok"):
+                result = fallback_res
+
         wifi_ok  = result.get("wifi_ok")
         ip       = result.get("ip")
         srv_ok   = result.get("server_ok")
@@ -625,6 +669,7 @@ def run(self):
                     except Exception:
                         pass
                     try:
+                        # avvia server preferendo 80, con fallback interno a 8080
                         self._start_server(port=SERVER_PORT, allow_foreground=False)
                     except Exception as e:
                         self.log.info(f"Start server fallito: {e!r}")
@@ -643,12 +688,14 @@ def run(self):
             self._ap_disable()
 
             if not srv_ok:
-                # prova a (ri)avviare server solo se porta non già in ascolto
-                if ip and not self._port_open(ip, SERVER_PORT):
+                # prova a (ri)avviare server solo se porta non già in ascolto (su 80 o 8080)
+                if ip and not (self._port_open(ip, SERVER_PORT) or self._port_open(ip, FALLBACK_PORT)):
                     try:
                         self._start_server(port=SERVER_PORT, allow_foreground=False)
                         time.sleep(1)
                         again = self.check_wifi_and_server(port=SERVER_PORT)
+                        if not again.get("server_ok"):
+                            again = self.check_wifi_and_server(port=FALLBACK_PORT)
                         if not again.get("server_ok"):
                             self.log.info(f"Server ancora KO: {again.get('error')}")
                     except Exception as e:
@@ -701,4 +748,3 @@ WiFiManager._apply_sta_hostname = _apply_sta_hostname
 if __name__ == "__main__":
     wm = WiFiManager()
     wm.run()
-
