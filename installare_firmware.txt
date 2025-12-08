@@ -1,0 +1,50 @@
+#collega alla porta USB
+
+# scopri porta usb:
+ls /dev/ttyUSB* /dev/ttyACM*
+
+# verifica esptool - se presente e da problemi per disinstallare
+sudo apt remove esptool
+
+# per installare esptool
+sudo apt install pipx
+pipx ensurepath
+pipx install esptool
+
+# per controllare versione esptool
+esptool version
+
+# per cancellare firmware
+esptool --port /dev/ttyUSB0 erase-flash
+
+# se non funziona potrebbe essere necessario entrare in modalità bootloader
+➡️ tieni premuto BOOT
+➡️ premi e rilascia RST/EN
+➡️ rilascia BOOT
+
+# installare firmware (mettere precorso completo del file .bin)
+esptool --chip esp32 --port /dev/ttyUSB0 write-flash -z 0x1000 ESP32_GENERIC-20250911-v1.26.1.bin
+
+# verifica se è installato mpremote
+mpremote --help
+
+# per installare mpremote
+pipx install mpremote
+
+# per vedere i file presenti
+mpremote connect /dev/ttyUSB0 ls
+
+# comando per cancellare tutti i files
+mpremote connect /dev/ttyUSB0 rm -rv :
+
+# comando per caricare i file della repo (tutti eccetto quelli non necessari)
+find . -type f \
+  ! -name "*.bin" \
+  ! -name "*.txt" \
+  ! -path "./.git/*" \
+  ! -name "README.md" \
+  -exec mpremote connect /dev/ttyUSB0 cp {} :{} \;
+
+# per vedere i log sulla console
+mpremote connect /dev/ttyUSB0 repl
+
