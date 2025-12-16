@@ -18,10 +18,18 @@ except Exception:
     except Exception:
         LedStatus = None
 
+# Prefer core.server, then fallback to root server; keep reason
+start_server = None
+_server_import_err = None
 try:
-    from server import start_server
-except Exception:
-    start_server = None
+    from core.server import start_server  # type: ignore
+except Exception as e1:
+    _server_import_err = e1
+    try:
+        from server import start_server  # type: ignore
+    except Exception as e2:
+        _server_import_err = e2
+        start_server = None
 
 class WiFiManager:
     def __init__(self, wifi_json="wifi.json", log=None):
@@ -293,8 +301,20 @@ def _port_open(self, ip, port, timeout_ms=500):
 
 def _start_server(self, port=80, allow_foreground=False):
     if start_server is None:
-        self.log.info("server.py non disponibile: start_server=None")
-        return True
+        # Log detailed reason and attempt minimal fallback server
+        try:
+            self.log.info("server.py non disponibile: start_server=None")
+            if _server_import_err:
+                self.log.info(f"Server import error: {_server_import_err!r}")
+        except Exception:
+            pass
+
+        try:
+            self._fallback_start_server(port=port)
+            return True
+        except Exception as e:
+            self.log.info(f"Fallback server failed: {e!r}")
+            return False
     try:
         sta = network.WLAN(network.STA_IF)
     except Exception:
@@ -334,6 +354,36 @@ def _start_server(self, port=80, allow_foreground=False):
         except Exception as e2:
             self.log.info(f"Avvio server fallito: {e2!r}")
             return False
+
+def _fallback_start_server(self, port=80):
+    """Minimal blocking HTTP server providing /health and /wifi/ui placeholders.
+    This is used only if importing the main server fails.
+    """
+    import socket
+    s = socket.socket()
+    s.setsockopt(0, 2, 1)  # SOL_SOCKET, SO_REUSEADDR, 1 (may vary)
+    s.bind(('0.0.0.0', port))
+    s.listen(2)
+    self.log.info(f"Fallback HTTP server listening on {port}")
+    while True:
+        cl, addr = s.accept()
+        try:
+            req = cl.recv(512)
+            # crude parse
+            if b"/health" in req:
+                body = json.dumps({"ok": True, "ts": time.time()})
+                cl.send(b"HTTP/1.0 200 OK\r\nContent-Type: application/json\r\n\r\n" + body.encode())
+            elif b"/wifi/ui" in req:
+                html = "<html><body><h1>WiFi UI Fallback</h1></body></html>"
+                cl.send(b"HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n" + html.encode())
+            else:
+                cl.send(b"HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\nESP32 Fallback Server")
+        except Exception:
+            pass
+        try:
+            cl.close()
+        except Exception:
+            pass
 
 def check_wifi_and_server(self, host=None, port=80, timeout=2.0, retries=2):
     sta = network.WLAN(network.STA_IF)
@@ -574,6 +624,7 @@ WiFiManager._enter_setup_once = _enter_setup_once
 WiFiManager._try_connect = _try_connect
 WiFiManager._port_open = _port_open
 WiFiManager._start_server = _start_server
+WiFiManager._fallback_start_server = _fallback_start_server
 WiFiManager.check_wifi_and_server = check_wifi_and_server
 WiFiManager._irq_button = _irq_button
 WiFiManager.button_pressed = button_pressed
