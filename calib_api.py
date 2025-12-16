@@ -1,7 +1,10 @@
 # calib_api.py
 import ujson
 from http_consts import _HTTP_200_JSON, _HTTP_200_JSON_CORS
-from busy_lock import BUSY
+try:
+    from core.busy_lock import BUSY
+except Exception:
+    from busy_lock import BUSY
 import adc_scope
 
 def _cal_load():

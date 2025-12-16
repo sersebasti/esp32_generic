@@ -1,11 +1,10 @@
 import socket, gc, ujson, network
 from http_consts import (_HTTP_200_JSON, _HTTP_200_HTML, _HTTP_400, _HTTP_204_CORS)
-from busy_lock import BUSY
-
-# Moduli endpoint (replicano la logica originale)
+try:
+    from core.busy_lock import BUSY
+except Exception:
+    from busy_lock import BUSY
 import status_api, wifi_api, adc_api, calib_api, system_api
-
-# fs_api originale: mantiene la firma a 6 argomenti
 import fs_api
 
 def _hdr_get(req_bytes, name_lower):
@@ -67,26 +66,21 @@ def _parse_path(line):
         return "GET", "/"
 
 def start_server(preferred_port=80, fallback_port=8080, verbose=True):
-    # reset lock come nell'originale
     BUSY["v"] = False
-
     s = socket.socket()
     try:
         try:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         except Exception:
             pass
-
         try:
             s.bind(("0.0.0.0", preferred_port))
             bound = preferred_port
         except OSError:
             s.bind(("0.0.0.0", fallback_port))
             bound = fallback_port
-
         s.listen(2)
         s.settimeout(0.5)
-
         if verbose:
             try:
                 sta = network.WLAN(network.STA_IF)
@@ -94,7 +88,6 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
             except Exception:
                 ip = "0.0.0.0"
             print("Status server su http://%s:%d/status" % (ip, bound))
-
         while True:
             try:
                 cl, addr = s.accept()
@@ -107,20 +100,14 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                     cl.close(); continue
                 line = req.split(b"\r\n", 1)[0].decode("utf-8", "ignore")
                 method, path = _parse_path(line)
-
                 if method == "OPTIONS":
-                    # Preflight CORS
                     cl.send(_HTTP_204_CORS)
                     continue
-
-                # 1) /fs/* → delega a fs_api con la firma a 6 argomenti (identica all'originale)
                 if path.startswith("/fs/"):
                     handled = fs_api.handle(cl, method, path, req, _read_post_json, _body_initial_and_len)
                     if not handled:
                         cl.send(_HTTP_400)
                     continue
-
-                # 2) Altri endpoint: stessi URL e comportamenti
                 if status_api.handle(cl, method, path):
                     pass
                 elif wifi_api.handle(cl, method, path, req, _read_post_json):
@@ -133,7 +120,6 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                     pass
                 else:
                     cl.send(_HTTP_400)
-
             except Exception:
                 try: cl.close()
                 except Exception: pass

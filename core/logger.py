@@ -9,11 +9,10 @@ class CircularLogger:
         self.echo_levels = set(echo_levels)
         self._pos = 0
 
-        # Prepara file se non esiste
         try:
             if not self._size(path):
                 with open(path, "wb") as f:
-                    f.write(b"\0" * max_bytes)  # file pre-allocato
+                    f.write(b"\0" * max_bytes)
         except OSError:
             pass
 
@@ -36,7 +35,6 @@ class CircularLogger:
             try: print(line.strip())
             except: pass
 
-        # Scrivi in modalità circolare
         try:
             with open(self.path, "r+b") as f:
                 f.seek(self._pos)
@@ -62,4 +60,3 @@ class CircularLogger:
             return data.decode("utf-8", "ignore").splitlines()[-50:]
         except OSError:
             return []
-
