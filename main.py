@@ -1,5 +1,5 @@
 from core.logger import CircularLogger
-from wifi_manager import WiFiManager
+from core.wifi_manager import WiFiManager
 from config import LOG_PATH, LOG_MAX_BYTES, WIFI_JSON
 
 log = CircularLogger(path=LOG_PATH, max_bytes=LOG_MAX_BYTES, echo=True)
