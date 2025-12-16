@@ -53,3 +53,6 @@ mpremote connect COM5 cp .\core\__init__.py .\core\busy_lock.py .\core\led_statu
 # per vedere i log sulla console
 mpremote connect /dev/ttyUSB0 repl
 
+# LANCIARE IN UNSEOCNDO MOMENTO 
+mpremote connect COM5 exec "import core.uftpd as uftpd; uftpd.restart(port=21, verbose=0)"
+

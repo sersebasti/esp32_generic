@@ -300,6 +300,53 @@ def _port_open(self, ip, port, timeout_ms=500):
     except Exception:
         return False
 
+def _current_ip():
+    try:
+        sta = network.WLAN(network.STA_IF)
+    except Exception:
+        sta = None
+    try:
+        ap = network.WLAN(network.AP_IF)
+    except Exception:
+        ap = None
+    if sta and sta.isconnected():
+        return sta.ifconfig()[0]
+    if ap and ap.active():
+        return ap.ifconfig()[0]
+    return "0.0.0.0"
+
+def _maybe_start_ftp(self):
+    try:
+        import config as _cfg
+    except Exception:
+        _cfg = None
+    enabled = bool(getattr(_cfg, "FTP_AUTOSTART", False)) if _cfg else False
+    if not enabled:
+        return False
+    port = int(getattr(_cfg, "FTP_PORT", 21)) if _cfg else 21
+    ip = _current_ip()
+    if ip != "0.0.0.0" and self._port_open(ip, port):
+        try: self.log.info(f"FTP già attivo sulla porta {port}")
+        except Exception: pass
+        return True
+    try:
+        try:
+            import core.uftpd as uftpd
+        except Exception:
+            import uftpd as uftpd  # type: ignore
+        if port != 21:
+            try:
+                uftpd.restart(port=port)
+            except Exception:
+                pass
+        try: self.log.info(f"FTP avviato sulla porta {port}")
+        except Exception: pass
+        return True
+    except Exception as e:
+        try: self.log.info(f"FTP avvio fallito: {e!r}")
+        except Exception: pass
+        return False
+
 def _start_server(self, port=80, allow_foreground=False):
     if start_server is None:
         # Log detailed reason and attempt minimal fallback server
@@ -334,12 +381,26 @@ def _start_server(self, port=80, allow_foreground=False):
         ip = "0.0.0.0"
     if ip != "0.0.0.0" and (self._port_open(ip, port) or self._port_open(ip, 8080)):
         self.log.info("Server già attivo (80/8080), skip avvio.")
+        try:
+            self._maybe_start_ftp()
+        except AttributeError:
+            pass
+        except Exception as e:
+            try: self.log.info(f"FTP start skipped: {e!r}")
+            except Exception: pass
         return True
     def _runner():
         start_server(preferred_port=port, fallback_port=8080, verbose=True)
     try:
         import _thread
         _thread.start_new_thread(_runner, ())
+        try:
+            self._maybe_start_ftp()
+        except AttributeError:
+            pass
+        except Exception as e:
+            try: self.log.info(f"FTP start skipped: {e!r}")
+            except Exception: pass
         return True
     except Exception as e:
         self.log.info(f"Thread server non disponibile ({e!r})")
@@ -347,6 +408,13 @@ def _start_server(self, port=80, allow_foreground=False):
             return False
         try:
             _runner()
+            try:
+                self._maybe_start_ftp()
+            except AttributeError:
+                pass
+            except Exception as e:
+                try: self.log.info(f"FTP start skipped: {e!r}")
+                except Exception: pass
             return True
         except OSError as oe:
             if getattr(oe, 'args', [None])[0] in (98, 112):
@@ -647,4 +715,6 @@ WiFiManager.run = run
 WiFiManager._apply_sta_hostname = _apply_sta_hostname
 WiFiManager._prioritize_by_scan = _prioritize_by_scan
 WiFiManager._scan_rssi_map = _scan_rssi_map
+WiFiManager._current_ip = _current_ip
+WiFiManager._maybe_start_ftp = _maybe_start_ftp
 
