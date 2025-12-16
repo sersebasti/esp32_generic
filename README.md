@@ -1,5 +1,16 @@
 # comandi per aggiornare le reti wifi
 
+# password per access point 
+premere apposito pulsante per un paio di secondi
+la luce blu deve andare accessa fissa
+collegarsi alla rete ESP32_MACADDRESS
+password = 12345678
+
+# per accedere ad access point
+password = 12345678
+http://192.168.4.1/wifi/ui
+su cellulare disattivare rete dati mobile se attiva
+
 # lista reti configurate
 curl http://<IP-ESP>/wifi/list
 
