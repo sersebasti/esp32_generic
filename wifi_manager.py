@@ -15,9 +15,12 @@ class _NullLog:
 
 # LED di stato (facoltativo)
 try:
-    from led_status import LedStatus
+    from core.led_status import LedStatus
 except Exception:
-    LedStatus = None
+    try:
+        from led_status import LedStatus
+    except Exception:
+        LedStatus = None
 
 # Server HTTP (facoltativo)
 try:
