@@ -1,6 +1,9 @@
 import socket, gc, ujson, network
 from http_consts import (_HTTP_200_JSON, _HTTP_200_HTML, _HTTP_400, _HTTP_204_CORS)
-from busy_lock import BUSY
+try:
+    from core.busy_lock import BUSY
+except Exception:
+    from busy_lock import BUSY
 import status_api, wifi_api, adc_api, calib_api, system_api
 import fs_api
 

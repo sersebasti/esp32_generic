@@ -20,15 +20,16 @@ except Exception:
 
 # Prefer core.server, then fallback to root server; keep reason
 start_server = None
-_server_import_err = None
+_server_import_err_core = None
+_server_import_err_root = None
 try:
     from core.server import start_server  # type: ignore
 except Exception as e1:
-    _server_import_err = e1
+    _server_import_err_core = e1
     try:
         from server import start_server  # type: ignore
     except Exception as e2:
-        _server_import_err = e2
+        _server_import_err_root = e2
         start_server = None
 
 class WiFiManager:
@@ -304,14 +305,16 @@ def _start_server(self, port=80, allow_foreground=False):
         # Log detailed reason and attempt minimal fallback server
         try:
             self.log.info("server.py non disponibile: start_server=None")
-            if _server_import_err:
-                self.log.info(f"Server import error: {_server_import_err!r}")
+            if _server_import_err_core:
+                self.log.info(f"Core server import error: {_server_import_err_core!r}")
+            if _server_import_err_root:
+                self.log.info(f"Root server import error: {_server_import_err_root!r}")
         except Exception:
             pass
 
         try:
-            self._fallback_start_server(port=port)
-            return True
+            ok = self._fallback_start_server(port=port)
+            return ok
         except Exception as e:
             self.log.info(f"Fallback server failed: {e!r}")
             return False
@@ -361,8 +364,20 @@ def _fallback_start_server(self, port=80):
     """
     import socket
     s = socket.socket()
-    s.setsockopt(0, 2, 1)  # SOL_SOCKET, SO_REUSEADDR, 1 (may vary)
-    s.bind(('0.0.0.0', port))
+    try:
+        s.setsockopt(0, 2, 1)  # may no-op on lwIP
+    except Exception:
+        pass
+    try:
+        s.bind(('0.0.0.0', port))
+    except OSError as e:
+        # 112 ~ EADDRINUSE on many MicroPython builds → try 8080
+        try:
+            s.bind(('0.0.0.0', 8080))
+            port = 8080
+        except Exception:
+            s.close()
+            raise e
     s.listen(2)
     self.log.info(f"Fallback HTTP server listening on {port}")
     while True:
