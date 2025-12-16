@@ -1,53 +1,10 @@
-# wifi_manager.py
-# Gestore WiFi + avvio server HTTP con health-check e retry robusti
-# Setup mode one-shot: bottone → LED verde OFF, LED blu fisso, STA OFF, AP ON, server attivo
-# Dopo l’ingresso in setup, run() termina (nessun ciclo ulteriore).
+"""Compatibility shim: import WiFiManager from core.
 
-import network, time, json, socket, machine, micropython  # type: ignore
+This file re-exports WiFiManager to avoid breaking legacy imports
+while the implementation lives in core.wifi_manager.
+"""
 
-# --- Logger nullo (fallback) ---
-class _NullLog:
-    def info(self, *a, **k):
-        try: print(*a)
-        except: pass
-    warn = info
-    error = info
-
-# LED di stato (facoltativo)
-try:
-    from core.led_status import LedStatus
-except Exception:
-    try:
-        from led_status import LedStatus
-    except Exception:
-        LedStatus = None
-
-# Server HTTP (facoltativo)
-try:
-    from server import start_server
-except Exception:
-    start_server = None
-
-
-# ---------------- Classe principale ----------------
-class WiFiManager:
-    def __init__(self, wifi_json="wifi.json", log=None):
-        self.wifi_json = wifi_json
-        self.log = log or _NullLog()
-        self.leds = LedStatus() if LedStatus else _NullLed()
-        self._rtc_synced = False
-        self._setup_mode = False  # one-shot finché non si riavvia
-
-        # --- PULSANTE ---
-        self._btn_pin_num = 32  # cambia se necessario
-        self._btn_last_ms = 0   # per debounce
-        try:
-            self._btn = machine.Pin(self._btn_pin_num, machine.Pin.IN, machine.Pin.PULL_UP)
-            # active-low → premuto = GND
-            self._btn.irq(trigger=machine.Pin.IRQ_FALLING, handler=self._irq_button)
-        except Exception as e:
-            self.log.info(f"Button init failed: {e!r}")
-            self._btn = None
+from core.wifi_manager import WiFiManager
 
 
 # ---------- UTIL: LED nullo se non disponibile ----------
@@ -753,26 +710,5 @@ def run(self):
 
 
 # ------------------ Bind dei metodi alla classe ------------------
-WiFiManager._sync_time_once = _sync_time_once
-WiFiManager._networks_from_cfg = staticmethod(_networks_from_cfg)
-WiFiManager._load_networks = _load_networks
-WiFiManager._reset_wifi = _reset_wifi
-WiFiManager._ap_enable = _ap_enable
-WiFiManager._ap_disable = _ap_disable
-WiFiManager._enter_setup_once = _enter_setup_once
-WiFiManager._try_connect = _try_connect
-WiFiManager._port_open = _port_open
-WiFiManager._start_server = _start_server
-WiFiManager.check_wifi_and_server = check_wifi_and_server
-WiFiManager._irq_button = _irq_button
-WiFiManager.button_pressed = button_pressed
-WiFiManager.run = run
-WiFiManager._apply_sta_hostname = _apply_sta_hostname
-WiFiManager._prioritize_by_scan = _prioritize_by_scan
-WiFiManager._scan_rssi_map = _scan_rssi_map
-
-
-# --------- Esempio di esecuzione diretta ---------
 if __name__ == "__main__":
-    wm = WiFiManager()
-    wm.run()
+    WiFiManager().run()
