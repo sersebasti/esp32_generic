@@ -257,10 +257,7 @@
         // Ignora, useremo fallback
       }
 
-      // Fallback: cartelle comuni
-      for (const name of ['core','fs','scope','other']){
-        addEntry(name, '/' + sanitizeName(name));
-      }
+      // Niente fallback: mostra solo cartelle realmente presenti sul device.
 
       // Se un'altra invocazione ha preso il sopravvento, abort
       if (my !== folderButtonsTicket) return;
