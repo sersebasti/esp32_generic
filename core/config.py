@@ -12,7 +12,6 @@ _DEFAULTS = {
     "ftp_pass": "admin",
     "features": {
         "scope": True,
-        "calibration": True,
         "fs_api": True,
     },
 }

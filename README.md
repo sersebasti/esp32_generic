@@ -53,7 +53,7 @@ Required uploads:
 - Full `core/` folder with all its contents (APIs, server, UI, helpers)
 
 Optional modules (upload the folder and enable related features in `core/config.py`):
-- `scope/` → set `features.scope = True` and `features.calibration = True`
+- `scope/` → set `features.scope = True`
 - `fs/` → set `features.fs_api = True`
 
 Key core files (normally included when you copy the entire `core/` folder):
