@@ -84,7 +84,7 @@ Configuration lives in `core/config.py` as in-code defaults. To adjust, edit the
   - FTP_PORT: FTP port (default: 21)
   - FTP_USER / FTP_PASS: FTP credentials (default: admin/admin)
 
-Note: some UIs may read the device name/hostname from `wifi.json`.
+Note: some UIs may read the device name/hostname from core/wifi.json.
 
 ---
 

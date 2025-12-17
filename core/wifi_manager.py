@@ -18,6 +18,23 @@ except Exception:
     except Exception:
         LedStatus = None
 
+# Read button pin and wifi json path from centralized config, with resilient fallbacks
+try:
+    from core.config import BTN_PIN as _CFG_BTN_PIN  # type: ignore
+except Exception:
+    try:
+        from config import BTN_PIN as _CFG_BTN_PIN  # type: ignore
+    except Exception:
+        _CFG_BTN_PIN = 32
+
+try:
+    from core.config import WIFI_JSON as _CFG_WIFI_JSON  # type: ignore
+except Exception:
+    try:
+        from config import WIFI_JSON as _CFG_WIFI_JSON  # type: ignore
+    except Exception:
+        _CFG_WIFI_JSON = "core/wifi.json"
+
 # Prefer core.server, then fallback to root server; keep reason
 start_server = None
 _server_import_err_core = None
@@ -33,14 +50,14 @@ except Exception as e1:
         start_server = None
 
 class WiFiManager:
-    def __init__(self, wifi_json="wifi.json", log=None):
-        self.wifi_json = wifi_json
+    def __init__(self, wifi_json=None, log=None):
+        self.wifi_json = wifi_json or _CFG_WIFI_JSON
         self.log = log or _NullLog()
         self.leds = LedStatus() if LedStatus else _NullLed()
         self._rtc_synced = False
         self._setup_mode = False
 
-        self._btn_pin_num = 32
+        self._btn_pin_num = int(_CFG_BTN_PIN)
         self._btn_last_ms = 0
         try:
             self._btn = machine.Pin(self._btn_pin_num, machine.Pin.IN, machine.Pin.PULL_UP)

@@ -27,7 +27,7 @@ def feature_enabled(name):
         return False
 
 # Export constant-style aliases for convenience
-WIFI_JSON = cfg.get("wifi_json", "wifi.json")
+WIFI_JSON = cfg.get("wifi_json", "core/wifi.json")
 LOG_PATH = cfg.get("log_path", "log.txt")
 LOG_MAX_BYTES = int(cfg.get("log_max_bytes", 8 * 1024))
 BTN_PIN = int(cfg.get("btn_pin", 32))
