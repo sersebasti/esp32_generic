@@ -1,5 +1,5 @@
 # system_api.py
-from http_consts import _HTTP_200_JSON
+from core.http_consts import _HTTP_200_JSON
 
 def handle(cl, method, path):
     # POST /reboot  (stesso comportamento dell'originale)

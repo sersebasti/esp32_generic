@@ -1,10 +1,11 @@
 import socket, gc, ujson, network
-from http_consts import (_HTTP_200_JSON, _HTTP_200_HTML, _HTTP_400, _HTTP_204_CORS)
+from core.http_consts import (_HTTP_200_JSON, _HTTP_200_HTML, _HTTP_400, _HTTP_204_CORS)
 try:
     from core.busy_lock import BUSY
 except Exception:
     from busy_lock import BUSY
-import status_api, wifi_api, adc_api, system_api
+import status_api, wifi_api, system_api
+import scope.adc_api as adc_api
 import fs_api
 
 def _hdr_get(req_bytes, name_lower):

@@ -1,22 +1,27 @@
-# adc_api.py
-import ujson
-from http_consts import _HTTP_200_JSON, _HTTP_200_JSON_CORS
+# adc_api.py (scope)
+import ujson, os
+from core.http_consts import _HTTP_200_JSON, _HTTP_200_JSON_CORS
 try:
     from core.busy_lock import BUSY
 except Exception:
     from busy_lock import BUSY
-import adc_scope
+import scope.adc_scope as adc_scope
 
-# ---- Calib helpers (migrated from calib_api.py) ----
+_CAL_PATH = "scope/calibrate.json"
+
 def _cal_load():
     try:
-        with open("calibrate.json") as f:
+        with open(_CAL_PATH) as f:
             return ujson.load(f)
-    except:
+    except Exception:
         return {}
 
 def _cal_save(d):
-    with open("calibrate.json", "w") as f:
+    try:
+        os.mkdir("scope")
+    except Exception:
+        pass
+    with open(_CAL_PATH, "w") as f:
         ujson.dump(d, f)
 
 def _rms_with_baseline(arr, baseline):
@@ -61,9 +66,8 @@ def handle(cl, method, path, req=None, _read_post_json=None):
         finally:
             BUSY["v"] = False
         return True
-    
-    # ---- Calibration endpoints (merged) ----
-    # /calibrate (GET con query amp=?)
+
+    # ---- Calibration endpoints ----
     if method == "GET" and path.startswith("/calibrate"):
         n = 1600; sr = 4000; amp = None
         if "?" in path:
@@ -78,8 +82,6 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                         except: amp = None
 
         cal = _cal_load()
-
-        # Nessun parametro → stato corrente
         if amp is None:
             if "points" not in cal: cal["points"] = []
             resp = {"ok": True, "cal": cal,
@@ -87,7 +89,6 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
             return True
 
-        # amp == 0 → baseline
         if amp == 0.0:
             if BUSY["v"]:
                 cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
@@ -106,7 +107,6 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                 BUSY["v"] = False
             return True
 
-        # amp > 0 → aggiungi punto + fit k
         if BUSY["v"]:
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
             return True
@@ -134,7 +134,6 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             BUSY["v"] = False
         return True
 
-    # /amps (GET)
     if method == "GET" and path.startswith("/amps"):
         if BUSY["v"]:
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
@@ -169,7 +168,6 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             BUSY["v"] = False
         return True
 
-    # /calibrate/delete (POST)
     if method == "POST" and path.startswith("/calibrate/delete"):
         try:
             if _read_post_json is None or req is None:
@@ -215,12 +213,13 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                 pass
         return True
 
-    # /calibrate/reset (POST)
     if method == "POST" and path.startswith("/calibrate/reset"):
         try:
-            import os
-            os.remove("calibrate.json")
-        except:
+            try:
+                os.remove(_CAL_PATH)
+            except Exception:
+                pass
+        except Exception:
             pass
         cl.send(_HTTP_200_JSON + b'{"ok":true}')
         return True

@@ -1,6 +1,6 @@
 # status_api.py
 import gc, network, ubinascii, time, ujson
-from http_consts import _HTTP_200_JSON
+from core.http_consts import _HTTP_200_JSON
 from version import version
 
 def _get_ip_sta():

@@ -1,6 +1,6 @@
 # wifi_api.py
 import ujson
-from http_consts import _HTTP_200_JSON, _HTTP_200_HTML
+from core.http_consts import _HTTP_200_JSON, _HTTP_200_HTML
 import wifi_config as wcfg
 import wifi_ui
 
