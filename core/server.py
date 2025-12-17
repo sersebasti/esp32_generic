@@ -4,8 +4,7 @@ try:
     from core.busy_lock import set_busy
 except Exception:
     from busy_lock import set_busy
-from core import status_api, wifi_api
-import system_api
+from core import status_api, wifi_api, system_api
 try:
     import scope.adc_api as adc_api
 except Exception:

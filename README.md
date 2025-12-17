@@ -49,7 +49,7 @@ find . -type f \
 ```
 
 Make sure these key files/paths are present:
-- core/wifi_api.py, core/wifi_store.py, core/wifi_ui.html, core/server.py, core/status_api.py, core/http_consts.py
+- core/wifi_api.py, core/wifi_store.py, core/wifi_ui.html, core/server.py, core/status_api.py, core/system_api.py, core/http_consts.py
 - main.py, boot.py (if used), core/busy_lock.py, core/wifi_led_status.py
 
 9) Open the REPL console (for logs/diagnostics):
