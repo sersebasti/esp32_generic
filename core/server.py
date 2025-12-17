@@ -4,9 +4,16 @@ try:
     from core.busy_lock import BUSY
 except Exception:
     from busy_lock import BUSY
-import status_api, wifi_api, system_api
-import scope.adc_api as adc_api
-import fs_api
+from core import status_api, wifi_api
+import system_api
+try:
+    import scope.adc_api as adc_api
+except Exception:
+    adc_api = None
+try:
+    import fs.api as fs_api
+except Exception:
+    fs_api = None
 
 def _hdr_get(req_bytes, name_lower):
     try:
@@ -105,15 +112,18 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                     cl.send(_HTTP_204_CORS)
                     continue
                 if path.startswith("/fs/"):
-                    handled = fs_api.handle(cl, method, path, req, _read_post_json, _body_initial_and_len)
-                    if not handled:
+                    if fs_api is None:
                         cl.send(_HTTP_400)
+                    else:
+                        handled = fs_api.handle(cl, method, path, req, _read_post_json, _body_initial_and_len)
+                        if not handled:
+                            cl.send(_HTTP_400)
                     continue
                 if status_api.handle(cl, method, path):
                     pass
                 elif wifi_api.handle(cl, method, path, req, _read_post_json):
                     pass
-                elif adc_api.handle(cl, method, path, req, _read_post_json):
+                elif (adc_api is not None) and adc_api.handle(cl, method, path, req, _read_post_json):
                     pass
                 elif system_api.handle(cl, method, path):
                     pass

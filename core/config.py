@@ -2,7 +2,7 @@
 # Configurazione centralizzata basata su default codificati.
 # Modifica i valori qui per adeguare il comportamento dell'app.
 _DEFAULTS = {
-    "wifi_json": "wifi.json",
+    "wifi_json": "core/wifi.json",
     "log_path": "log.txt",
     "log_max_bytes": 8 * 1024,
     "btn_pin": 32,

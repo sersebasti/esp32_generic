@@ -126,3 +126,19 @@ Non vengono letti file di configurazione esterni. Per modificare i parametri, ap
 
 Esempio posizione valori: vedi [core/config.py](../core/config.py).
 
+---
+
+# Moduli Wi‑Fi spostati in core
+
+I moduli Wi‑Fi sono stati riorganizzati sotto `core/`:
+- API: [core/wifi_api.py](../core/wifi_api.py)
+- Config utilities: [core/wifi_config.py](../core/wifi_config.py)
+- UI HTML: [core/wifi_ui.py](../core/wifi_ui.py)
+
+I vecchi file nella root (`wifi_api.py`, `wifi_config.py`, `wifi_ui.py`) non sono più usati e sono stati rimossi/sostituiti con stub. Gli endpoint REST restano invariati:
+- GET /wifi/ui
+- GET /wifi/scan
+- GET /wifi/list
+- POST /wifi/add
+- POST /wifi/delete
+
