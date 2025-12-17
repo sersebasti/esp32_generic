@@ -1,9 +1,9 @@
 import socket, gc, ujson, network
 from core.http_consts import (_HTTP_200_JSON, _HTTP_200_HTML, _HTTP_400, _HTTP_204_CORS)
 try:
-    from core.busy_lock import BUSY
+    from core.busy_lock import set_busy
 except Exception:
-    from busy_lock import BUSY
+    from busy_lock import set_busy
 from core import status_api, wifi_api
 import system_api
 try:
@@ -74,7 +74,10 @@ def _parse_path(line):
         return "GET", "/"
 
 def start_server(preferred_port=80, fallback_port=8080, verbose=True):
-    BUSY["v"] = False
+    try:
+        set_busy(False)
+    except Exception:
+        pass
     s = socket.socket()
     try:
         try:

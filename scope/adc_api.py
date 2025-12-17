@@ -2,9 +2,9 @@
 import ujson, os
 from core.http_consts import _HTTP_200_JSON, _HTTP_200_JSON_CORS
 try:
-    from core.busy_lock import BUSY
+    from core.busy_lock import is_busy, busy_region
 except Exception:
-    from busy_lock import BUSY
+    from busy_lock import is_busy, busy_region
 import scope.adc_scope as adc_scope
 
 _CAL_PATH = "scope/calibrate.json"
@@ -48,11 +48,10 @@ def handle(cl, method, path, req=None, _read_post_json=None):
         if not adc_scope:
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"adc_scope_module_missing"}')
             return True
-        if BUSY["v"]:
+        if is_busy():
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
             return True
-        BUSY["v"] = True
-        try:
+        with busy_region():
             n = 1024; sr = 4000
             if "?" in path:
                 q = path.split("?", 1)[1]
@@ -63,8 +62,6 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                         elif k in ("sr","sample_rate_hz"): sr = int(v)
             payload = adc_scope.json_dump_counts(n=n, sample_rate_hz=sr)
             cl.send(_HTTP_200_JSON + payload.encode())
-        finally:
-            BUSY["v"] = False
         return True
 
     # ---- Calibration endpoints ----
@@ -90,11 +87,10 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             return True
 
         if amp == 0.0:
-            if BUSY["v"]:
+            if is_busy():
                 cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
                 return True
-            BUSY["v"] = True
-            try:
+            with busy_region():
                 arr, sr = adc_scope.sample_counts(n, sr)
                 baseline = sum(arr) / len(arr)
                 cal["baseline_mean"] = round(baseline, 2)
@@ -103,15 +99,12 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                 _cal_save(cal)
                 resp = {"ok": True, "saved": {"baseline_mean": cal["baseline_mean"], "n0": cal["n0"], "sr0": cal["sr0"]}}
                 cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
-            finally:
-                BUSY["v"] = False
             return True
 
-        if BUSY["v"]:
+        if is_busy():
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
             return True
-        BUSY["v"] = True
-        try:
+        with busy_region():
             arr, sr = adc_scope.sample_counts(n, sr)
             baseline = float(cal.get("baseline_mean", sum(arr)/len(arr)))
             rms = _rms_with_baseline(arr, baseline)
@@ -130,16 +123,13 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                     "num_points": len(pts), "baseline_mean": round(baseline, 2),
                     "min": int(mn), "max": int(mx), "clipping": bool(clipping)}
             cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
-        finally:
-            BUSY["v"] = False
         return True
 
     if method == "GET" and path.startswith("/amps"):
-        if BUSY["v"]:
+        if is_busy():
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
             return True
-        BUSY["v"] = True
-        try:
+        with busy_region():
             n = 1600; sr = 4000
             if "?" in path:
                 q = path.split("?", 1)[1]
@@ -164,8 +154,6 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                        "baseline_mean": round(baseline, 2),
                        "min": int(mn), "max": int(mx), "clipping": bool(clipping)}
                 cl.send(_HTTP_200_JSON + ujson.dumps(out).encode())
-        finally:
-            BUSY["v"] = False
         return True
 
     if method == "POST" and path.startswith("/calibrate/delete"):

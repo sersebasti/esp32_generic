@@ -14,3 +14,25 @@ def set_busy(flag):
         BUSY["v"] = bool(flag)
     except Exception:
         BUSY["v"] = False
+
+
+class _BusyRegion:
+    def __enter__(self):
+        set_busy(True)
+        return True
+    def __exit__(self, exc_type, exc, tb):
+        set_busy(False)
+        # Do not suppress exceptions
+        return False
+
+
+def busy_region():
+    """Context manager that sets BUSY on enter and clears it on exit.
+
+    Usage:
+        if is_busy():
+            ...
+        with busy_region():
+            ...
+    """
+    return _BusyRegion()
