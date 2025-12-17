@@ -19,6 +19,10 @@
     code { background:#f0f0f0; padding:2px 6px; border-radius:6px; }
     .card { border:1px solid #eee; border-radius:12px; padding:12px; margin:12px 0; }
     .cols { display:grid; grid-template-columns: 1fr; gap: 14px; }
+    .blocked { opacity: 0.5; filter: grayscale(100%); pointer-events: none; user-select: none; }
+    .banner { padding: 10px 12px; border-radius: 10px; margin: 8px 0; }
+    .banner.warn { background: #fff2e6; border: 1px solid #ffd2a8; color: #7a3d00; }
+    .hidden { display: none; }
     @media (min-width: 900px) {
       .cols { grid-template-columns: 1fr 1fr; }
     }
@@ -37,11 +41,12 @@
     </div>
     <div class="row"><span class="muted">URL:</span> <code id="url"></code></div>
     <div class="row"><span id="status" class="muted">Pronto.</span></div>
+    <div id="connBanner" class="banner warn hidden">Dispositivo non raggiungibile all'IP indicato. Inserisci l'IP corretto e premi "Status".</div>
   </div>
 
   <div class="cols">
     <!-- Sezione Viewer/Download/Delete -->
-    <div class="card">
+    <div id="viewerCard" class="card">
       <h2>File viewer</h2>
 
       <div class="row">
@@ -74,7 +79,7 @@
     </div>
 
     <!-- Sezione Upload -->
-    <div class="card">
+    <div id="uploadCard" class="card">
       <h2>Upload file</h2>
       <div class="row">
         <input id="fileInput" type="file" />
@@ -99,6 +104,9 @@
     const ipEl = $('#ip');
     const urlEl = $('#url');
     const statusEl = $('#status');
+    const connBanner = $('#connBanner');
+    const viewerCard = $('#viewerCard');
+    const uploadCard = $('#uploadCard');
 
     // Viewer refs
     const fnameEl = $('#fname');
@@ -139,6 +147,70 @@
       const txt = await r.text();
       if (!r.ok) throw new Error("HTTP " + r.status + " " + txt);
       return txt;
+    }
+
+    // ---- Connessione / Blocco UI ----
+    let isLocked = false;
+    function setLocked(lock){
+      isLocked = !!lock;
+      if (isLocked) {
+        viewerCard.classList.add('blocked');
+        uploadCard.classList.add('blocked');
+        connBanner.classList.remove('hidden');
+      } else {
+        viewerCard.classList.remove('blocked');
+        uploadCard.classList.remove('blocked');
+        connBanner.classList.add('hidden');
+      }
+    }
+
+    function withTimeout(promise, ms){
+      const ctrl = new AbortController();
+      const t = setTimeout(()=> ctrl.abort(), ms);
+      return (async ()=>{
+        try{
+          return await promise(ctrl.signal);
+        } finally {
+          clearTimeout(t);
+        }
+      })();
+    }
+
+    async function tryStatus(signal){
+      const resp = await fetch(`${base()}/status`, { signal, cache: 'no-store' });
+      const text = await resp.text();
+      let parsed = null;
+      try { parsed = JSON.parse(text); } catch(_) {}
+      return { ok: resp.ok, text, json: parsed };
+    }
+
+    function statusLooksOK(s){
+      if (!s) return false;
+      // Caso richiesto: se il testo è '9', consideralo OK
+      if (typeof s.text === 'string' && s.text.trim() === '9') return true;
+      // In questo progetto /status restituisce JSON con campi noti: ip/uptime/version
+      if (s.ok && s.json && (s.json.ip || s.json.version || s.json.uptime_s != null)) return true;
+      return false;
+    }
+
+    async function checkDevice(){
+      try {
+        statusEl.textContent = 'Controllo connessione...';
+        const s = await withTimeout((signal)=> tryStatus(signal), 2500);
+        if (statusLooksOK(s)){
+          setLocked(false);
+          statusEl.textContent = 'Dispositivo rilevato.';
+          // mostra in result l'output dello status per comodità, se JSON formatta
+          if (s.json) resultEl.textContent = JSON.stringify(s.json, null, 2);
+          else resultEl.textContent = s.text;
+          return true;
+        }
+        throw new Error('Risposta non valida');
+      } catch (err){
+        setLocked(true);
+        statusEl.textContent = 'Non raggiungibile: ' + (err && err.message ? err.message : 'errore sconosciuto');
+        return false;
+      }
     }
 
     // ---- Viewer / Download / Delete ----
@@ -367,12 +439,22 @@
 
     async function getStatus() {
       try {
-        statusEl.textContent = "Richiesta status...";
-        const txt = await fetchText(`${base()}/status`);
-        resultEl.textContent = txt;
-        statusEl.textContent = "Status ricevuto.";
+        statusEl.textContent = 'Richiesta status...';
+        const s = await withTimeout((signal)=> tryStatus(signal), 2500);
+        // mostra sempre il risultato
+        if (s.json) resultEl.textContent = JSON.stringify(s.json, null, 2);
+        else resultEl.textContent = s.text;
+        if (statusLooksOK(s)){
+          statusEl.textContent = 'Status ricevuto: OK';
+          setLocked(false);
+        } else {
+          statusEl.textContent = 'Status ricevuto: non valido';
+          setLocked(true);
+        }
       } catch (err) {
-        statusEl.textContent = "Errore: " + err.message;
+        resultEl.textContent = (err && err.message) ? err.message : String(err);
+        statusEl.textContent = 'Errore: ' + (err && err.message ? err.message : 'richiesta fallita');
+        setLocked(true);
       }
     }
 
@@ -404,9 +486,16 @@
     // Avvio: imposta root e crea un bottone per ogni cartella (livello 1)
     setDir('/');
     loadRootDirs();
+    // All'avvio verifica l'IP di default e blocca/sblocca UI
+    checkDevice();
 
-    // Quando si cambia IP, ricarica l'elenco cartelle
-    $('#ip').addEventListener('change', ()=>{ loadRootDirs(); });
+    // Quando si cambia IP, ricarica l'elenco cartelle e forza blocco finché non si fa Status
+    $('#ip').addEventListener('change', ()=>{
+      loadRootDirs();
+      setLocked(true);
+      connBanner.classList.remove('hidden');
+      statusEl.textContent = 'IP modificato. Premi "Status" per verificare.';
+    });
   </script>
 </body>
 </html>
