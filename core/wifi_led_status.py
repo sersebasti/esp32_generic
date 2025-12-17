@@ -1,4 +1,4 @@
-# led_status.py (moved to core)
+# wifi_led_status.py
 
 LED_BLUE_PIN  = 2
 LED_BLUE_LOW  = False

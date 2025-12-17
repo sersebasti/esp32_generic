@@ -11,10 +11,10 @@ class _NullLog:
     error = info
 
 try:
-    from core.led_status import LedStatus
+    from core.wifi_led_status import LedStatus
 except Exception:
     try:
-        from led_status import LedStatus
+        from wifi_led_status import LedStatus
     except Exception:
         LedStatus = None
 
