@@ -1,7 +1,7 @@
 # core/wifi_manager.py
 # WiFiManager implementation moved under core
 
-import network, time, json, socket, machine, micropython  # type: ignore
+import network, time, json, socket, machine  # type: ignore
 
 class _NullLog:
     def info(self, *a, **k):
@@ -52,8 +52,7 @@ class WiFiManager:
 class _NullLed:
     def show_connecting(self): pass
     def show_connected(self):  pass
-    def green_off(self): pass
-    def blue_on(self): pass
+    # Minimal interface used by WiFiManager; real LEDs handled by LedStatus
 
 WiFiManager._NullLed = _NullLed
 
@@ -234,7 +233,10 @@ def _enter_setup_once(self):
             self.leds.show_ap()
     except Exception:
         pass
-    print("LED: verde OFF, blu fisso")
+    try:
+        self.log.info("LED: verde OFF, blu fisso")
+    except Exception:
+        pass
     try:
         sta = network.WLAN(network.STA_IF)
         if sta.active():
@@ -245,7 +247,10 @@ def _enter_setup_once(self):
             sta.active(False)
     except Exception:
          pass
-    print("WiFi STA disattivata")
+    try:
+        self.log.info("WiFi STA disattivata")
+    except Exception:
+        pass
     ip_ap = self._ap_enable()
     try:
         self._start_server(port=80, allow_foreground=False)
@@ -253,7 +258,10 @@ def _enter_setup_once(self):
         self.log.info(f"Start server fallito: {e!r}")
     if not ip_ap:
         ip_ap = "192.168.4.1"
-    print("UI WiFi: http://%s/wifi/ui" % ip_ap)
+    try:
+        self.log.info("UI WiFi: http://%s/wifi/ui" % ip_ap)
+    except Exception:
+        pass
 
 def _try_connect(self, ssid, pwd, timeout_s=15, cancel_cb=None):
     sta = network.WLAN(network.STA_IF)
