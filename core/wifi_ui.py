@@ -153,10 +153,13 @@ async function loadCfg(){
 qs('#btnAdd').onclick = async ()=>{
     const ssid = qs('#ssid').value.trim();
     const pwd  = qs('#pwd').value;
-    const prio = parseInt(qs('#prio').value||'0',10);
+    const prioEl = qs('#prio');
+    const prio = prioEl ? parseInt(prioEl.value||'0',10) : NaN; // input priorità assente in UI
     if(!ssid){ msg(qs('#addMsg'),'SSID mancante',false); return; }
     try{
-        const r = await postJSON('/wifi/add', {ssid:ssid, password:pwd, priority: isNaN(prio)?undefined:prio});
+        const payload = {ssid:ssid, password:pwd};
+        if(!isNaN(prio)) payload.priority = prio;
+        const r = await postJSON('/wifi/add', payload);
         if(r.ok){ msg(qs('#addMsg'),'Aggiunta: '+ssid,true); qs('#pwd').value=''; loadCfg(); }
         else{ msg(qs('#addMsg'),'Errore: '+(r.message||'fail'),false); }
     }catch(e){
