@@ -28,15 +28,60 @@ def handle(cl, method, path, req, _read_post_json, _body_initial_and_len):
     # --- LIST ---
     if method == "GET" and path.startswith("/fs/list"):
         try:
-            files = []
-            for name in os.listdir():
+            # directory target da query (?path=/dir). Default: root "/"
+            target = _query_arg(path, "path") or _query_arg(path, "dir")
+            if not target or target == "/":
+                target = "/"
+            else:
+                # normalizza: assoluto, senza slash finale
+                target = target if target.startswith("/") else ("/" + target)
+                if target.endswith("/") and target != "/":
+                    target = target[:-1]
+
+            # helper compatibili con path assoluti/relativi su MicroPython
+            def _listdir_safe(p):
                 try:
-                    st = os.stat(name)
-                    size = st[6] if len(st) > 6 else None
+                    return os.listdir(p)
                 except:
+                    try:
+                        q = p.lstrip("/")
+                        return os.listdir(q)
+                    except:
+                        return None
+            def _stat_safe(p):
+                try:
+                    return os.stat(p)
+                except:
+                    try:
+                        q = p.lstrip("/")
+                        return os.stat(q)
+                    except:
+                        return None
+
+            # elenca contenuti
+            names = None
+            if target == "/":
+                # alcune build richiedono stringa vuota per root
+                names = _listdir_safe("/") or _listdir_safe("") or _listdir_safe(".")
+            else:
+                names = _listdir_safe(target)
+            if names is None:
+                cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"bad_dir"}')
+                return True
+
+            files = []
+            for name in names:
+                full = (target + "/" + name) if target != "/" else ("/" + name)
+                st = _stat_safe(full)
+                if st:
+                    size = st[6] if len(st) > 6 else None
+                    mode = st[0] if len(st) > 0 else 0
+                    is_dir = bool(mode & 0x4000)  # S_IFDIR
+                else:
                     size = None
-                files.append({"name": name, "size": size})
-            cl.send(_HTTP_200_JSON_CORS + ujson.dumps({"ok": True, "files": files}).encode())
+                    is_dir = False
+                files.append({"name": name, "size": size, "is_dir": is_dir})
+            cl.send(_HTTP_200_JSON_CORS + ujson.dumps({"ok": True, "path": target, "files": files}).encode())
         except:
             cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"list_failed"}')
         return True

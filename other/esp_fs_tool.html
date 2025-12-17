@@ -45,6 +45,15 @@
       <h2>File viewer</h2>
 
       <div class="row">
+        <span class="muted">Cartella:</span> <code id="cwd">/</code>
+      </div>
+
+      <div class="row">
+        <label>Selezione cartelle</label>
+        <div id="folderButtons" class="row"></div>
+      </div>
+
+      <div class="row">
         <button id="refreshBtn">Aggiorna lista file</button>
         <span class="muted">Ammessi in lista: .txt, .py, .json</span>
       </div>
@@ -107,8 +116,15 @@
 
     function setURL(u) { urlEl.textContent = u || ''; }
 
+    function normalize(path){ return (path || '').replace(/\\/g,'/'); }
     function sanitizeName(path) {
-      return (path || '').replace(/^\/+/, '');
+      return normalize(path).replace(/^\/+/, '');
+    }
+    function joinPath(dir, name){
+      dir = normalize(dir);
+      name = normalize(name);
+      if(!dir || dir==='/' ) return '/' + sanitizeName(name);
+      return (dir.replace(/\/$/, '')) + '/' + sanitizeName(name);
     }
 
     function allowed(path) {
@@ -126,26 +142,112 @@
     }
 
     // ---- Viewer / Download / Delete ----
+    let currentDir = '/';
+    function setDir(p){
+      p = normalize(p);
+      if(!p || p === '') p = '/';
+      if(p !== '/' && !p.startsWith('/')) p = '/' + p;
+      currentDir = p;
+      $('#cwd').textContent = currentDir;
+    }
+
+    let folderButtonsTicket = 0;
+    async function loadRootDirs(){
+      const my = ++folderButtonsTicket;
+      statusEl.textContent = 'Carico cartelle (root)...';
+
+      // Raccogli etichette uniche in memoria per evitare duplicati anche in caso di chiamate sovrapposte
+      const entries = new Map(); // label -> dirPath
+      const addEntry = (label, dirPath) => {
+        const key = label.trim();
+        if (!entries.has(key)) entries.set(key, dirPath);
+      };
+
+      addEntry('root','/');
+
+      // Prova a leggere dal device
+      try{
+        const txt = await fetchText(`${base()}/fs/list`);
+        const data = JSON.parse(txt);
+        if(data && data.ok){
+          const rows = (data.files || []);
+          const names = rows.map(it => (typeof it === 'string') ? it : it.name).filter(Boolean);
+          const maybeDirs = rows.map(it => (typeof it === 'string') ? null : !!it.is_dir);
+          for (let i=0;i<names.length;i++){
+            const name = (names[i] || '').toString();
+            const isDir = maybeDirs[i];
+            if (name && (isDir === true || (isDir == null && !/\./.test(name)))) {
+              addEntry(name, '/' + sanitizeName(name));
+            }
+          }
+        }
+      }catch(err){
+        // Ignora, useremo fallback
+      }
+
+      // Fallback: cartelle comuni
+      for (const name of ['core','fs','scope','other']){
+        addEntry(name, '/' + sanitizeName(name));
+      }
+
+      // Se un'altra invocazione ha preso il sopravvento, abort
+      if (my !== folderButtonsTicket) return;
+
+      // Costruisci DOM in un fragment e sostituisci atomoicamente
+      const frag = document.createDocumentFragment();
+      for (const [label, dirPath] of entries){
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        btn.addEventListener('click', async ()=>{
+          setDir(dirPath);
+          await refreshList();
+        });
+        frag.appendChild(btn);
+      }
+      const fb = $('#folderButtons');
+      fb.replaceChildren(frag);
+      statusEl.textContent = 'Cartelle aggiornate';
+    }
+
     async function refreshList() {
       try {
         statusEl.textContent = 'Carico lista file...';
         fnameEl.innerHTML = "";
-        const url = `${base()}/fs/list`;
+        const dirArg = sanitizeName(currentDir);
+        const url = dirArg ? `${base()}/fs/list?dir=${encodeURIComponent(dirArg)}`
+                           : `${base()}/fs/list`;
         const txt = await fetchText(url);
         const data = JSON.parse(txt);
         if (!data.ok) throw new Error("Lista non valida");
 
-        const files = (data.files || []).filter(f => allowed("/" + f.name));
-        if (files.length === 0) {
+        const rows = (data.files || []);
+        const items = rows.map(it => (typeof it === 'string') ? { name: it } : (it || {}));
+
+        let files;
+        if (normalize(currentDir) === '/') {
+          // Root: mostra solo file che non hanno '/' o '\\' nel nome (no sottocartelle)
+          files = items.filter(it => {
+            const name = ((it.name || '') + '').toString();
+            if (it.is_dir) return false;
+            if (name.indexOf('/') !== -1 || name.indexOf('\\') !== -1) return false;
+            return allowed('/' + name);
+          }).map(it => ({ base: it.name, size: it.size || 0 }));
+        } else {
+          // Non-root: accetta i file elencati dalla cartella selezionata
+          files = items.filter(it => !it.is_dir && allowed(joinPath(currentDir, it.name || '')))
+                       .map(it => ({ base: it.name || '', size: it.size || 0 }));
+        }
+
+        if (!files || files.length === 0) {
           const opt = document.createElement("option");
           opt.textContent = "(nessun file .txt/.py/.json trovato)";
           opt.value = "";
           fnameEl.appendChild(opt);
         } else {
-          for (const f of files) {
+          for (const e of files) {
             const opt = document.createElement("option");
-            opt.value = "/" + f.name; // path con slash
-            opt.textContent = `${f.name} (${f.size || 0} B)`;
+            opt.value = joinPath(currentDir, e.base);
+            opt.textContent = `${e.base} (${e.size || 0} B)`;
             fnameEl.appendChild(opt);
           }
         }
@@ -162,7 +264,7 @@
         if (!allowed(path)) throw new Error('Estensione non ammessa');
         statusEl.textContent = 'Carico ' + path + '...';
         // slash reale nel parametro path (nessuna codifica dello '/')
-        const url = `${base()}/fs/download?path=${path}`;
+        const url = `${base()}/fs/download?path=${encodeURI(path)}`;
         const text = await fetchText(url);
         previewEl.textContent = text;
         statusEl.textContent = 'Mostrato ' + path;
@@ -179,7 +281,7 @@
 
         statusEl.textContent = 'Scarico ' + path + '...';
         // slash reale nel parametro path (nessuna codifica dello '/')
-        const url = `${base()}/fs/download?path=${path}`;
+        const url = `${base()}/fs/download?path=${encodeURI(path)}`;
         setURL(url);
 
         const r = await fetch(url, { cache: 'no-store' });
@@ -203,12 +305,8 @@
     }
 
     function protect(path) {
-      const name = sanitizeName(path).toLowerCase();
-      const protectedList = [
-        "boot.py","main.py","wifi_manager.py",
-        "fs_api.py","server.py","wifi.json"
-      ];
-      return protectedList.includes(name);
+      // Nessuna protezione: l'utente accetta il rischio di cancellazioni accidentali
+      return false;
     }
 
     async function delFile() {
@@ -252,7 +350,7 @@
           alert("Seleziona un file locale prima!");
           return;
         }
-        const url = `${base()}/fs/upload?to=/${encodeURIComponent(file.name)}`;
+        const url = `${base()}/fs/upload?to=${encodeURI(joinPath(currentDir, file.name))}`;
         statusEl.textContent = "Upload in corso...";
         setURL(url);
         const txt = await fetchText(url, { method: "POST", body: file });
@@ -291,6 +389,9 @@
     }
 
     // ---- Bind pulsanti ----
+    // Selezione cartelle dedicata a sinistra
+    // Nessun menu a tendina: i bottoni di livello root gestiscono la selezione
+
     $('#refreshBtn').addEventListener('click', refreshList);
     $('#viewBtn').addEventListener('click', view);
     $('#downloadBtn').addEventListener('click', download);
@@ -300,8 +401,12 @@
     $('#statusBtn').addEventListener('click', getStatus);
     $('#rebootBtn').addEventListener('click', reboot);
 
-    // Aggiorna subito la lista all’apertura
-    refreshList();
+    // Avvio: imposta root e crea un bottone per ogni cartella (livello 1)
+    setDir('/');
+    loadRootDirs();
+
+    // Quando si cambia IP, ricarica l'elenco cartelle
+    $('#ip').addEventListener('change', ()=>{ loadRootDirs(); });
   </script>
 </body>
 </html>
