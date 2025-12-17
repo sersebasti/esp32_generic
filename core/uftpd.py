@@ -44,9 +44,9 @@ STA_addr = ("0.0.0.0", 0, 0xffffff00)
 _month_name = ("", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
-# Optional credentials from config
+# Optional credentials from core.config
 try:
-    import config as _cfg
+    import core.config as _cfg
     _AUTH_USER = getattr(_cfg, "FTP_USER", None)
     _AUTH_PASS = getattr(_cfg, "FTP_PASS", None)
 except Exception:

@@ -28,7 +28,7 @@ esptool --chip esp32 --port /dev/ttyUSB0 write-flash -z 0x1000 ESP32_GENERIC-202
 # verifica se è installato mpremote
 mpremote --help
 
-# per installare mpremote
+# per installare mpremote (linux)
 pipx install mpremote
 
 # per vedere i file presenti

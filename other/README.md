@@ -105,3 +105,24 @@ curl -X POST -H "Content-Type: application/json" \
      http://192.168.1.10/fs/rename
 {"ok": true, "renamed": ["/main.py", "/main_old.py"]}
 
+
+---
+
+# Configurazione (solo codice)
+
+La configurazione dell'ESP32 è centralizzata in `core/config.py` ed è basata unicamente su valori di default codificati nel sorgente.
+
+Non vengono letti file di configurazione esterni. Per modificare i parametri, apri `core/config.py` e cambia i valori nel blocco di default.
+
+- Principali parametri:
+  - `WIFI_JSON`: nome del file reti Wi-Fi (default: `wifi.json`)
+  - `LOG_PATH`: percorso file di log (default: `log.txt`)
+  - `LOG_MAX_BYTES`: dimensione massima log (default: `8192`)
+  - `BTN_PIN`: pin del pulsante (default: `32`)
+  - `FTP_AUTOSTART`: avvia FTP all'avvio (default: `False`)
+  - `FTP_PORT`: porta FTP (default: `21`)
+  - `FTP_USER` / `FTP_PASS`: credenziali FTP (default: `admin` / `admin`)
+  - `features`: abilita/disabilita feature (`scope`, `calibration`, `fs_api`)
+
+Esempio posizione valori: vedi [core/config.py](../core/config.py).
+

@@ -4,7 +4,7 @@ try:
     from core.busy_lock import BUSY
 except Exception:
     from busy_lock import BUSY
-import status_api, wifi_api, adc_api, calib_api, system_api
+import status_api, wifi_api, adc_api, system_api
 import fs_api
 
 def _hdr_get(req_bytes, name_lower):
@@ -112,9 +112,7 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                     pass
                 elif wifi_api.handle(cl, method, path, req, _read_post_json):
                     pass
-                elif adc_api.handle(cl, method, path):
-                    pass
-                elif calib_api.handle(cl, method, path, req, _read_post_json):
+                elif adc_api.handle(cl, method, path, req, _read_post_json):
                     pass
                 elif system_api.handle(cl, method, path):
                     pass

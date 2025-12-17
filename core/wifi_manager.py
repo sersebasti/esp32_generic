@@ -317,7 +317,7 @@ def _current_ip():
 
 def _maybe_start_ftp(self):
     try:
-        import config as _cfg
+        import core.config as _cfg
     except Exception:
         _cfg = None
     enabled = bool(getattr(_cfg, "FTP_AUTOSTART", False)) if _cfg else False
