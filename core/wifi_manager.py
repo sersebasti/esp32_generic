@@ -632,9 +632,11 @@ def run(self):
                 continue
             nets = self._prioritize_by_scan(nets)
             connected = False
+            setup_requested = False
             for ssid, pwd in nets:
                 if self.button_pressed(clear=True, long_ms=800):
                     self.log.info("🔘 Pulsante durante tentativi → setup mode")
+                    setup_requested = True
                     connected = False
                     break
                 ok, ip_new, reason = self._try_connect(
@@ -660,7 +662,14 @@ def run(self):
                     break
                 else:
                     self.log.info(f"Connessione fallita a '{ssid}' ({reason or 'fail'})")
+                    if (reason == "cancelled"):
+                        # Il pulsante ha annullato: entra subito in setup
+                        setup_requested = True
+                        break
                     time.sleep_ms(BACKOFF_RETRY_MS)
+            if setup_requested:
+                # Esce dal loop principale per attivare subito la setup mode (AP)
+                break
             if not connected:
                 time.sleep(BACKOFF_ALL_FAIL_S)
                 continue
