@@ -132,10 +132,10 @@ Esempio posizione valori: vedi [core/config.py](../core/config.py).
 
 I moduli Wi‑Fi sono stati riorganizzati sotto `core/`:
 - API: [core/wifi_api.py](../core/wifi_api.py)
-- Config utilities: [core/wifi_config.py](../core/wifi_config.py)
+- Store/Config utilities: [core/wifi_store.py](../core/wifi_store.py)
 - UI HTML: [core/wifi_ui.py](../core/wifi_ui.py)
 
-I vecchi file nella root (`wifi_api.py`, `wifi_config.py`, `wifi_ui.py`) non sono più usati e sono stati rimossi/sostituiti con stub. Gli endpoint REST restano invariati:
+I vecchi file nella root (`wifi_api.py`, `wifi_config.py`, `wifi_ui.py`) non sono più usati e sono stati rimossi/sostituiti con stub. Nota: `wifi_config.py` è stato rinominato in `wifi_store.py`. Gli endpoint REST restano invariati:
 - GET /wifi/ui
 - GET /wifi/scan
 - GET /wifi/list

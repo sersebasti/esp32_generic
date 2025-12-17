@@ -1,5 +1,5 @@
-# wifi_config.py
-# Utilità per leggere/scrivere wifi.json e gestire le reti Wi-Fi (scan, add, delete)
+# wifi_store.py
+# Utilità per leggere/scrivere wifi.json e gestire le reti Wi‑Fi (scan, add, delete)
 # Compatibile con MicroPython (ujson, network)
 
 import ujson as json
