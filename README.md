@@ -48,9 +48,16 @@ find . -type f \
   -exec mpremote connect /dev/ttyUSB0 cp {} :{} \;
 ```
 
-Make sure these key files/paths are present:
-- core/wifi_api.py, core/wifi_store.py, core/wifi_ui.html, core/server.py, core/status_api.py, core/system_api.py, core/http_consts.py
-- main.py, boot.py (if used), core/busy_lock.py, core/wifi_led_status.py
+Required uploads:
+- Root files: `main.py`, `boot.py` (located in repository root)
+- Full `core/` folder with all its contents (APIs, server, UI, helpers)
+
+Optional modules (upload the folder and enable related features in `core/config.py`):
+- `scope/` → set `features.scope = True` and `features.calibration = True`
+- `fs/` → set `features.fs_api = True`
+
+Key core files (normally included when you copy the entire `core/` folder):
+- core/wifi_api.py, core/wifi_store.py, core/wifi_ui.html, core/server.py, core/status_api.py, core/system_api.py, core/http_consts.py, core/busy_lock.py, core/wifi_led_status.py
 
 9) Open the REPL console (for logs/diagnostics):
 ```bash
