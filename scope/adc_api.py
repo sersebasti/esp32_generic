@@ -64,6 +64,25 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             cl.send(_HTTP_200_JSON + payload.encode())
         return True
 
+    # --- Endpoint per confronto baseline ---
+    if method == "GET" and path.startswith("/compare_baseline"):
+        n = 1600; sr = 4000
+        if "?" in path:
+            q = path.split("?", 1)[1]
+            for p in q.split("&"):
+                if "=" in p:
+                    k, v = p.split("=", 1)
+                    if k == "n": n = int(v)
+                    elif k in ("sr","sample_rate_hz"): sr = int(v)
+        cal = _cal_load()
+        baseline = cal.get("baseline_mean", None)
+        arr, sr = adc_scope.sample_counts(n, sr)
+        mean_now = sum(arr) / len(arr)
+        resp = {"ok": True, "baseline_mean": baseline, "mean_now": round(mean_now, 2)}
+        if baseline is not None:
+            resp["diff"] = round(mean_now - baseline, 2)
+        cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
+        return True
     # ---- Calibration endpoints ----
     if method == "GET" and path.startswith("/calibrate"):
         n = 1600; sr = 4000; amp = None

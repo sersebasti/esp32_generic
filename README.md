@@ -1,3 +1,43 @@
+
+## Firmware Installation (Windows)
+
+1) Collega l'ESP32 via USB.
+
+
+2) Trova la porta seriale (COM):
+```powershell
+Get-WmiObject Win32_SerialPort | Select-Object DeviceID,Description
+```
+**Procedura consigliata:**
+- Scollega l'ESP32 dal PC e lancia il comando qui sopra.
+- Ricollega l'ESP32 e rilancia il comando.
+- La porta che appare (o scompare quando scolleghi) è quella giusta per l'ESP32.
+- Se non compare nessuna nuova porta, prova a cambiare cavo USB o porta USB del PC.
+- Se vedi solo porte "Intel(R) Active Management Technology" o simili, l'ESP32 non è rilevato: verifica i driver o il cavo.
+
+3) (Opzionale) Installa Python e ampy/mpremote:
+Scarica Python da https://www.python.org/downloads/ e assicurati che sia nel PATH.
+Poi:
+```powershell
+pip install adafruit-ampy mpremote
+```
+
+4) Connettiti alla REPL MicroPython:
+```powershell
+mpremote connect COMx repl
+```
+Sostituisci COMx con la porta trovata (es: COM3).
+
+5) Carica file o esegui comandi:
+```powershell
+ampy --port COMx put main.py
+mpremote connect COMx cp main.py :main.py
+```
+
+6) Puoi anche usare programmi come PuTTY/Tera Term per la console seriale (baud 115200).
+
+---
+
 ## Firmware Installation (Linux)
 
 1) Connect the ESP32 via USB.
@@ -146,6 +186,7 @@ curl -X POST http://<DEVICE_IP>/wifi/delete \
   - GET /calibrate: show calibration state
   - GET /calibrate?amp=<A>: add baseline (A=0) or a calibration point
   - GET /amps[?n=1600&sr=4000]: measure RMS current using the model
+  - GET /compare_baseline[?n=1600&sr=4000]: confronta la baseline salvata con la media attuale dei counts
   - POST /calibrate/delete: remove a point `{index}` or `{amps,rms_counts}`
   - POST /calibrate/reset: reset calibration
 
