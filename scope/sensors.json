@@ -1,0 +1,6 @@
+{
+  "sensors": [
+    {"id": "c1", "adc_pin": 34},
+    {"id": "c2", "adc_pin": 35}
+  ]
+}

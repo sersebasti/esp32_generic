@@ -20,7 +20,13 @@
   </style>
 </head>
 <body>
+
   <h1>Misure ESP32</h1>
+  <div class="row">
+    <label for="sensorSelect"><strong>Sensore:</strong></label>
+    <select id="sensorSelect"></select>
+    <span class="muted">Scegli il sensore di corrente da usare (es. c1, c2...)</span>
+  </div>
 
   <!-- ===== Sezione 1: Oscilloscopio ===== -->
   <section id="osc">
@@ -119,18 +125,48 @@
     const ampState = document.getElementById('ampState');
     const ampMeta  = document.getElementById('ampMeta');
 
+
+    // --- Gestione sensori ---
+    const sensorSelect = document.getElementById('sensorSelect');
+    let sensors = [];
+    function loadSensors() {
+      // Static list, in futuro fetch dinamico
+      sensors = [
+        {id: 'c1', label: 'c1 (pin 34)'},
+        {id: 'c2', label: 'c2 (pin 35)'}
+      ];
+      sensorSelect.innerHTML = '';
+      sensors.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id; opt.textContent = s.label;
+        sensorSelect.appendChild(opt);
+      });
+      // Default o ultimo usato
+      const last = localStorage.getItem('adc.sensor_id') || 'c1';
+      sensorSelect.value = last;
+    }
+    sensorSelect.addEventListener('change', () => {
+      localStorage.setItem('adc.sensor_id', sensorSelect.value);
+    });
+
+    function getSensorId() {
+      return sensorSelect.value || 'c1';
+    }
+
     function loadPrefs() {
       ipEl.value = localStorage.getItem('adc.ip') || '192.168.1.10';
       nEl.value  = localStorage.getItem('adc.n')  || '1024';
       srEl.value = localStorage.getItem('adc.sr') || '4000';
       const calUrl = localStorage.getItem('cal.baseUrl');
       if (!calUrl) document.getElementById('baseUrl').value = 'http://' + ipEl.value.trim();
+      loadSensors();
     }
     function savePrefs() {
       const ip = ipEl.value.trim();
       localStorage.setItem('adc.ip', ip);
       localStorage.setItem('adc.n',  nEl.value);
       localStorage.setItem('adc.sr', srEl.value);
+      localStorage.setItem('adc.sensor_id', getSensorId());
       const base = 'http://' + ip;
       document.getElementById('baseUrl').value = base;
       localStorage.setItem('cal.baseUrl', base);
@@ -156,15 +192,17 @@
       const ip = ipEl.value.trim();
       const n  = parseInt(nEl.value, 10)  || 1024;
       const sr = parseInt(srEl.value, 10) || 4000;
+      const sensor_id = getSensorId();
       if (!ip) throw new Error('IP non valido');
-      return `http://${ip}/adc/scope_counts?n=${n}&sr=${sr}`;
+      return `http://${ip}/adc/scope_counts?sensor_id=${encodeURIComponent(sensor_id)}&n=${n}&sr=${sr}`;
     }
     function ampsUrl() {
       const ip = ipEl.value.trim();
       const n  = parseInt(nEl.value, 10)  || 1024;
       const sr = parseInt(srEl.value, 10) || 4000;
+      const sensor_id = getSensorId();
       if (!ip) throw new Error('IP non valido');
-      return `http://${ip}/amps?n=${n}&sr=${sr}`;
+      return `http://${ip}/amps?sensor_id=${encodeURIComponent(sensor_id)}&n=${n}&sr=${sr}`;
     }
 
     async function fetchAndPlot() {
@@ -241,6 +279,8 @@
     const pointsListEl = document.getElementById("pointsList");
 
     baseUrlEl.value = localStorage.getItem('cal.baseUrl') || baseUrlEl.value || "http://192.168.1.10";
+    // --- sensore anche in calibrazione ---
+    const sensorIdCal = () => (localStorage.getItem('adc.sensor_id') || 'c1');
     baseUrlEl.addEventListener('change', () => {
       const v = baseUrlEl.value.replace(/\/+$/,'');
       localStorage.setItem('cal.baseUrl', v);
@@ -324,7 +364,8 @@
     async function load() {
       const base = baseUrlEl.value.replace(/\/+$/,"");
       localStorage.setItem('cal.baseUrl', base);
-      const url = base + "/calibrate";
+      const sensor_id = sensorIdCal();
+      const url = base + "/calibrate?sensor_id=" + encodeURIComponent(sensor_id);
       metaEl.textContent = "Carico: " + url + " ...";
       try {
         const r = await fetch(url, { cache: "no-store" });
@@ -384,9 +425,10 @@
 
     // baseline: misura (GET /calibrate?amp=0)
     btnBaseline.addEventListener("click", async () => {
-      const base = baseUrlEl.value.replace(/\/+$/,"");
+      const base = baseUrlEl.value.replace(/\/+$/," ");
+      const sensor_id = sensorIdCal();
       try {
-        const r = await fetch(base + "/calibrate?amp=0", { method: "GET", mode: "cors" });
+        const r = await fetch(base + "/calibrate?amp=0&sensor_id=" + encodeURIComponent(sensor_id), { method: "GET", mode: "cors" });
         const j = await r.json();
         if (!j.ok) throw new Error(j.err || "operazione fallita");
         await load();
@@ -406,7 +448,8 @@
     });
 
     document.getElementById("btnAddPoint").addEventListener("click", async () => {
-      const base = baseUrlEl.value.replace(/\/+$/,"");
+      const base = baseUrlEl.value.replace(/\/+$/," ");
+      const sensor_id = sensorIdCal();
       const A   = parseFloat(document.getElementById("ampInput").value);
       const n   = parseInt(document.getElementById("ampN").value || "1600", 10);
       const sr  = parseInt(document.getElementById("ampSR").value || "4000", 10);
@@ -414,7 +457,7 @@
       if (!isFinite(A) || A <= 0) { alert("Inserisci un valore di Ampere RMS > 0"); return; }
       addMeta.textContent = "Misuro e salvo il punto...";
       try {
-        const url = `${base}/calibrate?amp=${encodeURIComponent(A)}&n=${n}&sr=${sr}`;
+        const url = `${base}/calibrate?amp=${encodeURIComponent(A)}&n=${n}&sr=${sr}&sensor_id=${encodeURIComponent(sensor_id)}`;
         const r = await fetch(url, { method: "GET", mode: "cors", cache: "no-store" });
         const j = await r.json();
         if (!j.ok) {

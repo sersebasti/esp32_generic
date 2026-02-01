@@ -5,7 +5,12 @@ try:
     from core.busy_lock import is_busy, busy_region
 except Exception:
     from busy_lock import is_busy, busy_region
-import scope.adc_scope as adc_scope
+
+# Refactoring: supporto multi-sensore
+from .sensor_manager import CurrentSensorManager
+
+# Inizializza il manager dei sensori (singleton)
+_SENSOR_MANAGER = CurrentSensorManager()
 
 _CAL_PATH = "scope/calibrate.json"
 
@@ -43,16 +48,13 @@ def _fit_k(points):
     return (sxy / sxx) if sxx > 0 else 0.0
 
 def handle(cl, method, path, req=None, _read_post_json=None):
-    # /adc/scope_counts
+    # /adc/scope_counts?sensor_id=c1
     if method == "GET" and path.startswith("/adc/scope_counts"):
-        if not adc_scope:
-            cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"adc_scope_module_missing"}')
-            return True
         if is_busy():
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
             return True
         with busy_region():
-            n = 1024; sr = 4000
+            n = 1024; sr = 4000; sensor_id = "c1"
             if "?" in path:
                 q = path.split("?", 1)[1]
                 for p in q.split("&"):
@@ -60,13 +62,27 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                         k, v = p.split("=", 1)
                         if k == "n": n = int(v)
                         elif k in ("sr","sample_rate_hz"): sr = int(v)
-            payload = adc_scope.json_dump_counts(n=n, sample_rate_hz=sr)
+                        elif k == "sensor_id": sensor_id = v
+            sensor = _SENSOR_MANAGER.get_sensor(sensor_id)
+            if not sensor:
+                cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"sensor_not_found"}')
+                return True
+            arr, sr = sensor.sample_counts(n, sr)
+            mean, rms = sensor.stats_counts(arr)
+            payload = ujson.dumps({
+                "ok": True,
+                "n": len(arr),
+                "sample_rate_hz": sr,
+                "counts": arr,
+                "counts_mean": round(mean, 2),
+                "counts_rms": round(rms, 2)
+            })
             cl.send(_HTTP_200_JSON + payload.encode())
         return True
 
     # --- Endpoint per confronto baseline ---
     if method == "GET" and path.startswith("/compare_baseline"):
-        n = 1600; sr = 4000
+        n = 1600; sr = 4000; sensor_id = "c1"
         if "?" in path:
             q = path.split("?", 1)[1]
             for p in q.split("&"):
@@ -74,18 +90,21 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                     k, v = p.split("=", 1)
                     if k == "n": n = int(v)
                     elif k in ("sr","sample_rate_hz"): sr = int(v)
-        cal = _cal_load()
-        baseline = cal.get("baseline_mean", None)
-        arr, sr = adc_scope.sample_counts(n, sr)
-        mean_now = sum(arr) / len(arr)
+                    elif k == "sensor_id": sensor_id = v
+        sensor = _SENSOR_MANAGER.get_sensor(sensor_id)
+        if not sensor:
+            cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"sensor_not_found"}')
+            return True
+        baseline, mean_now, diff = sensor.compare_baseline(n, sr)
         resp = {"ok": True, "baseline_mean": baseline, "mean_now": round(mean_now, 2)}
         if baseline is not None:
-            resp["diff"] = round(mean_now - baseline, 2)
+            resp["diff"] = round(diff, 2)
         cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
         return True
-    # ---- Calibration endpoints ----
+
+    # ---- Calibration endpoints (multi-sensore) ----
     if method == "GET" and path.startswith("/calibrate"):
-        n = 1600; sr = 4000; amp = None
+        n = 1600; sr = 4000; amp = None; sensor_id = "c1"
         if "?" in path:
             q = path.split("?", 1)[1]
             for p in q.split("&"):
@@ -96,9 +115,15 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                     elif k == "amp":
                         try: amp = float(v)
                         except: amp = None
+                    elif k == "sensor_id": sensor_id = v
 
-        cal = _cal_load()
+        sensor = _SENSOR_MANAGER.get_sensor(sensor_id)
+        if not sensor:
+            cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"sensor_not_found"}')
+            return True
+
         if amp is None:
+            cal = sensor.cal
             if "points" not in cal: cal["points"] = []
             resp = {"ok": True, "cal": cal,
                     "hint": "usa /calibrate?amp=0 per baseline, /calibrate?amp=<A> per aggiungere un punto"}
@@ -110,12 +135,8 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                 cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
                 return True
             with busy_region():
-                arr, sr = adc_scope.sample_counts(n, sr)
-                baseline = sum(arr) / len(arr)
-                cal["baseline_mean"] = round(baseline, 2)
-                cal["n0"] = len(arr); cal["sr0"] = sr
-                if "points" not in cal: cal["points"] = []
-                _cal_save(cal)
+                baseline = sensor.calibrate_baseline(n, sr)
+                cal = sensor.cal
                 resp = {"ok": True, "saved": {"baseline_mean": cal["baseline_mean"], "n0": cal["n0"], "sr0": cal["sr0"]}}
                 cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
             return True
@@ -124,22 +145,13 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
             return True
         with busy_region():
-            arr, sr = adc_scope.sample_counts(n, sr)
-            baseline = float(cal.get("baseline_mean", sum(arr)/len(arr)))
-            rms = _rms_with_baseline(arr, baseline)
-            pt = {"amps": float(amp), "rms_counts": round(rms, 2)}
-            pts = cal.get("points", [])
-            pts = pts if isinstance(pts, list) else []
-            pts.append(pt)
-            cal["points"] = pts
-            k = _fit_k(pts)
-            cal["k_A_per_count"] = round(k, 9)
-            _cal_save(cal)
-
+            pt, k = sensor.add_calibration_point(amp, n, sr)
+            arr, sr = sensor.sample_counts(n, sr)
+            baseline = float(sensor.cal.get("baseline_mean", sum(arr)/len(arr)))
             mn = min(arr); mx = max(arr)
             clipping = (mn < 50) or (mx > 4040)
-            resp = {"ok": True, "added": pt, "k_A_per_count": cal["k_A_per_count"],
-                    "num_points": len(pts), "baseline_mean": round(baseline, 2),
+            resp = {"ok": True, "added": pt, "k_A_per_count": k,
+                    "num_points": len(sensor.cal.get("points", [])), "baseline_mean": round(baseline, 2),
                     "min": int(mn), "max": int(mx), "clipping": bool(clipping)}
             cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
         return True
@@ -149,7 +161,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
             return True
         with busy_region():
-            n = 1600; sr = 4000
+            n = 1600; sr = 4000; sensor_id = "c1"
             if "?" in path:
                 q = path.split("?", 1)[1]
                 for p in q.split("&"):
@@ -157,22 +169,18 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                         k, v = p.split("=", 1)
                         if k == "n": n = int(v)
                         elif k in ("sr","sample_rate_hz"): sr = int(v)
+                        elif k == "sensor_id": sensor_id = v
 
-            cal = _cal_load()
-            k = float(cal.get("k_A_per_count", 0.0))
-            if k <= 0:
-                cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"no_model"}')
-            else:
-                arr, sr = adc_scope.sample_counts(n, sr)
-                baseline = float(cal.get("baseline_mean", sum(arr)/len(arr)))
-                rms = _rms_with_baseline(arr, baseline)
-                amps = k * rms
-                mn = min(arr); mx = max(arr)
-                clipping = (mn < 50) or (mx > 4040)
-                out = {"ok": True, "amps_rms": round(amps, 3), "rms_counts": round(rms, 2),
-                       "baseline_mean": round(baseline, 2),
-                       "min": int(mn), "max": int(mx), "clipping": bool(clipping)}
-                cl.send(_HTTP_200_JSON + ujson.dumps(out).encode())
+            sensor = _SENSOR_MANAGER.get_sensor(sensor_id)
+            if not sensor:
+                cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"sensor_not_found"}')
+                return True
+            amps, rms, baseline, mn, mx = sensor.measure_amps(n, sr)
+            clipping = (mn < 50) or (mx > 4040)
+            out = {"ok": True, "amps_rms": round(amps, 3), "rms_counts": round(rms, 2),
+                   "baseline_mean": round(baseline, 2),
+                   "min": int(mn), "max": int(mx), "clipping": bool(clipping)}
+            cl.send(_HTTP_200_JSON + ujson.dumps(out).encode())
         return True
 
     if method == "POST" and path.startswith("/calibrate/delete"):

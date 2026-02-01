@@ -182,11 +182,11 @@ curl -X POST http://<DEVICE_IP>/wifi/delete \
   - POST /reboot: reboot device
 
 - Scope/ADC (if module present)
-  - GET /adc/scope_counts[?n=1600&sr=4000]
-  - GET /calibrate: show calibration state
-  - GET /calibrate?amp=<A>: add baseline (A=0) or a calibration point
-  - GET /amps[?n=1600&sr=4000]: measure RMS current using the model
-  - GET /compare_baseline[?n=1600&sr=4000]: confronta la baseline salvata con la media attuale dei counts
+  - GET /adc/scope_counts[?sensor_id=c1&n=1600&sr=4000]: acquisizione raw dal sensore specificato
+  - GET /calibrate[?sensor_id=c1]: mostra stato calibrazione per il sensore
+  - GET /calibrate?amp=<A>&sensor_id=c1: aggiungi baseline (A=0) o punto di calibrazione per il sensore
+  - GET /amps[?sensor_id=c1&n=1600&sr=4000]: misura la corrente RMS dal sensore
+  - GET /compare_baseline[?sensor_id=c1&n=1600&sr=4000]: confronta la baseline salvata con la media attuale dei counts per il sensore
   - POST /calibrate/delete: remove a point `{index}` or `{amps,rms_counts}`
   - POST /calibrate/reset: reset calibration
 
