@@ -228,6 +228,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                     cal["k_A_per_count"] = round(k, 9)
                 else:
                     cal["k_A_per_count"] = 0.0
+                sensor.cal = cal  # Aggiorna la variabile in memoria
                 sensor._save_calibration()
                 resp = {"ok": True, "removed": removed,
                         "num_points": len(pts),
