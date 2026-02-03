@@ -160,6 +160,7 @@
     sensorSelect.addEventListener('change', () => {
       localStorage.setItem('adc.sensor_id', sensorSelect.value);
       console.log('[sensorSelect] Sensore selezionato:', sensorSelect.value);
+      location.reload(); // Ricarica la pagina per aggiornare la UI
     });
 
     function getSensorId() {
