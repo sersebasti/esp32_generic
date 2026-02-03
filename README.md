@@ -1,3 +1,44 @@
+## Endpoint ESP32: Misura e Calibrazione
+
+Tutti gli endpoint accettano il parametro sensor_id (es. c1, c2) e supportano fast=1.
+
+### Misura
+- **GET /adc/scope_counts**
+  - Parametri: sensor_id, n, sr, fast
+  - Esempio: `/adc/scope_counts?sensor_id=c1&n=1024&sr=4000&fast=1`
+
+- **GET /amps**
+  - Parametri: sensor_id, n, sr, fast
+  - Esempio: `/amps?sensor_id=c1&n=1024&sr=4000&fast=1`
+
+### Calibrazione
+- **GET /calibrate**
+  - Parametri: sensor_id, fast
+  - Esempio: `/calibrate?sensor_id=c1&fast=1`
+
+- **GET /calibrate?amp=0** (misura baseline)
+  - Parametri: sensor_id, fast
+  - Esempio: `/calibrate?amp=0&sensor_id=c1&fast=1`
+
+- **GET /calibrate?amp=...** (aggiungi punto)
+  - Parametri: sensor_id, amp, n, sr, fast
+  - Esempio: `/calibrate?amp=5.0&sensor_id=c1&n=1600&sr=4000&fast=1`
+
+- **POST /calibrate/delete**
+  - Body JSON: `{ "sensor_id": "c1", "index": 0 }`
+  - Elimina il punto di calibrazione all’indice indicato
+
+- **POST /calibrate/reset**
+  - Parametri: sensor_id, fast
+  - Esempio: `/calibrate/reset?sensor_id=c1&fast=1`
+  - Cancella tutti i punti e la baseline del sensore
+
+### Baseline
+- **GET /compare_baseline**
+  - Parametri: sensor_id, n, sr, fast
+  - Esempio: `/compare_baseline?sensor_id=c1&n=1600&sr=4000&fast=1`
+
+---
 ## Modalità campionamento veloce (fast=1)
 
 Tutti gli endpoint di misura e calibrazione supportano il parametro opzionale `fast=1`:
