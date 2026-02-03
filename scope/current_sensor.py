@@ -6,6 +6,7 @@ from machine import ADC, Pin
 
 class CurrentSensor:
     def __init__(self, adc_pin, cal_dir="scope"):
+        print(f"[DEBUG] CurrentSensor __init__ adc_pin={adc_pin}")
         self.adc_pin = adc_pin
         self.cal_dir = cal_dir
         self.cal_file = f"{cal_dir}/calibrate_{adc_pin}.json"
@@ -44,15 +45,23 @@ class CurrentSensor:
             s += self.adc.read()
         return s >> 2
 
-    def sample_counts(self, n=512, sample_rate_hz=4000):
+    def sample_counts(self, n=512, sample_rate_hz=4000, fast=False):
+        import gc
+        print(f"[DEBUG] sample_counts n={n}, sample_rate_hz={sample_rate_hz}, fast={fast}")
+        print(f"[DEBUG] Memoria libera prima: {gc.mem_free()} allocata: {gc.mem_alloc()}")
         self._init_adc()
         n = max(32, min(int(n), 4096))
         sr = max(200, min(int(sample_rate_hz), 20000))
         dt_us = int(1_000_000 / sr)
         arr = []
-        for _ in range(n):
+        for i in range(n):
             arr.append(self._read_count())
-            time.sleep_us(dt_us)
+            if i < 5:
+                print(f"[DEBUG] sample_counts[{i}] = {arr[-1]}")
+            if not fast:
+                import time
+                time.sleep_us(dt_us)
+        print(f"[DEBUG] Memoria libera dopo: {gc.mem_free()} allocata: {gc.mem_alloc()}")
         return arr, sr
 
     def stats_counts(self, arr):
@@ -73,6 +82,7 @@ class CurrentSensor:
         except Exception:
             return {}
 
+
     def _save_calibration(self):
         try:
             os.mkdir(self.cal_dir)
@@ -81,8 +91,17 @@ class CurrentSensor:
         with open(self.cal_file, "w") as f:
             ujson.dump(self.cal, f)
 
-    def calibrate_baseline(self, n=1600, sr=4000):
-        arr, sr = self.sample_counts(n, sr)
+    def reset_calibration(self):
+        # Cancella il file e azzera self.cal
+        try:
+            if os.path.exists(self.cal_file):
+                os.remove(self.cal_file)
+        except Exception:
+            pass
+        self.cal = {}
+
+    def calibrate_baseline(self, n=1600, sr=4000, fast=False):
+        arr, sr = self.sample_counts(n, sr, fast=fast)
         baseline = sum(arr) / len(arr)
         self.cal["baseline_mean"] = round(baseline, 2)
         self.cal["n0"] = len(arr)
@@ -92,8 +111,8 @@ class CurrentSensor:
         self._save_calibration()
         return self.cal["baseline_mean"]
 
-    def add_calibration_point(self, amps, n=1600, sr=4000):
-        arr, sr = self.sample_counts(n, sr)
+    def add_calibration_point(self, amps, n=1600, sr=4000, fast=False):
+        arr, sr = self.sample_counts(n, sr, fast=fast)
         baseline = float(self.cal.get("baseline_mean", sum(arr)/len(arr)))
         rms = self._rms_with_baseline(arr, baseline)
         pt = {"amps": float(amps), "rms_counts": round(rms, 2)}
@@ -123,16 +142,16 @@ class CurrentSensor:
             sxx += r * r
         return (sxy / sxx) if sxx > 0 else 0.0
 
-    def measure_amps(self, n=1600, sr=4000):
-        arr, sr = self.sample_counts(n, sr)
+    def measure_amps(self, n=1600, sr=4000, fast=False):
+        arr, sr = self.sample_counts(n, sr, fast=fast)
         baseline = float(self.cal.get("baseline_mean", sum(arr)/len(arr)))
         rms = self._rms_with_baseline(arr, baseline)
         k = float(self.cal.get("k_A_per_count", 0.0))
         amps = k * rms
         return amps, rms, baseline, min(arr), max(arr)
 
-    def compare_baseline(self, n=1600, sr=4000):
-        arr, sr = self.sample_counts(n, sr)
+    def compare_baseline(self, n=1600, sr=4000, fast=False):
+        arr, sr = self.sample_counts(n, sr, fast=fast)
         mean_now = sum(arr) / len(arr)
         baseline = self.cal.get("baseline_mean", None)
         diff = mean_now - baseline if baseline is not None else None

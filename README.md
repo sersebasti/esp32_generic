@@ -1,3 +1,29 @@
+## Modalità campionamento veloce (fast=1)
+
+Tutti gli endpoint di misura e calibrazione supportano il parametro opzionale `fast=1`:
+
+- Se aggiungi `&fast=1` alla richiesta, il campionamento avviene alla massima velocità possibile (senza ritardo tra i campioni).
+- Utile per test di velocità o quando non serve un sample rate preciso.
+
+### Esempi di richieste (sostituisci `<IP_ESP32>` con l'indirizzo del tuo dispositivo):
+
+```
+http://<IP_ESP32>/adc/scope_counts?sensor_id=c1&n=1024&sr=4000
+http://<IP_ESP32>/adc/scope_counts?sensor_id=c1&n=1024&sr=4000&fast=1
+http://<IP_ESP32>/amps?sensor_id=c1&n=1024&sr=4000
+http://<IP_ESP32>/amps?sensor_id=c1&n=1024&sr=4000&fast=1
+http://<IP_ESP32>/calibrate?sensor_id=c1
+http://<IP_ESP32>/calibrate?amp=0&sensor_id=c1
+http://<IP_ESP32>/calibrate?amp=0&sensor_id=c1&fast=1
+http://<IP_ESP32>/calibrate?amp=5.0&sensor_id=c1
+http://<IP_ESP32>/calibrate?amp=5.0&sensor_id=c1&fast=1
+http://<IP_ESP32>/compare_baseline?sensor_id=c1
+http://<IP_ESP32>/compare_baseline?sensor_id=c1&fast=1
+```
+
+Se ometti `fast=1`, il sample rate sarà regolato dal parametro `sr` (più lento ma temporizzato).
+
+**Nota:** con `fast=1` il tempo di risposta è molto più breve, ma i campioni non sono equispaziati nel tempo.
 
 ## Firmware Installation (Windows)
 
@@ -32,7 +58,47 @@ Sostituisci COMx con la porta trovata (es: COM3).
 ```powershell
 ampy --port COMx put main.py
 mpremote connect COMx cp main.py :main.py
+ 
+# Per cancellare TUTTI i file dal dispositivo (attenzione, elimina tutto!):
+mpremote connect COMx rm -rv :
 ```
+
+---
+
+## Aggiornamento completo del software (wipe & reinstall)
+
+1. **Cancella tutti i file dal dispositivo** (ATTENZIONE: elimina tutto!)
+  ```powershell
+  mpremote connect COMx rm -rv :
+  ```
+2. **Carica i file principali nella root**:
+  ```powershell
+  mpremote connect COMx cp boot.py :boot.py
+  mpremote connect COMx cp main.py :main.py
+  ```
+3. **Crea le cartelle necessarie** (core, fs, scope):
+  ```powershell
+  mpremote connect COMx mkdir :core
+  mpremote connect COMx mkdir :fs
+  mpremote connect COMx mkdir :scope
+  ```
+4. **Copia tutti i file nelle rispettive cartelle**:
+  ```powershell
+
+ mpremote connect COMx cp -r core :
+  mpremote connect COMx cp -r fs :
+  mpremote connect COMx cp -r scope :
+  ```
+  Se ricevi errori di permesso, assicurati che le cartelle siano state create prima e ripeti il comando.
+
+5. **Riavvia il dispositivo** (opzionale ma consigliato):
+  ```powershell
+  mpremote connect COMx exec "import machine; machine.reset()"
+  ```
+
+**Nota:**
+- Dopo il wipe, è fondamentale caricare subito almeno boot.py e main.py nella root, altrimenti il dispositivo potrebbe non avviarsi correttamente.
+- Se usi moduli opzionali (scope, fs), ricordati di copiare anche queste cartelle e i relativi file.
 
 6) Puoi anche usare programmi come PuTTY/Tera Term per la console seriale (baud 115200).
 

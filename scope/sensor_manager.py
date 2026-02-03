@@ -6,10 +6,13 @@ import ujson, os
 
 class CurrentSensorManager:
     def __init__(self, config_path="scope/sensors.json"):
+        print("[DEBUG] CurrentSensorManager __init__")
         self.config_path = config_path
         self.sensors = {}
         self.config = self._load_config()
+        print(f"[DEBUG] Loaded config: {self.config}")
         self._init_sensors()
+        print(f"[DEBUG] Sensors dict after init: {self.sensors}")
 
     def _load_config(self):
         try:

@@ -57,6 +57,7 @@
     </div>
 
     <canvas id="chart"></canvas>
+    <div id="errorMsg" style="color:#c00; font-weight:bold; margin-top:8px;"></div>
   </section>
 
   <hr>
@@ -113,6 +114,16 @@
   <!-- Script Oscilloscopio -->
   <script>
   (function(){
+    // Funzione url() ora dentro l'IIFE
+    function url() {
+      console.log('[url] Generazione URL richiesta');
+      const ip = ipEl.value.trim();
+      const n  = parseInt(nEl.value, 10)  || 1024;
+      const sr = parseInt(srEl.value, 10) || 4000;
+      const sensor_id = getSensorId();
+      if (!ip) throw new Error('IP non valido');
+      return `http://${ip}/adc/scope_counts?sensor_id=${encodeURIComponent(sensor_id)}&n=${n}&sr=${sr}&fast=1`;
+    }
     const ipEl = document.getElementById('ip');
     const nEl  = document.getElementById('n');
     const srEl = document.getElementById('sr');
@@ -130,6 +141,7 @@
     const sensorSelect = document.getElementById('sensorSelect');
     let sensors = [];
     function loadSensors() {
+      console.log('[loadSensors] Caricamento lista sensori');
       // Static list, in futuro fetch dinamico
       sensors = [
         {id: 'c1', label: 'c1 (pin 34)'},
@@ -147,6 +159,7 @@
     }
     sensorSelect.addEventListener('change', () => {
       localStorage.setItem('adc.sensor_id', sensorSelect.value);
+      console.log('[sensorSelect] Sensore selezionato:', sensorSelect.value);
     });
 
     function getSensorId() {
@@ -154,6 +167,7 @@
     }
 
     function loadPrefs() {
+      console.log('[loadPrefs] Caricamento preferenze');
       ipEl.value = localStorage.getItem('adc.ip') || '192.168.1.10';
       nEl.value  = localStorage.getItem('adc.n')  || '1024';
       srEl.value = localStorage.getItem('adc.sr') || '4000';
@@ -162,6 +176,7 @@
       loadSensors();
     }
     function savePrefs() {
+      console.log('[savePrefs] Salvataggio preferenze');
       const ip = ipEl.value.trim();
       localStorage.setItem('adc.ip', ip);
       localStorage.setItem('adc.n',  nEl.value);
@@ -184,17 +199,35 @@
       }
     });
 
-    let timer = null;
+    let running = false;
+    let fetchInProgress = false;
+    const errorMsgEl = document.getElementById('errorMsg');
     function setStatus(msg) { statusEl.textContent = msg; }
     function setLast(ts)    { lastEl.textContent = ts ? ('Ultimo aggiornamento: ' + ts) : ''; }
 
-    function url() {
-      const ip = ipEl.value.trim();
-      const n  = parseInt(nEl.value, 10)  || 1024;
-      const sr = parseInt(srEl.value, 10) || 4000;
-      const sensor_id = getSensorId();
-      if (!ip) throw new Error('IP non valido');
-      return `http://${ip}/adc/scope_counts?sensor_id=${encodeURIComponent(sensor_id)}&n=${n}&sr=${sr}`;
+    function start() {
+      if (running) return;
+      console.log('[start] Avvio misurazione');
+      savePrefs();
+      running = true;
+      startBtn.disabled = true; stopBtn.disabled = false;
+      loopFetch();
+    }
+    function stop() {
+      running = false;
+      startBtn.disabled = false; stopBtn.disabled = true;
+      setStatus('In pausa.');
+      console.log('[stop] Misurazione fermata');
+    }
+
+    async function loopFetch() {
+      console.log('[loopFetch] Inizio ciclo richieste');
+      while (running) {
+        await fetchAndPlot();
+        // Puoi aggiungere un piccolo delay tra le richieste se vuoi:
+        await new Promise(res => setTimeout(res, 200));
+      }
+      console.log('[loopFetch] Fine ciclo richieste');
     }
     function ampsUrl() {
       const ip = ipEl.value.trim();
@@ -202,25 +235,36 @@
       const sr = parseInt(srEl.value, 10) || 4000;
       const sensor_id = getSensorId();
       if (!ip) throw new Error('IP non valido');
-      return `http://${ip}/amps?sensor_id=${encodeURIComponent(sensor_id)}&n=${n}&sr=${sr}`;
+      return `http://${ip}/amps?sensor_id=${encodeURIComponent(sensor_id)}&n=${n}&sr=${sr}&fast=1`;
     }
 
+
     async function fetchAndPlot() {
+      if (fetchInProgress) return;
+      fetchInProgress = true;
+      errorMsgEl.textContent = '';
+      console.log('[fetchAndPlot] Invio richieste fetch');
       try {
         const [respCounts, respAmps] = await Promise.all([
           fetch(url(),     { cache: 'no-store' }),
           fetch(ampsUrl(), { cache: 'no-store' }).catch(() => null)
         ]);
+        console.log('[fetchAndPlot] Risposta ricevuta', {respCounts, respAmps});
         if (!respCounts || !respCounts.ok) throw new Error('HTTP ' + (respCounts && respCounts.status));
         const j = await respCounts.json();
         if (!j || !Array.isArray(j.counts)) throw new Error('Risposta counts non valida');
 
         chart.data.labels = j.counts.map((_, i) => i);
         chart.data.datasets[0].data = j.counts;
+        console.log('[fetchAndPlot] Aggiorno grafico...');
+        const t0 = performance.now();
         chart.update('none');
+        const t1 = performance.now();
+        console.log(`[fetchAndPlot] Grafico aggiornato in ${(t1-t0).toFixed(2)} ms`, j.counts);
 
         if (respAmps && respAmps.ok) {
           const a = await respAmps.json();
+          console.log('[fetchAndPlot] Dati ampere ricevuti', a);
           if (a.ok) {
             ampState.textContent = 'calibrato';
             ampValEl.textContent = (typeof a.amps_rms === 'number') ? a.amps_rms.toFixed(3) + ' A' : '—';
@@ -241,19 +285,25 @@
         setLast(new Date().toLocaleTimeString());
       } catch (err) {
         setStatus('Errore: ' + err.message);
+        errorMsgEl.textContent = 'Errore: ' + err.message;
+        console.log('[fetchAndPlot] Errore:', err);
+      } finally {
+        fetchInProgress = false;
+        console.log('[fetchAndPlot] fetchInProgress = false');
       }
     }
 
+    // --- LOGICA CORRETTA: richiesta sequenziale ---
     function start() {
-      if (timer) return;
+      if (running) return;
       savePrefs();
-      fetchAndPlot();
-      timer = setInterval(fetchAndPlot, 2000);
+      running = true;
       startBtn.disabled = true; stopBtn.disabled = false;
+      loopFetch();
     }
     function stop() {
-      if (timer) clearInterval(timer);
-      timer = null; startBtn.disabled = false; stopBtn.disabled = true;
+      running = false;
+      startBtn.disabled = false; stopBtn.disabled = true;
       setStatus('In pausa.');
     }
 
@@ -341,11 +391,12 @@
           btn.onclick = async () => {
             if (!confirm(`Confermi rimozione del punto #${p.i}?`)) return;
             try {
+              const sensor_id = sensorIdCal();
               const r = await fetch(base + "/calibrate/delete", {
                 method: "POST",
                 mode: "cors",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ index: p.i })
+                body: JSON.stringify({ index: p.i, sensor_id })
               });
               const j = await r.json();
               if (!j.ok) throw new Error(j.err || "operazione fallita");
@@ -365,7 +416,7 @@
       const base = baseUrlEl.value.replace(/\/+$/,"");
       localStorage.setItem('cal.baseUrl', base);
       const sensor_id = sensorIdCal();
-      const url = base + "/calibrate?sensor_id=" + encodeURIComponent(sensor_id);
+      const url = base + "/calibrate?sensor_id=" + encodeURIComponent(sensor_id) + "&fast=1";
       metaEl.textContent = "Carico: " + url + " ...";
       try {
         const r = await fetch(url, { cache: "no-store" });
@@ -428,7 +479,7 @@
       const base = baseUrlEl.value.replace(/\/+$/," ");
       const sensor_id = sensorIdCal();
       try {
-        const r = await fetch(base + "/calibrate?amp=0&sensor_id=" + encodeURIComponent(sensor_id), { method: "GET", mode: "cors" });
+        const r = await fetch(base + "/calibrate?amp=0&sensor_id=" + encodeURIComponent(sensor_id) + "&fast=1", { method: "GET", mode: "cors" });
         const j = await r.json();
         if (!j.ok) throw new Error(j.err || "operazione fallita");
         await load();
@@ -440,7 +491,8 @@
       const base = baseUrlEl.value.replace(/\/+$/,"");
       if (!confirm("Questa operazione resetta TUTTA la calibrazione (baseline + punti). Procedere?")) return;
       try {
-        const r = await fetch(base + "/calibrate/reset", { method: "POST" });
+        const sensor_id = sensorIdCal();
+        const r = await fetch(base + "/calibrate/reset?sensor_id=" + encodeURIComponent(sensor_id) + "&fast=1", { method: "POST" });
         const j = await r.json();
         if (!j.ok) throw new Error(j.err || "operazione fallita");
         await load();
@@ -457,7 +509,7 @@
       if (!isFinite(A) || A <= 0) { alert("Inserisci un valore di Ampere RMS > 0"); return; }
       addMeta.textContent = "Misuro e salvo il punto...";
       try {
-        const url = `${base}/calibrate?amp=${encodeURIComponent(A)}&n=${n}&sr=${sr}&sensor_id=${encodeURIComponent(sensor_id)}`;
+        const url = `${base}/calibrate?amp=${encodeURIComponent(A)}&n=${n}&sr=${sr}&sensor_id=${encodeURIComponent(sensor_id)}&fast=1`;
         const r = await fetch(url, { method: "GET", mode: "cors", cache: "no-store" });
         const j = await r.json();
         if (!j.ok) {
