@@ -2,7 +2,14 @@
 import gc, network, ubinascii, time, ujson
 from core.http_consts import _HTTP_200_JSON
 from core.config import WIFI_JSON
-from core.version import version
+import sys
+try:
+    sys.modules.pop('core.version', None)
+except Exception:
+    pass
+import core.version
+version = core.version.version
+print("[DEBUG] Importato version dal file core/version.py:", version)
 
 def _get_ip_sta():
     try:
@@ -66,6 +73,7 @@ def handle(cl, method, path):
 
     # /status
     if method == "GET" and path.startswith("/status"):
+        print("[DEBUG] handle /status: version attuale:", version)
         meta = _read_meta()
         payload = {
             "version": version,
