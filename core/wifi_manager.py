@@ -633,6 +633,15 @@ def run(self):
     HEALTH_OK_SLEEP_S  = 5
     self.log.info("WiFiManager avviato: modalità 'never auto-AP'")
     while True:
+        import gc, sys, machine
+        mem_free = gc.mem_free()
+        print(f"[MONITOR] Memoria libera: {mem_free} bytes")
+        print(f"[MONITOR] Moduli caricati: {list(sys.modules.keys())}")
+        if hasattr(sys, 'print_exception'):
+            print(f"[MONITOR] Eccezioni: {sys.print_exception}")
+        if mem_free < 10000:
+            print("[WARNING] Memoria critica! Riavvio per evitare crash.")
+            machine.reset()
         if (not self._setup_mode) and self.button_pressed(clear=True, long_ms=800):
             self.log.info("🔘 Pulsante (long-press) → setup mode")
             break
