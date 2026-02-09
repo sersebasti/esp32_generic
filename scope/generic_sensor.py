@@ -4,6 +4,24 @@ import math
 
 class GenericSensor:
 
+    def _save_calibration(self):
+        try:
+            import os
+            os.mkdir(self.cal_dir)
+        except Exception:
+            pass
+        with open(self.cal_file, "w") as f:
+            import ujson
+            ujson.dump(self.cal, f)
+
+    def _load_calibration(self):
+        try:
+            with open(self.cal_file) as f:
+                import ujson
+                return ujson.load(f)
+        except Exception:
+            return {}
+
     def _rms_with_baseline(self, arr, baseline):
         s = 0.0
         for v in arr:

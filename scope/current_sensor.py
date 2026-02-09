@@ -48,21 +48,8 @@ class CurrentSensor(GenericSensor):
 
 
 
-    def _load_calibration(self):
-        try:
-            with open(self.cal_file) as f:
-                return ujson.load(f)
-        except Exception:
-            return {}
 
 
-    def _save_calibration(self):
-        try:
-            os.mkdir(self.cal_dir)
-        except Exception:
-            pass
-        with open(self.cal_file, "w") as f:
-            ujson.dump(self.cal, f)
 
     def reset_calibration(self):
         # Cancella il file e azzera self.cal
