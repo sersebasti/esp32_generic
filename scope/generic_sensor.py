@@ -89,13 +89,21 @@ class GenericSensor:
         import gc
         print(f"[DEBUG] sample_counts n={n}, sample_rate_hz={sample_rate_hz}, fast={fast}")
         print(f"[DEBUG] Memoria libera prima: {gc.mem_free()} allocata: {gc.mem_alloc()}")
-        self._init_adc()
+        try:
+            self._init_adc()
+        except Exception as e:
+            print(f"[ERROR] Errore in _init_adc: {e}")
+            return [0]*n, sample_rate_hz
         n = max(32, min(int(n), 4096))
         sr = max(200, min(int(sample_rate_hz), 20000))
         dt_us = int(1_000_000 / sr)
         arr = []
         for i in range(n):
-            arr.append(self._read_count())
+            try:
+                arr.append(self._read_count())
+            except Exception as e:
+                print(f"[ERROR] Errore in _read_count (i={i}): {e}")
+                arr.append(0)
             if i < 5:
                 print(f"[DEBUG] sample_counts[{i}] = {arr[-1]}")
             if not fast:
@@ -118,8 +126,12 @@ class GenericSensor:
     def __init__(self, pin, samples=100):
         self.pin = pin
         self.samples = samples
-        self.adc = machine.ADC(machine.Pin(self.pin))
-        self.adc.atten(machine.ADC.ATTN_11DB)
+        try:
+            self.adc = machine.ADC(machine.Pin(self.pin))
+            self.adc.atten(machine.ADC.ATTN_11DB)
+        except Exception as e:
+            print(f"[ERROR] Errore in GenericSensor.__init__: {e}")
+            self.adc = None
 
     def read_adc(self):
         return self.adc.read()

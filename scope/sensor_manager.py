@@ -2,6 +2,7 @@
 # Gestione di più sensori di corrente tramite configurazione
 
 from .current_sensor import CurrentSensor
+from .voltage_sensor import VoltageSensor
 import ujson, os
 
 class CurrentSensorManager:
@@ -26,8 +27,12 @@ class CurrentSensorManager:
         for s in self.config.get("sensors", []):
             sensor_id = s.get("id")
             adc_pin = s.get("adc_pin")
+            sensor_type = s.get("type", "current")
             if sensor_id and adc_pin is not None:
-                self.sensors[sensor_id] = CurrentSensor(adc_pin)
+                if sensor_type == "voltage":
+                    self.sensors[sensor_id] = VoltageSensor(adc_pin, s)
+                else:
+                    self.sensors[sensor_id] = CurrentSensor(adc_pin)
 
     def get_sensor(self, sensor_id):
         return self.sensors.get(sensor_id)
@@ -35,11 +40,14 @@ class CurrentSensorManager:
     def list_sensors(self):
         return list(self.sensors.keys())
 
-    def add_sensor(self, sensor_id, adc_pin):
+    def add_sensor(self, sensor_id, adc_pin, sensor_type="current"):
         if sensor_id in self.sensors:
             return False
-        self.sensors[sensor_id] = CurrentSensor(adc_pin)
-        self.config["sensors"].append({"id": sensor_id, "adc_pin": adc_pin})
+        if sensor_type == "voltage":
+            self.sensors[sensor_id] = VoltageSensor(adc_pin, {"id": sensor_id, "adc_pin": adc_pin, "type": sensor_type})
+        else:
+            self.sensors[sensor_id] = CurrentSensor(adc_pin)
+        self.config["sensors"].append({"id": sensor_id, "adc_pin": adc_pin, "type": sensor_type})
         self._save_config()
         return True
 
