@@ -4,6 +4,25 @@ import math
 
 class GenericSensor:
 
+    def sample_counts(self, n=512, sample_rate_hz=4000, fast=False):
+        import gc
+        print(f"[DEBUG] sample_counts n={n}, sample_rate_hz={sample_rate_hz}, fast={fast}")
+        print(f"[DEBUG] Memoria libera prima: {gc.mem_free()} allocata: {gc.mem_alloc()}")
+        self._init_adc()
+        n = max(32, min(int(n), 4096))
+        sr = max(200, min(int(sample_rate_hz), 20000))
+        dt_us = int(1_000_000 / sr)
+        arr = []
+        for i in range(n):
+            arr.append(self._read_count())
+            if i < 5:
+                print(f"[DEBUG] sample_counts[{i}] = {arr[-1]}")
+            if not fast:
+                import time
+                time.sleep_us(dt_us)
+        print(f"[DEBUG] Memoria libera dopo: {gc.mem_free()} allocata: {gc.mem_alloc()}")
+        return arr, sr
+
     @staticmethod
     def fit_k(points, value_key="amps", rms_key="rms_counts"):
             sxy = 0.0
