@@ -21,12 +21,15 @@
 </head>
 <body>
 
+
   <h1>Misure ESP32</h1>
   <div class="row">
     <label for="sensorSelect"><strong>Sensore:</strong></label>
     <select id="sensorSelect"></select>
-    <span class="muted">Scegli il sensore di corrente da usare (es. c1, c2...)</span>
+    <span class="muted">Scegli il sensore da usare (es. c1, v1...)</span>
   </div>
+
+  <div id="mainContent" style="display:none">
 
   <!-- ===== Sezione 1: Oscilloscopio ===== -->
   <section id="osc">
@@ -111,6 +114,8 @@
     <div id="kinfo" class="mono" style="margin-top:8px;"></div>
   </section>
 
+  </div>
+
   <!-- Script Oscilloscopio -->
   <script>
   (function(){
@@ -137,44 +142,106 @@
     const ampMeta  = document.getElementById('ampMeta');
 
 
-    // --- Gestione sensori ---
+
+    // --- Gestione sensori dinamica ---
     const sensorSelect = document.getElementById('sensorSelect');
     let sensors = [];
-    function loadSensors() {
-      console.log('[loadSensors] Caricamento lista sensori');
-      // Static list, in futuro fetch dinamico
-      sensors = [
-        {id: 'c1', label: 'c1 (pin 34)'},
-        {id: 'c2', label: 'c2 (pin 35)'}
-      ];
+    let userHasSelectedSensor = false;
+    async function loadSensors() {
+      console.log('[loadSensors] Caricamento lista sensori dinamica');
+      // Prova a usare l'IP inserito, fallback localhost
+      let base = ipEl && ipEl.value ? ipEl.value.trim() : '192.168.1.10';
+      if (!base) base = '192.168.1.10';
+      let url = `http://${base}/sensors`;
+      try {
+        const resp = await fetch(url, {cache:'no-store'});
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        let data = await resp.json();
+        // Supporta sia risposta diretta che { sensors: [...] }
+        if (Array.isArray(data)) {
+          sensors = data;
+        } else if (Array.isArray(data.sensors)) {
+          sensors = data.sensors;
+        } else {
+          throw new Error('Formato risposta non valido');
+        }
+      } catch (e) {
+        // fallback statico se errore
+        console.warn('[loadSensors] Errore fetch /sensors:', e);
+        sensors = [
+          {id: 'c1', name: 'c1', type: 'current'},
+          {id: 'c2', name: 'c2', type: 'current'},
+          {id: 'v1', name: 'v1', type: 'voltage'}
+        ];
+      }
       sensorSelect.innerHTML = '';
+      // Mostra tutti i sensori (corrente e tensione)
+      // Aggiungi una option vuota iniziale obbligando la scelta
+      sensorSelect.innerHTML = '';
+      const emptyOpt = document.createElement('option');
+      emptyOpt.value = '';
+      emptyOpt.textContent = '-- seleziona sensore --';
+      sensorSelect.appendChild(emptyOpt);
       sensors.forEach(s => {
         const opt = document.createElement('option');
-        opt.value = s.id; opt.textContent = s.label;
+        opt.value = s.id;
+        // Mostra tipo se presente
+        opt.textContent = (s.name || s.label || s.id) + (s.type ? ` (${s.type})` : '');
         sensorSelect.appendChild(opt);
       });
-      // Default o ultimo usato
-      const last = localStorage.getItem('adc.sensor_id') || 'c1';
-      sensorSelect.value = last;
+      // Non selezionare nulla di default, obbliga scelta manuale
+      // All'avvio, nessun sensore selezionato manualmente
+      sensorSelect.value = '';
+      userHasSelectedSensor = false;
+      // Nascondi mainContent sempre all'avvio
+      const mainContent = document.getElementById('mainContent');
+      mainContent.style.display = 'none';
     }
     sensorSelect.addEventListener('change', () => {
-      localStorage.setItem('adc.sensor_id', sensorSelect.value);
-      console.log('[sensorSelect] Sensore selezionato:', sensorSelect.value);
-      location.reload(); // Ricarica la pagina per aggiornare la UI
+      userHasSelectedSensor = true;
+      const prev = localStorage.getItem('adc.sensor_id');
+      const curr = sensorSelect.value;
+      localStorage.setItem('adc.sensor_id', curr);
+      console.log('[sensorSelect] Sensore selezionato:', curr);
+      // Mostra mainContent solo se selezionato e valido
+      const mainContent = document.getElementById('mainContent');
+      if (curr && sensors.some(s => s.id === curr)) {
+        mainContent.style.display = '';
+        // Aggiorna solo la parte dati/UI, non il menu
+        reloadMainContent();
+      } else {
+        mainContent.style.display = 'none';
+      }
     });
 
-    function getSensorId() {
-      return sensorSelect.value || 'c1';
+    // Funzione per aggiornare solo la parte dati/UI (oscilloscopio e calibrazione)
+    function reloadMainContent() {
+      // Aggiorna preferenze e richiama funzioni di caricamento dati
+      // Oscilloscopio: aggiorna parametri e resetta grafico
+      if (typeof savePrefs === 'function') savePrefs();
+      if (typeof fetchAndPlot === 'function') fetchAndPlot();
+      // Calibrazione: richiama load() se definito
+      if (window.document.getElementById('btnReload')) {
+        window.document.getElementById('btnReload').click();
+      }
     }
 
-    function loadPrefs() {
+    function getSensorId() {
+      // Restituisce solo se selezionato e valido
+      if (sensorSelect.value && sensors.some(s => s.id === sensorSelect.value)) {
+        return sensorSelect.value;
+      }
+      return '';
+    }
+
+    async function loadPrefs() {
       console.log('[loadPrefs] Caricamento preferenze');
       ipEl.value = localStorage.getItem('adc.ip') || '192.168.1.10';
       nEl.value  = localStorage.getItem('adc.n')  || '1024';
       srEl.value = localStorage.getItem('adc.sr') || '4000';
       const calUrl = localStorage.getItem('cal.baseUrl');
       if (!calUrl) document.getElementById('baseUrl').value = 'http://' + ipEl.value.trim();
-      loadSensors();
+      await loadSensors();
     }
     function savePrefs() {
       console.log('[savePrefs] Salvataggio preferenze');

@@ -1,6 +1,20 @@
 ## Endpoint ESP32: Misura e Calibrazione
 
-Tutti gli endpoint accettano il parametro sensor_id (es. c1, c2) e supportano fast=1.
+Tutti gli endpoint di misura e calibrazione accettano il parametro obbligatorio `sensor_id` (es. c1, c2, v1) che identifica il sensore su cui operare. L'elenco dei sensori disponibili si ottiene tramite l'endpoint `/sensors`.
+
+Tutti gli endpoint supportano inoltre il parametro opzionale `fast=1`.
+
+### Elenco sensori disponibili
+- **GET /sensors**
+  - Restituisce la lista dei sensori configurati (da sensors.json) con i relativi parametri (id, tipo, nome, ecc.).
+  - Esempio di risposta:
+    ```json
+    [
+      {"id": "c1", "type": "current", "name": "Corrente 1"},
+      {"id": "v1", "type": "voltage", "name": "Tensione 1"}
+    ]
+    ```
+  - Utile per popolare dinamicamente la UI lato client.
 
 ### Misura
 - **GET /adc/scope_counts**
@@ -37,6 +51,19 @@ Tutti gli endpoint accettano il parametro sensor_id (es. c1, c2) e supportano fa
 - **GET /compare_baseline**
   - Parametri: sensor_id, n, sr, fast
   - Esempio: `/compare_baseline?sensor_id=c1&n=1600&sr=4000&fast=1`
+
+---
+## Elenco e descrizione endpoint sensori
+
+- **GET /sensors**: Elenco di tutti i sensori configurati (id, tipo, nome, ecc.)
+- **GET /adc/scope_counts**: Acquisizione raw dal sensore specificato (parametri: sensor_id, n, sr, fast)
+- **GET /amps**: Misura la corrente RMS dal sensore (parametri: sensor_id, n, sr, fast)
+- **GET /calibrate**: Stato calibrazione per il sensore (parametri: sensor_id, fast)
+- **GET /calibrate?amp=0**: Misura baseline (parametri: sensor_id, fast)
+- **GET /calibrate?amp=...**: Aggiungi punto di calibrazione (parametri: sensor_id, amp, n, sr, fast)
+- **POST /calibrate/delete**: Elimina punto di calibrazione (body: { sensor_id, index })
+- **POST /calibrate/reset**: Cancella tutti i punti e baseline (parametri: sensor_id, fast)
+- **GET /compare_baseline**: Confronta baseline salvata con media attuale (parametri: sensor_id, n, sr, fast)
 
 ---
 ## Modalità campionamento veloce (fast=1)
