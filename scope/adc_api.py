@@ -42,6 +42,16 @@ def _rms_with_baseline(arr, baseline):
     # _fit_k removed; use GenericSensor.fit_k instead
 
 def handle(cl, method, path, req=None, _read_post_json=None):
+        # Endpoint: /sensors - restituisce la lista dei sensori da sensors.json
+        if method == "GET" and path == "/sensors":
+            try:
+                with open("scope/sensors.json") as f:
+                    sensors_cfg = ujson.load(f)
+                sensors = sensors_cfg.get("sensors", [])
+                cl.send(_HTTP_200_JSON + ujson.dumps({"ok": True, "sensors": sensors}).encode())
+            except Exception as e:
+                cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "err": str(e)}).encode())
+            return True
     # /adc/scope_counts?sensor_id=c1
     if method == "GET" and path.startswith("/adc/scope_counts"):
         print("[DEBUG] handle /adc/scope_counts", path)

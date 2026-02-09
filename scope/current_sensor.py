@@ -47,16 +47,6 @@ class CurrentSensor(GenericSensor):
         return s >> 2
 
 
-
-
-
-
-
-
-
-
-    # _fit_k is now in GenericSensor as fit_k (static method)
-
     def measure_amps(self, n=1600, sr=4000, fast=False):
         arr, sr = self.sample_counts(n, sr, fast=fast)
         baseline = float(self.cal.get("baseline_mean", sum(arr)/len(arr)))
