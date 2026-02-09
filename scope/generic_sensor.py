@@ -4,6 +4,13 @@ import math
 
 class GenericSensor:
 
+    def _rms_with_baseline(self, arr, baseline):
+        s = 0.0
+        for v in arr:
+            d = v - baseline
+            s += d * d
+        return math.sqrt(s / len(arr))
+
     def stats_counts(self, arr):
         n = len(arr)
         s = sum(arr)

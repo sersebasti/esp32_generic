@@ -103,12 +103,6 @@ class CurrentSensor(GenericSensor):
         self._save_calibration()
         return pt, self.cal["k_A_per_count"]
 
-    def _rms_with_baseline(self, arr, baseline):
-        s = 0.0
-        for v in arr:
-            d = v - baseline
-            s += d * d
-        return math.sqrt(s / len(arr))
 
     # _fit_k is now in GenericSensor as fit_k (static method)
 
