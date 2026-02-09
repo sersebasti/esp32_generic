@@ -3,8 +3,9 @@
 
 import ujson, math, os
 from machine import ADC, Pin
+from scope.generic_sensor import GenericSensor
 
-class CurrentSensor:
+class CurrentSensor(GenericSensor):
     def __init__(self, adc_pin, cal_dir="scope"):
         print(f"[DEBUG] CurrentSensor __init__ adc_pin={adc_pin}")
         self.adc_pin = adc_pin
