@@ -42,6 +42,38 @@ def _rms_with_baseline(arr, baseline):
     # _fit_k removed; use GenericSensor.fit_k instead
 
 def handle(cl, method, path, req=None, _read_post_json=None):
+    
+    # --- Endpoint per misura tensione RMS (solo sensori voltage) ---
+    if method == "GET" and path.startswith("/volts"):
+            if is_busy():
+                cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
+                return True
+            with busy_region():
+                n = 1600; sr = 4000; sensor_id = "v1"; fast = False
+                if "?" in path:
+                    q = path.split("?", 1)[1]
+                    for p in q.split("&"):
+                        if "=" in p:
+                            k, v = p.split("=", 1)
+                            if k == "n": n = int(v)
+                            elif k in ("sr","sample_rate_hz"): sr = int(v)
+                            elif k == "sensor_id": sensor_id = v
+                            elif k == "fast": fast = v in ("1","true","True")
+                sensor = _SENSOR_MANAGER.get_sensor(sensor_id)
+                if not sensor:
+                    cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"sensor_not_found"}')
+                    return True
+                # Verifica tipo sensore
+                if not hasattr(sensor, 'type') or getattr(sensor, 'type', None) != 'voltage':
+                    cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"not_voltage_sensor"}')
+                    return True
+                volts, rms, baseline, mn, mx = sensor.measure_volts(n, sr, fast=fast)
+                clipping = (mn < 50) or (mx > 4040)
+                out = {"ok": True, "volts_rms": round(volts, 3), "rms_counts": round(rms, 2),
+                       "baseline_mean": round(baseline, 2),
+                       "min": int(mn), "max": int(mx), "clipping": bool(clipping)}
+                cl.send(_HTTP_200_JSON + ujson.dumps(out).encode())
+            return True
     # Endpoint: /sensors - restituisce la lista dei sensori da sensors.json
     if method == "GET" and path == "/sensors":
             try:
@@ -117,7 +149,8 @@ def handle(cl, method, path, req=None, _read_post_json=None):
 
     # ---- Calibration endpoints (multi-sensore) ----
     if method == "GET" and path.startswith("/calibrate"):
-        n = 1600; sr = 4000; amp = None; sensor_id = "c1"; fast = False
+        n = 1600; sr = 4000; value = None; sensor_id = "c1"; fast = False
+        value_key = "amps"; k_key = "k_A_per_count"; hint = "usa /calibrate?amp=0 per baseline, /calibrate?amp=<A> per aggiungere un punto"
         if "?" in path:
             q = path.split("?", 1)[1]
             for p in q.split("&"):
@@ -126,8 +159,13 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                     if k == "n": n = int(v)
                     elif k in ("sr","sample_rate_hz"): sr = int(v)
                     elif k == "amp":
-                        try: amp = float(v)
-                        except: amp = None
+                        try: value = float(v)
+                        except: value = None
+                        value_key = "amps"; k_key = "k_A_per_count"
+                    elif k == "volt":
+                        try: value = float(v)
+                        except: value = None
+                        value_key = "volts"; k_key = "k_V_per_count"
                     elif k == "sensor_id": sensor_id = v
                     elif k == "fast": fast = v in ("1","true","True")
 
@@ -136,15 +174,19 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"sensor_not_found"}')
             return True
 
-        if amp is None:
+        # Se il sensore è di tipo voltage, cambia i parametri di default
+        if hasattr(sensor, 'type') and getattr(sensor, 'type', None) == 'voltage':
+            value_key = "volts"; k_key = "k_V_per_count"
+            hint = "usa /calibrate?volt=0 per baseline, /calibrate?volt=<V> per aggiungere un punto"
+
+        if value is None:
             cal = sensor._load_calibration()
             if "points" not in cal: cal["points"] = []
-            resp = {"ok": True, "cal": cal,
-                    "hint": "usa /calibrate?amp=0 per baseline, /calibrate?amp=<A> per aggiungere un punto"}
+            resp = {"ok": True, "cal": cal, "hint": hint}
             cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
             return True
-        
-        if amp == 0.0:
+
+        if value == 0.0:
             if is_busy():
                 cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
                 return True
@@ -159,12 +201,12 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
             return True
         with busy_region():
-            pt, k = sensor.add_calibration_point(amp, n, sr, fast=fast)
+            pt, k = sensor.add_calibration_point(value, n, sr, fast=fast, value_key=value_key, rms_key="rms_counts", k_key=k_key)
             arr, sr = sensor.sample_counts(n, sr, fast=fast)
             baseline = float(sensor.cal.get("baseline_mean", sum(arr)/len(arr)))
             mn = min(arr); mx = max(arr)
             clipping = (mn < 50) or (mx > 4040)
-            resp = {"ok": True, "added": pt, "k_A_per_count": k,
+            resp = {"ok": True, "added": pt, k_key: k,
                     "num_points": len(sensor.cal.get("points", [])), "baseline_mean": round(baseline, 2),
                     "min": int(mn), "max": int(mx), "clipping": bool(clipping)}
             cl.send(_HTTP_200_JSON + ujson.dumps(resp).encode())
