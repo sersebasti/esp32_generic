@@ -3,6 +3,18 @@ import time
 import math
 
 class GenericSensor:
+
+    @staticmethod
+    def fit_k(points, value_key="amps", rms_key="rms_counts"):
+            sxy = 0.0
+            sxx = 0.0
+            for p in points:
+                a = float(p[value_key])
+                r = float(p[rms_key])
+                sxy += a * r
+                sxx += r * r
+            return (sxy / sxx) if sxx > 0 else 0.0
+        
     def __init__(self, pin, samples=100):
         self.pin = pin
         self.samples = samples

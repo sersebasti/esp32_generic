@@ -7,7 +7,9 @@ except Exception:
     from busy_lock import is_busy, busy_region
 
 # Refactoring: supporto multi-sensore
+
 from .sensor_manager import CurrentSensorManager
+from .generic_sensor import GenericSensor
 
 # Inizializza il manager dei sensori (singleton)
 _SENSOR_MANAGER = CurrentSensorManager()
@@ -37,15 +39,7 @@ def _rms_with_baseline(arr, baseline):
     from math import sqrt
     return sqrt(s / len(arr))
 
-def _fit_k(points):
-    sxy = 0.0
-    sxx = 0.0
-    for p in points:
-        a = float(p["amps"])
-        r = float(p["rms_counts"])
-        sxy += a * r
-        sxx += r * r
-    return (sxy / sxx) if sxx > 0 else 0.0
+    # _fit_k removed; use GenericSensor.fit_k instead
 
 def handle(cl, method, path, req=None, _read_post_json=None):
     # /adc/scope_counts?sensor_id=c1
@@ -224,7 +218,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             else:
                 cal["points"] = pts
                 if pts:
-                    k = _fit_k(pts)
+                    k = GenericSensor.fit_k(pts)
                     cal["k_A_per_count"] = round(k, 9)
                 else:
                     cal["k_A_per_count"] = 0.0

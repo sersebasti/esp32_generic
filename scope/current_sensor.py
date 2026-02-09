@@ -126,7 +126,7 @@ class CurrentSensor(GenericSensor):
         pts = pts if isinstance(pts, list) else []
         pts.append(pt)
         self.cal["points"] = pts
-        k = self._fit_k(pts, value_key="amps", rms_key="rms_counts")
+        k = GenericSensor.fit_k(pts, value_key="amps", rms_key="rms_counts")
         self.cal["k_A_per_count"] = round(k, 9)
         self._save_calibration()
         return pt, self.cal["k_A_per_count"]
@@ -138,15 +138,7 @@ class CurrentSensor(GenericSensor):
             s += d * d
         return math.sqrt(s / len(arr))
 
-    def _fit_k(self, points, value_key="amps", rms_key="rms_counts"):
-        sxy = 0.0
-        sxx = 0.0
-        for p in points:
-            a = float(p[value_key])
-            r = float(p[rms_key])
-            sxy += a * r
-            sxx += r * r
-        return (sxy / sxx) if sxx > 0 else 0.0
+    # _fit_k is now in GenericSensor as fit_k (static method)
 
     def measure_amps(self, n=1600, sr=4000, fast=False):
         arr, sr = self.sample_counts(n, sr, fast=fast)
