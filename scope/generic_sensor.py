@@ -4,6 +4,38 @@ import math
 
 class GenericSensor:
 
+    def add_calibration_point(self, value, n=1600, sr=4000, fast=False, value_key="amps", rms_key="rms_counts", k_key="k_A_per_count"):
+        arr, sr = self.sample_counts(n, sr, fast=fast)
+        baseline = float(self.cal.get("baseline_mean", sum(arr)/len(arr)))
+        rms = self._rms_with_baseline(arr, baseline)
+        pt = {value_key: float(value), rms_key: round(rms, 2)}
+        pts = self.cal.get("points", [])
+        pts = pts if isinstance(pts, list) else []
+        pts.append(pt)
+        self.cal["points"] = pts
+        k = self.fit_k(pts, value_key=value_key, rms_key=rms_key)
+        self.cal[k_key] = round(k, 9)
+        self._save_calibration()
+        return pt, self.cal[k_key]
+
+    def calibrate_baseline(self, n=1600, sr=4000, fast=False):
+        arr, sr = self.sample_counts(n, sr, fast=fast)
+        baseline = sum(arr) / len(arr)
+        self.cal["baseline_mean"] = round(baseline, 2)
+        self.cal["n0"] = len(arr)
+        self.cal["sr0"] = sr
+        if "points" not in self.cal:
+            self.cal["points"] = []
+        self._save_calibration()
+        return self.cal["baseline_mean"]
+
+    def compare_baseline(self, n=1600, sr=4000, fast=False):
+        arr, sr = self.sample_counts(n, sr, fast=fast)
+        mean_now = sum(arr) / len(arr)
+        baseline = self.cal.get("baseline_mean", None)
+        diff = mean_now - baseline if baseline is not None else None
+        return baseline, mean_now, diff
+
     def reset_calibration(self):
         try:
             import os

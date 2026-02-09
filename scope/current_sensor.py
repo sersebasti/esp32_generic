@@ -52,30 +52,7 @@ class CurrentSensor(GenericSensor):
 
 
 
-    def calibrate_baseline(self, n=1600, sr=4000, fast=False):
-        arr, sr = self.sample_counts(n, sr, fast=fast)
-        baseline = sum(arr) / len(arr)
-        self.cal["baseline_mean"] = round(baseline, 2)
-        self.cal["n0"] = len(arr)
-        self.cal["sr0"] = sr
-        if "points" not in self.cal:
-            self.cal["points"] = []
-        self._save_calibration()
-        return self.cal["baseline_mean"]
 
-    def add_calibration_point(self, amps, n=1600, sr=4000, fast=False):
-        arr, sr = self.sample_counts(n, sr, fast=fast)
-        baseline = float(self.cal.get("baseline_mean", sum(arr)/len(arr)))
-        rms = self._rms_with_baseline(arr, baseline)
-        pt = {"amps": float(amps), "rms_counts": round(rms, 2)}
-        pts = self.cal.get("points", [])
-        pts = pts if isinstance(pts, list) else []
-        pts.append(pt)
-        self.cal["points"] = pts
-        k = GenericSensor.fit_k(pts, value_key="amps", rms_key="rms_counts")
-        self.cal["k_A_per_count"] = round(k, 9)
-        self._save_calibration()
-        return pt, self.cal["k_A_per_count"]
 
 
     # _fit_k is now in GenericSensor as fit_k (static method)
@@ -88,9 +65,3 @@ class CurrentSensor(GenericSensor):
         amps = k * rms
         return amps, rms, baseline, min(arr), max(arr)
 
-    def compare_baseline(self, n=1600, sr=4000, fast=False):
-        arr, sr = self.sample_counts(n, sr, fast=fast)
-        mean_now = sum(arr) / len(arr)
-        baseline = self.cal.get("baseline_mean", None)
-        diff = mean_now - baseline if baseline is not None else None
-        return baseline, mean_now, diff
