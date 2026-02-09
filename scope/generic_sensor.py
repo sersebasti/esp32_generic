@@ -4,6 +4,17 @@ import math
 
 class GenericSensor:
 
+    def stats_counts(self, arr):
+        n = len(arr)
+        s = sum(arr)
+        mean = s / n
+        acc = 0.0
+        for v in arr:
+            dv = v - mean
+            acc += dv * dv
+        rms = math.sqrt(acc / n)
+        return mean, rms
+
     def sample_counts(self, n=512, sample_rate_hz=4000, fast=False):
         import gc
         print(f"[DEBUG] sample_counts n={n}, sample_rate_hz={sample_rate_hz}, fast={fast}")

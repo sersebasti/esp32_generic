@@ -47,16 +47,6 @@ class CurrentSensor(GenericSensor):
         return s >> 2
 
 
-    def stats_counts(self, arr):
-        n = len(arr)
-        s = sum(arr)
-        mean = s / n
-        acc = 0.0
-        for v in arr:
-            dv = v - mean
-            acc += dv * dv
-        rms = math.sqrt(acc / n)
-        return mean, rms
 
     def _load_calibration(self):
         try:
