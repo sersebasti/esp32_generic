@@ -42,8 +42,8 @@ def _rms_with_baseline(arr, baseline):
     # _fit_k removed; use GenericSensor.fit_k instead
 
 def handle(cl, method, path, req=None, _read_post_json=None):
-        # Endpoint: /sensors - restituisce la lista dei sensori da sensors.json
-        if method == "GET" and path == "/sensors":
+    # Endpoint: /sensors - restituisce la lista dei sensori da sensors.json
+    if method == "GET" and path == "/sensors":
             try:
                 with open("scope/sensors.json") as f:
                     sensors_cfg = ujson.load(f)
