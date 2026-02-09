@@ -4,6 +4,19 @@ import math
 
 class GenericSensor:
 
+    def reset_calibration(self):
+        try:
+            import os
+            try:
+                os.stat(self.cal_file)
+                os.remove(self.cal_file)
+                print(f"[DEBUG] File {self.cal_file} cancellato.")
+            except OSError:
+                print(f"[DEBUG] File {self.cal_file} non esiste, nessuna cancellazione.")
+        except Exception as e:
+            print("[DEBUG] Errore cancellazione file:", e)
+        self.cal = {}
+
     def _save_calibration(self):
         try:
             import os

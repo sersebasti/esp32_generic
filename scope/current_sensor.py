@@ -51,19 +51,6 @@ class CurrentSensor(GenericSensor):
 
 
 
-    def reset_calibration(self):
-        # Cancella il file e azzera self.cal
-            # Cancella il file di calibrazione se esiste, stampa errori
-            try:
-                try:
-                    os.stat(self.cal_file)
-                    os.remove(self.cal_file)
-                    print("[DEBUG] File {} cancellato.".format(self.cal_file))
-                except OSError:
-                    print("[DEBUG] File {} non esiste, nessuna cancellazione.".format(self.cal_file))
-            except Exception as e:
-                print("[DEBUG] Errore cancellazione file:", e)
-            self.cal = {}
 
     def calibrate_baseline(self, n=1600, sr=4000, fast=False):
         arr, sr = self.sample_counts(n, sr, fast=fast)
