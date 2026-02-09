@@ -636,7 +636,7 @@ def run(self):
         import gc, sys, machine
         mem_free = gc.mem_free()
         print(f"[MONITOR] Memoria libera: {mem_free} bytes")
-        print(f"[MONITOR] Moduli caricati: {list(sys.modules.keys())}")
+        #print(f"[MONITOR] Moduli caricati: {list(sys.modules.keys())}")
         if hasattr(sys, 'print_exception'):
             print(f"[MONITOR] Eccezioni: {sys.print_exception}")
         if mem_free < 10000:
