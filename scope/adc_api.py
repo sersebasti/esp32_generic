@@ -254,12 +254,22 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             pts = cal.get("points", []) or []
 
             removed = None
+            # Determina le chiavi da usare in base al tipo di sensore
+            value_key = "amps"
+            k_key = "k_A_per_count"
+            if hasattr(sensor, 'type') and getattr(sensor, 'type', None) == 'voltage':
+                value_key = "volts"
+                k_key = "k_V_per_count"
+
             if isinstance(idx, int) and 0 <= idx < len(pts):
                 removed = pts.pop(idx)
             elif (amp is not None) and (rms is not None):
                 for i, p in enumerate(pts):
                     try:
-                        if float(p.get("amps")) == float(amp) and float(p.get("rms_counts")) == float(rms):
+                        if value_key == "amps" and float(p.get("amps")) == float(amp) and float(p.get("rms_counts")) == float(rms):
+                            removed = pts.pop(i)
+                            break
+                        elif value_key == "volts" and float(p.get("volts")) == float(amp) and float(p.get("rms_counts")) == float(rms):
                             removed = pts.pop(i)
                             break
                     except Exception:
@@ -270,15 +280,15 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             else:
                 cal["points"] = pts
                 if pts:
-                    k = GenericSensor.fit_k(pts)
-                    cal["k_A_per_count"] = round(k, 9)
+                    k = GenericSensor.fit_k(pts, value_key=value_key, rms_key="rms_counts")
+                    cal[k_key] = round(k, 9)
                 else:
-                    cal["k_A_per_count"] = 0.0
+                    cal[k_key] = 0.0
                 sensor.cal = cal  # Aggiorna la variabile in memoria
                 sensor._save_calibration()
                 resp = {"ok": True, "removed": removed,
                         "num_points": len(pts),
-                        "k_A_per_count": cal.get("k_A_per_count", 0.0)}
+                        k_key: cal.get(k_key, 0.0)}
                 cl.send(_HTTP_200_JSON_CORS + ujson.dumps(resp).encode())
         except Exception:
             try:
