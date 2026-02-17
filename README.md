@@ -331,3 +331,7 @@ curl -X POST http://<DEVICE_IP>/wifi/delete \
 - The ESP32 serves on the LAN, e.g., http://<DEVICE_IP>
 - /fs/* APIs enable CORS for use from external tools (browsers).
 - The Wi‑Fi UI is a static file at `core/wifi_ui.html`.
+
+
+## comado powershell per vedere ip
+- arp -a

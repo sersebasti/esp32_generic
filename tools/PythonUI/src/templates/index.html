@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Desktop GUI</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fb; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #0001; padding: 32px; }
+        h1 { color: #2a3a4a; font-size: 2em; margin-bottom: 0.5em; }
+        label { display: block; margin-top: 1em; color: #444; }
+        input, button, select { font-size: 1em; padding: 8px; margin-top: 0.5em; border-radius: 6px; border: 1px solid #ccc; }
+        button { background: #2a7ae2; color: #fff; border: none; cursor: pointer; margin-top: 1em; }
+        button:hover { background: #185a9d; }
+        .result { margin-top: 2em; background: #f7f7fa; padding: 16px; border-radius: 8px; min-height: 40px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ESP32 Desktop GUI</h1>
+        <form id="esp32-form" method="post">
+            <label for="ip">Indirizzo IP ESP32:</label>
+            <input type="text" id="ip" name="ip" placeholder="192.168.1.10" value="{{ ip }}" required>
+            <button type="submit">Connetti</button>
+        </form>
+        <div class="result" id="result">
+            {% if status %}{{ status }}{% else %}Risultati e messaggi appariranno qui.{% endif %}
+        </div>
+
+        {% if status_info %}
+        <div class="result">
+            <strong>Info dispositivo:</strong><br>
+            <ul>
+                <li><b>SSID:</b> {{ status_info.ssid }}</li>
+                <li><b>Uptime (s):</b> {{ status_info.uptime_s }}</li>
+                <li><b>Nome:</b> {{ status_info.name }}</li>
+                <li><b>MAC STA:</b> {{ status_info.mac_sta }}</li>
+                <li><b>IP:</b> {{ status_info.ip }}</li>
+                <li><b>Heap libero:</b> {{ status_info.heap_free }}</li>
+                <li><b>RSSI:</b> {{ status_info.rssi }}</li>
+                <li><b>Versione:</b> {{ status_info.version }}</li>
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if status_raw %}
+        <div class="result">
+            <strong>Risposta grezza /status:</strong><br>
+
+            {% if status_raw is string %}
+                <pre style="font-size:0.95em; background:#f0f0f0; border-radius:6px; padding:8px; white-space:pre-wrap;">{{ status_raw }}</pre>
+            {% else %}
+                <pre style="font-size:0.95em; background:#f0f0f0; border-radius:6px; padding:8px;">{{ status_raw|tojson(indent=2) }}</pre>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div id="sensor-menu-container" style="margin-top:2em;">
+            <label for="sensor-select"><b>Seleziona sensore:</b></label>
+            <select id="sensor-select" {% if sensors|length == 0 %}disabled{% endif %}>
+                <option value="">{% if sensors|length == 0 %}Nessun sensore disponibile{% else %}-- scegli --{% endif %}</option>
+                {% for s in sensors %}
+                    <option value="{{ s.id }}">{{ s.name or s.id }} ({{ s.type }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div id="sensor-boxes" style="display:none; margin-top:2em;">
+            <div style="margin-bottom:1.5em;">
+                <h3>Calibrazione</h3>
+                <div id="calibrazione-list"></div>
+                <div id="calibrazione-chart-container" style="display:none; margin-top:1em;">
+                    <canvas id="calibrazione-chart" height="160"></canvas>
+                </div>
+                <div style="margin-top:1em;">
+                    <button id="btn-baseline" type="button">Acquisisci Baseline</button>
+                    <button id="btn-corrente" type="button">Aggiungi punto corrente</button>
+                    <button id="btn-volt" type="button">Aggiungi punto tensione</button>
+                </div>
+                <div id="calibrazione-msg" style="margin-top:0.7em; color:#185a9d;"></div>
+            </div>
+            <div>
+                <h3>Misure</h3>
+                <button id="btn-aggiorna-misure" type="button">Aggiorna misure</button>
+                <div id="misure-content" style="margin-top:1em;"></div>
+            </div>
+        </div>
+        <script>
+            // Variabili globali per JS esterno
+            const ip = '{{ ip }}';
+            var sensorsList = JSON.parse('{{ sensors|default([])|tojson }}');
+        </script>
+        <script src="/static/js/main.js"></script>
+        </div>
+    </div>
+</body>
+</html>
