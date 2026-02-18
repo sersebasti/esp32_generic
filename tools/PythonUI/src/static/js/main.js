@@ -22,6 +22,7 @@ if (!window.Chart) {
   script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
   document.head.appendChild(script);
 }
+
 let calibChart = null;
 function showCalibInfoHtml(cal) {
     const container = document.getElementById('calibrazione-list');
@@ -35,7 +36,7 @@ function showCalibInfoHtml(cal) {
     // Baseline
     let hasBaseline = false;
     if (cal.baseline_mean !== undefined) {
-        html += `<div style=\"margin-bottom:0.5em;\">`;
+        html += `<div style="margin-bottom:0.5em;">`;
         html += `<b>Baseline:</b> <span id='baseline-value'>${cal.baseline_mean}</span>`;
         html += `</div>`;
         hasBaseline = true;
@@ -43,6 +44,14 @@ function showCalibInfoHtml(cal) {
     // Punti
     let hasPoints = false;
     let points = [];
+    // Log di debug e messaggi se mancano dati
+    console.log("Dati calibrazione ricevuti:", cal);
+    if (!hasBaseline) {
+        showMsg("Attenzione: baseline mancante, grafico non mostrato.");
+    }
+    if (!hasPoints) {
+        showMsg("Attenzione: nessun punto di calibrazione, grafico non mostrato.");
+    }
     if (cal.points && cal.points.length) {
         html += '<b>Punti calibrazione:</b><ul style="margin:0 0 0 1.2em;">';
         cal.points.forEach((p,i) => {
@@ -82,14 +91,13 @@ function showCalibInfoHtml(cal) {
         const data = {
             labels: points.map((p,i) => `P${i+1}`),
             datasets: [{
-                label: 'Calibrazione (volts vs rms_counts)',
+                label: 'ADC Counts',
                 data: points.map(p => ({x: p.volts, y: p.rms_counts})),
-                backgroundColor: 'rgba(32, 120, 240, 0.3)',
-                borderColor: 'rgba(32, 120, 240, 1)',
-                showLine: true,
+                borderColor: 'rgba(32,120,240,1)',
+                pointRadius: 4,
+                borderWidth: 1.5,
                 fill: false,
-                tension: 0.1,
-                pointRadius: 5
+                tension: 0.1
             }]
         };
         if (calibChart) calibChart.destroy();
@@ -211,8 +219,11 @@ function fetchMisure() {
         document.getElementById('misure-content').textContent = 'Seleziona un sensore per vedere le misure.';
         return;
     }
+    // Prendi i valori dagli input
+    const n = parseInt(document.getElementById('input-n')?.value) || 1024;
+    const sr = parseInt(document.getElementById('input-sr')?.value) || 4000;
     document.getElementById('misure-content').textContent = 'Caricamento...';
-    fetch(`http://${ip}/adc/scope_counts?sensor_id=${sid}&n=1024&sr=4000&fast=0`)
+    fetch(`http://${ip}/adc/scope_counts?sensor_id=${sid}&n=${n}&sr=${sr}&fast=1`)
         .then(r => r.json())
         .then(data => {
             let html = '';
@@ -233,18 +244,15 @@ function fetchMisure() {
                 const ctx = document.getElementById(chartId).getContext('2d');
                 if (window._misureChart) { window._misureChart.destroy(); }
                 window._misureChart = new Chart(ctx, {
-                    type: 'line',
+                    type: 'scatter',
                     data: {
-                        labels: data.counts.map((_,i) => i+1),
                         datasets: [{
                             label: 'ADC Counts',
-                            data: data.counts,
-                            borderColor: 'rgba(32,120,240,1)',
-                            backgroundColor: 'rgba(32,120,240,0.15)',
-                            pointRadius: 0,
-                            borderWidth: 1.5,
-                            fill: true,
-                            tension: 0.1
+                            data: data.counts.map((y, x) => ({x: x + 1, y})),
+                            backgroundColor: 'rgba(32,120,240,1)', // colore dei punti
+                            pointRadius: 1.5,
+                            showLine: false, // nessuna linea
+                            fill: false,
                         }]
                     },
                     options: {
