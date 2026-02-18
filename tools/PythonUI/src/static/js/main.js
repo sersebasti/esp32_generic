@@ -226,8 +226,18 @@ function fetchMisure() {
     const n = parseInt(document.getElementById('input-n')?.value) || 1024;
     const sr = parseInt(document.getElementById('input-sr')?.value) || 4000;
     const fast = document.getElementById('input-fast')?.checked ? 1 : 0;
+    const btn = document.getElementById('btn-aggiorna-misure');
+    if (btn) btn.disabled = true;
     document.getElementById('misure-content').textContent = 'Caricamento...';
-    fetch(`http://${ip}/adc/scope_counts?sensor_id=${sid}&n=${n}&sr=${sr}&fast=${fast}`)
+    // Timeout helper
+    function fetchWithTimeout(resource, options = {}) {
+        const { timeout = 5000 } = options;
+        return Promise.race([
+            fetch(resource, options),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout richiesta')), timeout))
+        ]);
+    }
+    fetchWithTimeout(`http://${ip}/adc/scope_counts?sensor_id=${sid}&n=${n}&sr=${sr}&fast=${fast}`, {timeout: 5000})
         .then(r => r.json())
         .then(data => {
             let html = '';
@@ -272,7 +282,7 @@ function fetchMisure() {
                 let labelEff = '';
                 // Recupera la calibrazione dal sensore selezionato
                 const sid = getSensorId();
-                const cal = window.sensorsList && Array.isArray(window.sensorsList) ? (window.sensorsList.find(s => s.id === sid)?.cal || {}) : {};
+                const cal = window._lastCalibInfo && window._lastCalibInfo.sensor_id === sid ? (window._lastCalibInfo.cal || {}) : {};
                 // Prova a recuperare la calibrazione anche da fetchCalibInfo (se già caricata)
                 if (window._lastCalibInfo && window._lastCalibInfo.sensor_id === sid) {
                     Object.assign(cal, window._lastCalibInfo.cal || {});
@@ -311,8 +321,11 @@ function fetchMisure() {
                 }
             }
         })
-        .catch(() => {
-            document.getElementById('misure-content').textContent = 'Errore nel recupero misure.';
+        .catch((e) => {
+            document.getElementById('misure-content').textContent = 'Errore nel recupero misure: ' + (e && e.message ? e.message : e);
+        })
+        .finally(() => {
+            if (btn) btn.disabled = false;
         });
 }
 if (btnMisure) btnMisure.onclick = fetchMisure;
