@@ -14,6 +14,18 @@ if (typeof sensorsList !== 'undefined' && Array.isArray(sensorsList)) {
 }
 function getSensorId() { return select.value; }
 function getSensorType() { return sensorTypeMap[select.value] || ''; }
+function getPointReferenceValue(point, sensorType) {
+    if (sensorType === 'current') {
+        return point.amps ?? point.amp ?? point.current ?? point.volts;
+    }
+    return point.volts ?? point.amp ?? point.amps;
+}
+function getBisRmsMeta(sensorType) {
+    if (sensorType === 'current') {
+        return { key: 'amps_rms', unit: 'A', endpoint: 'amps' };
+    }
+    return { key: 'volts_rms', unit: 'V', endpoint: 'volts' };
+}
 function showMsg(msg) {
     document.getElementById('calibrazione-msg').textContent = msg;
 }
@@ -28,6 +40,8 @@ let calibChart = null;
 function showCalibInfoHtml(cal) {
     const container = document.getElementById('calibrazione-list');
     let html = '';
+    const sensorType = getSensorType();
+    const refLabel = sensorType === 'current' ? 'amps' : 'volts';
     const chartContainer = document.getElementById('calibrazione-chart-container');
     if (!cal) {
         container.innerHTML = '<em>Nessun dato di calibrazione.</em>';
@@ -50,7 +64,9 @@ function showCalibInfoHtml(cal) {
     if (cal.points && cal.points.length) {
         html += '<b>Punti calibrazione:</b><ul style="margin:0 0 0 1.2em;">';
         cal.points.forEach((p,i) => {
-            html += `<li>rms_counts: ${p.rms_counts}, volts: ${p.volts} <button class='btn-elimina-punto' data-idx='${i}'>Elimina</button></li>`;
+            const refValue = getPointReferenceValue(p, sensorType);
+            const displayRef = (refValue === undefined || refValue === null) ? '-' : refValue;
+            html += `<li>rms_counts: ${p.rms_counts}, ${refLabel}: ${displayRef} <button class='btn-elimina-punto' data-idx='${i}'>Elimina</button></li>`;
             points.push(p);
         });
         html += '</ul>';
@@ -94,7 +110,9 @@ function showCalibInfoHtml(cal) {
             labels: points.map((p,i) => `P${i+1}`),
             datasets: [{
                 label: 'ADC Counts',
-                data: points.map(p => ({x: p.volts, y: p.rms_counts})),
+                data: points
+                    .map(p => ({x: Number(getPointReferenceValue(p, sensorType)), y: Number(p.rms_counts)}))
+                    .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y)),
                 borderColor: 'rgba(32,120,240,1)',
                 pointRadius: 4,
                 borderWidth: 1.5,
@@ -109,7 +127,7 @@ function showCalibInfoHtml(cal) {
             options: {
                 plugins: {legend: {display: false}},
                 scales: {
-                    x: {title: {display: true, text: 'Volts'}},
+                    x: {title: {display: true, text: sensorType === 'current' ? 'Amps' : 'Volts'}},
                     y: {title: {display: true, text: 'rms_counts'}}
                 }
             }
@@ -168,7 +186,10 @@ if (select) {
             let bisInfoDiv = document.getElementById('misure-bis-info-div');
             if (bisInfoDiv) bisInfoDiv.innerHTML = '';
             let bisRmsDiv = document.getElementById('misure-bis-rms');
-            if (bisRmsDiv) bisRmsDiv.textContent = 'volts_rms: - V';
+            if (bisRmsDiv) {
+                const bisMeta = getBisRmsMeta(getSensorType());
+                bisRmsDiv.textContent = `${bisMeta.key}: - ${bisMeta.unit}`;
+            }
             if (autoMisureBisTimeout) {
                 clearTimeout(autoMisureBisTimeout);
                 autoMisureBisTimeout = null;
@@ -246,7 +267,19 @@ if (btnBaseline) btnBaseline.onclick = function() {
 if (btnCorrente) btnCorrente.onclick = function() {
     const sid = getSensorId();
     if (!sid) return showMsg('Seleziona un sensore!');
-    callCalibEndpoint(`http://${ip}/calibrate?amp=7.0&sensor_id=${sid}&fast=1`);
+    let a = prompt('Inserisci il valore della corrente (A):', '7.0');
+    if (a === null || a.trim() === '' || isNaN(Number(a))) {
+        showMsg('Valore corrente non valido!');
+        return;
+    }
+    showMsg('Attendi...');
+    fetch(`http://${ip}/calibrate?amp=${encodeURIComponent(a)}&sensor_id=${sid}&fast=1`)
+        .then(r => r.json())
+        .then(data => {
+            showMsg('Punto di calibrazione corrente aggiunto!');
+            fetchCalibInfo();
+        })
+        .catch(() => showMsg('Errore durante aggiunta punto corrente.'));
 };
 if (btnVolt) btnVolt.onclick = function() {
     const sid = getSensorId();
@@ -463,6 +496,8 @@ function fetchMisure() {
 function fetchMisureBisVolts() {
     return new Promise((resolve) => {
         const sid = getSensorId();
+        const sensorType = getSensorType();
+        const bisMeta = getBisRmsMeta(sensorType);
         console.log('Sensore selezionato per misure BIS:', sid);
         const rmsDiv = document.getElementById('misure-bis-rms');
         const infoDiv = document.getElementById('misure-bis-info-div');
@@ -470,7 +505,7 @@ function fetchMisureBisVolts() {
 
         if (!sid) {
             if (infoDiv) infoDiv.innerHTML = '';
-            if (rmsDiv) rmsDiv.textContent = 'volts_rms: - V';
+            if (rmsDiv) rmsDiv.textContent = `${bisMeta.key}: - ${bisMeta.unit}`;
             resolve();
             return;
         }
@@ -480,7 +515,7 @@ function fetchMisureBisVolts() {
 
         if (btn) btn.disabled = true;
         if (infoDiv) infoDiv.innerHTML = '';
-        if (rmsDiv) rmsDiv.textContent = 'volts_rms: - V';
+        if (rmsDiv) rmsDiv.textContent = `${bisMeta.key}: - ${bisMeta.unit}`;
 
         function fetchWithTimeout(resource, options = {}) {
             const { timeout = 5000 } = options;
@@ -490,24 +525,31 @@ function fetchMisureBisVolts() {
             ]);
         }
 
-        fetchWithTimeout(`http://${ip}/volts?sensor_id=${sid}&n=${n}&sr=${sr}&fast=1`, {timeout: 5000})
+        fetchWithTimeout(`http://${ip}/${bisMeta.endpoint}?sensor_id=${sid}&n=${n}&sr=${sr}&fast=1`, {timeout: 5000})
             .then(r => {
-                console.log('fetch /volts: risposta ricevuta');
+                console.log(`fetch /${bisMeta.endpoint}: risposta ricevuta`);
                 return r.json();
             })
             .then(data => {
-                console.log('fetch /volts: dati json:', data);
+                console.log(`fetch /${bisMeta.endpoint}: dati json:`, data);
                 if (!data || data.ok === false) {
-                    throw new Error('Risposta /volts non valida');
+                    throw new Error(`Risposta /${bisMeta.endpoint} non valida`);
                 }
 
                 if (infoDiv) infoDiv.innerHTML = '';
-                if (rmsDiv) rmsDiv.textContent = `volts_rms: ${Number(data.volts_rms).toFixed(3)} V`;
+                const rmsValue = data[bisMeta.key] ?? data.volts_rms ?? data.amps_rms;
+                if (rmsDiv) {
+                    if (typeof rmsValue === 'number') {
+                        rmsDiv.textContent = `${bisMeta.key}: ${rmsValue.toFixed(3)} ${bisMeta.unit}`;
+                    } else {
+                        rmsDiv.textContent = `${bisMeta.key}: - ${bisMeta.unit}`;
+                    }
+                }
             })
             .catch((e) => {
                 console.log('Errore fetchMisureBisVolts:', e);
                 if (infoDiv) infoDiv.innerHTML = '';
-                if (rmsDiv) rmsDiv.textContent = 'volts_rms: - V';
+                if (rmsDiv) rmsDiv.textContent = `${bisMeta.key}: - ${bisMeta.unit}`;
             })
             .finally(() => {
                 if (btn) btn.disabled = false;

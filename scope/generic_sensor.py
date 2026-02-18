@@ -4,6 +4,87 @@ import math
 
 class GenericSensor:
 
+    @staticmethod
+    def _cal_float(sensor, key, default_val):
+        try:
+            return float(sensor.cal.get(key, default_val))
+        except Exception:
+            return float(default_val)
+
+    @staticmethod
+    def measure_instant_power_pair(voltage_sensor, current_sensor, n=1600, sample_rate_hz=4000, fast=False):
+        voltage_sensor._init_adc()
+        current_sensor._init_adc()
+
+        n = max(32, min(int(n), 4096))
+        sr = max(200, min(int(sample_rate_hz), 20000))
+        dt_us = int(1_000_000 / sr)
+
+        v_baseline = GenericSensor._cal_float(voltage_sensor, "baseline_mean", 2048.0)
+        i_baseline = GenericSensor._cal_float(current_sensor, "baseline_mean", 2048.0)
+        k_v = GenericSensor._cal_float(voltage_sensor, "k_V_per_count", 0.0)
+        k_i = GenericSensor._cal_float(current_sensor, "k_A_per_count", 0.0)
+
+        sum_v2 = 0.0
+        sum_i2 = 0.0
+        sum_p = 0.0
+
+        v_min = 4095
+        v_max = 0
+        i_min = 4095
+        i_max = 0
+
+        for _ in range(n):
+            v_count = voltage_sensor._read_count()
+            i_count = current_sensor._read_count()
+
+            if v_count < v_min:
+                v_min = v_count
+            if v_count > v_max:
+                v_max = v_count
+            if i_count < i_min:
+                i_min = i_count
+            if i_count > i_max:
+                i_max = i_count
+
+            v_inst = (v_count - v_baseline) * k_v
+            i_inst = (i_count - i_baseline) * k_i
+
+            sum_v2 += v_inst * v_inst
+            sum_i2 += i_inst * i_inst
+            sum_p += v_inst * i_inst
+
+            if not fast:
+                time.sleep_us(dt_us)
+
+        v_rms = math.sqrt(sum_v2 / n)
+        i_rms = math.sqrt(sum_i2 / n)
+        p_active = sum_p / n
+        p_apparent = v_rms * i_rms
+        power_factor = (p_active / p_apparent) if p_apparent > 0 else 0.0
+
+        return {
+            "n": n,
+            "sample_rate_hz": sr,
+            "volts_rms": v_rms,
+            "amps_rms": i_rms,
+            "power_w": p_active,
+            "apparent_power_va": p_apparent,
+            "power_factor": power_factor,
+            "voltage": {
+                "baseline_mean": v_baseline,
+                "min": v_min,
+                "max": v_max,
+                "clipping": (v_min < 50) or (v_max > 4040)
+            },
+            "current": {
+                "baseline_mean": i_baseline,
+                "min": i_min,
+                "max": i_max,
+                "clipping": (i_min < 50) or (i_max > 4040)
+            }
+        }
+
     def add_calibration_point(self, value, n=1600, sr=4000, fast=False, value_key="amps", rms_key="rms_counts", k_key="k_A_per_count"):
         arr, sr = self.sample_counts(n, sr, fast=fast)
         baseline = float(self.cal.get("baseline_mean", sum(arr)/len(arr)))

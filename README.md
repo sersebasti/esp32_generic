@@ -25,6 +25,12 @@ Tutti gli endpoint supportano inoltre il parametro opzionale `fast=1`.
   - Parametri: sensor_id, n, sr, fast
   - Esempio: `/amps?sensor_id=c1&n=1024&sr=4000&fast=1`
 
+- **GET /power**
+  - Misura la **potenza attiva** con campionamento istantaneo accoppiato V/I nello stesso loop ADC (riduce errore da sfasamento)
+  - Parametri: `voltage_sensor_id`, `current_sensor_id`, `n`, `sr`, `fast`
+  - Default: `voltage_sensor_id=v1`, `current_sensor_id=c1`
+  - Esempio: `/power?voltage_sensor_id=v1&current_sensor_id=c1&n=1024&sr=4000&fast=1`
+
 ### Calibrazione
 - **GET /calibrate**
   - Parametri: sensor_id, fast
@@ -58,6 +64,7 @@ Tutti gli endpoint supportano inoltre il parametro opzionale `fast=1`.
 - **GET /sensors**: Elenco di tutti i sensori configurati (id, tipo, nome, ecc.)
 - **GET /adc/scope_counts**: Acquisizione raw dal sensore specificato (parametri: sensor_id, n, sr, fast)
 - **GET /amps**: Misura la corrente RMS dal sensore (parametri: sensor_id, n, sr, fast)
+- **GET /power**: Misura potenza attiva con campionamento istantaneo V/I (parametri: n, sr, fast; sensori fissi v1/s1)
 - **GET /calibrate**: Stato calibrazione per il sensore (parametri: sensor_id, fast)
 - **GET /calibrate?amp=0**: Misura baseline (parametri: sensor_id, fast)
 - **GET /calibrate?amp=...**: Aggiungi punto di calibrazione (parametri: sensor_id, amp, n, sr, fast)
@@ -80,6 +87,8 @@ http://<IP_ESP32>/adc/scope_counts?sensor_id=c1&n=1024&sr=4000
 http://<IP_ESP32>/adc/scope_counts?sensor_id=c1&n=1024&sr=4000&fast=1
 http://<IP_ESP32>/amps?sensor_id=c1&n=1024&sr=4000
 http://<IP_ESP32>/amps?sensor_id=c1&n=1024&sr=4000&fast=1
+http://<IP_ESP32>/power?n=1024&sr=4000
+http://<IP_ESP32>/power?n=1024&sr=4000&fast=1
 http://<IP_ESP32>/calibrate?sensor_id=c1
 http://<IP_ESP32>/calibrate?amp=0&sensor_id=c1
 http://<IP_ESP32>/calibrate?amp=0&sensor_id=c1&fast=1

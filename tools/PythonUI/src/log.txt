@@ -4181,3 +4181,94 @@ jinja2.exceptions.TemplateAssertionError: No filter named 'escapejs'.
 2026-02-18 21:47:35,248 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
 2026-02-18 21:47:35,250 INFO 127.0.0.1 - - [18/Feb/2026 21:47:35] "POST / HTTP/1.1" 200 -
 2026-02-18 21:47:35,290 INFO 127.0.0.1 - - [18/Feb/2026 21:47:35] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-18 21:51:25,015 INFO [SERVER] Flask app avviata
+2026-02-18 21:51:25,017 INFO [SERVER] Flask app avviata
+2026-02-18 21:51:25,084 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.1.15:8000
+2026-02-18 21:51:25,085 INFO [33mPress CTRL+C to quit[0m
+2026-02-18 21:51:26,277 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 21:51:26,277 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 21:51:26,381 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 7292, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 77392, "rssi": -46, "version": "1.2.0"}
+2026-02-18 21:51:26,381 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 7292, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 77392, "rssi": -46, "version": "1.2.0"}
+2026-02-18 21:51:26,387 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 21:51:26,387 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 21:51:26,496 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 21:51:26,496 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 21:51:26,548 INFO 127.0.0.1 - - [18/Feb/2026 21:51:26] "GET / HTTP/1.1" 200 -
+2026-02-18 21:51:26,924 INFO 127.0.0.1 - - [18/Feb/2026 21:51:26] "GET /static/js/main.js HTTP/1.1" 200 -
+2026-02-18 21:51:27,754 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 21:51:27,754 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 21:51:27,918 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 7293, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 77904, "rssi": -46, "version": "1.2.0"}
+2026-02-18 21:51:27,918 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 7293, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 77904, "rssi": -46, "version": "1.2.0"}
+2026-02-18 21:51:27,918 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 21:51:27,918 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 21:51:27,969 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 21:51:27,969 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 21:51:27,972 INFO 127.0.0.1 - - [18/Feb/2026 21:51:27] "POST / HTTP/1.1" 200 -
+2026-02-18 21:51:28,008 INFO 127.0.0.1 - - [18/Feb/2026 21:51:28] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-18 21:54:52,861 INFO [SERVER] Flask app avviata
+2026-02-18 21:54:52,861 INFO [SERVER] Flask app avviata
+2026-02-18 21:54:52,901 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.1.15:8000
+2026-02-18 21:54:52,901 INFO [33mPress CTRL+C to quit[0m
+2026-02-18 21:54:54,360 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 21:54:54,360 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 21:54:54,559 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 7500, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 77600, "rssi": -53, "version": "1.2.0"}
+2026-02-18 21:54:54,559 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 7500, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 77600, "rssi": -53, "version": "1.2.0"}
+2026-02-18 21:54:54,561 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 21:54:54,561 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 21:54:54,615 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 21:54:54,615 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 21:54:54,642 INFO 127.0.0.1 - - [18/Feb/2026 21:54:54] "GET / HTTP/1.1" 200 -
+2026-02-18 21:54:55,172 INFO 127.0.0.1 - - [18/Feb/2026 21:54:55] "GET /static/js/main.js HTTP/1.1" 200 -
+2026-02-18 21:55:08,901 INFO [SERVER] Flask app avviata
+2026-02-18 21:55:08,908 INFO [SERVER] Flask app avviata
+2026-02-18 21:55:09,036 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.1.15:8000
+2026-02-18 21:55:09,043 INFO [33mPress CTRL+C to quit[0m
+2026-02-18 21:55:10,566 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 21:55:10,566 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 21:55:10,750 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 7516, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 77776, "rssi": -50, "version": "1.2.0"}
+2026-02-18 21:55:10,750 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 7516, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 77776, "rssi": -50, "version": "1.2.0"}
+2026-02-18 21:55:10,790 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 21:55:10,790 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 21:55:10,950 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 21:55:10,950 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 21:55:11,023 INFO 127.0.0.1 - - [18/Feb/2026 21:55:11] "GET / HTTP/1.1" 200 -
+2026-02-18 21:55:11,330 INFO 127.0.0.1 - - [18/Feb/2026 21:55:11] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-18 22:31:30,155 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 22:31:30,155 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 22:31:30,487 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 16, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 77760, "rssi": -34, "version": "1.2.0"}
+2026-02-18 22:31:30,487 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 16, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 77760, "rssi": -34, "version": "1.2.0"}
+2026-02-18 22:31:30,487 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 22:31:30,487 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 22:31:30,547 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 22:31:30,547 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 22:31:30,551 INFO 127.0.0.1 - - [18/Feb/2026 22:31:30] "POST / HTTP/1.1" 200 -
+2026-02-18 22:31:30,778 INFO 127.0.0.1 - - [18/Feb/2026 22:31:30] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-18 22:41:02,830 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 22:41:02,830 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 22:41:02,969 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 588, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 75808, "rssi": -38, "version": "1.2.0"}
+2026-02-18 22:41:02,969 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 588, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 75808, "rssi": -38, "version": "1.2.0"}
+2026-02-18 22:41:02,973 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 22:41:02,973 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 22:41:03,031 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 22:41:03,031 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 22:41:03,034 INFO 127.0.0.1 - - [18/Feb/2026 22:41:03] "POST / HTTP/1.1" 200 -
+2026-02-18 22:41:03,250 INFO 127.0.0.1 - - [18/Feb/2026 22:41:03] "GET /static/js/main.js HTTP/1.1" 200 -
+2026-02-18 23:01:48,722 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 23:01:48,722 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 23:01:48,807 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 82, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 75296, "rssi": -35, "version": "1.2.0"}
+2026-02-18 23:01:48,807 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 82, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 75296, "rssi": -35, "version": "1.2.0"}
+2026-02-18 23:01:48,809 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 23:01:48,809 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 23:01:48,866 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 23:01:48,866 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 23:01:48,868 INFO 127.0.0.1 - - [18/Feb/2026 23:01:48] "POST / HTTP/1.1" 200 -
+2026-02-18 23:01:49,055 INFO 127.0.0.1 - - [18/Feb/2026 23:01:49] "GET /static/js/main.js HTTP/1.1" 200 -

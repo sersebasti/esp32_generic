@@ -240,6 +240,85 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             cl.send(_HTTP_200_JSON + ujson.dumps(out).encode())
         return True
 
+    if method == "GET" and path.startswith("/power"):
+        if is_busy():
+            cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
+            return True
+        with busy_region():
+            n = 1600; sr = 4000; fast = False
+            voltage_sensor_id = "v1"
+            current_sensor_id = "c1"
+            if "?" in path:
+                q = path.split("?", 1)[1]
+                for p in q.split("&"):
+                    if "=" in p:
+                        k, v = p.split("=", 1)
+                        if k == "n": n = int(v)
+                        elif k in ("sr", "sample_rate_hz"): sr = int(v)
+                        elif k == "fast": fast = v in ("1", "true", "True")
+                        elif k in ("voltage_sensor_id", "voltage_id", "v_sensor_id"):
+                            voltage_sensor_id = v
+                        elif k in ("current_sensor_id", "current_id", "i_sensor_id"):
+                            current_sensor_id = v
+
+            voltage_sensor = _SENSOR_MANAGER.get_sensor(voltage_sensor_id)
+            current_sensor = _SENSOR_MANAGER.get_sensor(current_sensor_id)
+
+            if not voltage_sensor:
+                cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "err": "sensor_not_found", "sensor_id": voltage_sensor_id}).encode())
+                return True
+            if not current_sensor:
+                cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "err": "sensor_not_found", "sensor_id": current_sensor_id}).encode())
+                return True
+
+            voltage_type = getattr(voltage_sensor, 'type', None)
+            current_type = getattr(current_sensor, 'type', 'current')
+
+            if voltage_type != 'voltage':
+                cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "err": "not_voltage_sensor", "sensor_id": voltage_sensor_id}).encode())
+                return True
+            if current_type != 'current':
+                cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "err": "not_current_sensor", "sensor_id": current_sensor_id}).encode())
+                return True
+
+            p = GenericSensor.measure_instant_power_pair(
+                voltage_sensor,
+                current_sensor,
+                n=n,
+                sample_rate_hz=sr,
+                fast=fast,
+            )
+
+            out = {
+                "ok": True,
+                "mode": "instantaneous_pair",
+                "voltage_sensor_id": voltage_sensor_id,
+                "current_sensor_id": current_sensor_id,
+                "n": int(p["n"]),
+                "sample_rate_hz": int(p["sample_rate_hz"]),
+                "fast": bool(fast),
+                "volts_rms": round(p["volts_rms"], 3),
+                "amps_rms": round(p["amps_rms"], 3),
+                "power_w": round(p["power_w"], 3),
+                "apparent_power_va": round(p["apparent_power_va"], 3),
+                "power_factor": round(p["power_factor"], 4),
+                "clipping": bool(p["voltage"]["clipping"] or p["current"]["clipping"]),
+                "voltage": {
+                    "baseline_mean": round(p["voltage"]["baseline_mean"], 2),
+                    "min": int(p["voltage"]["min"]),
+                    "max": int(p["voltage"]["max"]),
+                    "clipping": bool(p["voltage"]["clipping"]),
+                },
+                "current": {
+                    "baseline_mean": round(p["current"]["baseline_mean"], 2),
+                    "min": int(p["current"]["min"]),
+                    "max": int(p["current"]["max"]),
+                    "clipping": bool(p["current"]["clipping"]),
+                }
+            }
+            cl.send(_HTTP_200_JSON + ujson.dumps(out).encode())
+        return True
+
     if method == "POST" and path.startswith("/calibrate/delete"):
         try:
             if _read_post_json is None or req is None:
