@@ -2,6 +2,7 @@
 // ip, sensorsList
 
 const select = document.getElementById('sensor-select');
+const btnMisureBis = document.getElementById('btn-aggiorna-misure-bis');
 const boxes = document.getElementById('sensor-boxes');
 // ip e sensorsList devono essere iniettati dal template
 // Esempio:
@@ -46,13 +47,6 @@ function showCalibInfoHtml(cal) {
     let points = [];
     // Log di debug e messaggi se mancano dati
     console.log("Dati calibrazione ricevuti:", cal);
-    if (!hasBaseline) {
-        showMsg("Attenzione: baseline mancante, grafico non mostrato.");
-    }
-    if (!hasPoints) {
-        html += '<em>Nessun punto di calibrazione.</em>';
-        showMsg("Attenzione: nessun punto di calibrazione, grafico non mostrato.");
-    }
     if (cal.points && cal.points.length) {
         html += '<b>Punti calibrazione:</b><ul style="margin:0 0 0 1.2em;">';
         cal.points.forEach((p,i) => {
@@ -63,6 +57,13 @@ function showCalibInfoHtml(cal) {
         hasPoints = true;
     } else {
         html += '<em>Nessun punto di calibrazione.</em>';
+    }
+    if (!hasBaseline) {
+        showMsg("Attenzione: baseline mancante, grafico non mostrato.");
+    } else if (!hasPoints) {
+        showMsg("Attenzione: nessun punto di calibrazione, grafico non mostrato.");
+    } else {
+        showMsg('');
     }
     container.innerHTML = html;
     // Aggiungi handler ai pulsanti Elimina punto (dopo aver aggiornato l'HTML!)
@@ -138,10 +139,63 @@ if (select) {
             showMsg('');
             updateCalibButtons();
             fetchCalibInfo();
+            // DEBUG: log cambio sensore
+            console.log('Cambio sensore:', this.value, 'Tipo:', getSensorType());
+            // Forza ricreazione canvas e chart delle misure
+            let misureContent = document.getElementById('misure-content');
+            let chart = document.getElementById('misure-chart');
+            if (window._misureChart) { window._misureChart.destroy(); window._misureChart = null; }
+            if (chart) {
+                chart.remove();
+            }
+            // Ricrea il canvas
+            let chartDiv = document.createElement('div');
+            chartDiv.style.marginTop = '1em';
+            let newCanvas = document.createElement('canvas');
+            newCanvas.id = 'misure-chart';
+            newCanvas.height = 180;
+            newCanvas.width = 600;
+            newCanvas.style.display = 'block';
+            newCanvas.style.boxSizing = 'border-box';
+            newCanvas.style.height = '180px';
+            newCanvas.style.width = '600px';
+            chartDiv.appendChild(newCanvas);
+            misureContent.appendChild(chartDiv);
+            let infoDiv = document.getElementById('misure-info-div');
+            if (infoDiv) infoDiv.innerHTML = '';
+            let effLabel = document.getElementById('misure-eff-label');
+            if (effLabel) effLabel.style.display = 'none';
+            let bisInfoDiv = document.getElementById('misure-bis-info-div');
+            if (bisInfoDiv) bisInfoDiv.innerHTML = '';
+            let bisRmsDiv = document.getElementById('misure-bis-rms');
+            if (bisRmsDiv) bisRmsDiv.textContent = 'volts_rms: - V';
+            if (autoMisureBisTimeout) {
+                clearTimeout(autoMisureBisTimeout);
+                autoMisureBisTimeout = null;
+            }
         } else {
             boxes.style.display = 'none';
             showMsg('');
             showCalibInfoHtml(null);
+            // Nascondi anche grafico misure
+            let misureContent = document.getElementById('misure-content');
+            let chart = document.getElementById('misure-chart');
+            if (window._misureChart) { window._misureChart.destroy(); window._misureChart = null; }
+            if (chart) {
+                chart.remove();
+            }
+            let infoDiv = document.getElementById('misure-info-div');
+            if (infoDiv) infoDiv.innerHTML = '';
+            let effLabel = document.getElementById('misure-eff-label');
+            if (effLabel) effLabel.style.display = 'none';
+            let bisInfoDiv = document.getElementById('misure-bis-info-div');
+            if (bisInfoDiv) bisInfoDiv.innerHTML = '';
+            let bisRmsDiv = document.getElementById('misure-bis-rms');
+            if (bisRmsDiv) bisRmsDiv.textContent = 'volts_rms: - V';
+            if (autoMisureBisTimeout) {
+                clearTimeout(autoMisureBisTimeout);
+                autoMisureBisTimeout = null;
+            }
         }
     });
 }
@@ -215,117 +269,263 @@ if (btnVolt) btnVolt.onclick = function() {
 updateCalibButtons();
 // --- Misure ---
 const btnMisure = document.getElementById('btn-aggiorna-misure');
-function fetchMisure() {
-    const sid = getSensorId();
-    console.log('Sensore selezionato per misure:', sid);
-    if (!sid) {
-        document.getElementById('misure-content').textContent = 'Seleziona un sensore per vedere le misure.';
-        return;
-    }
-    // Prendi i valori dagli input
-    const n = parseInt(document.getElementById('input-n')?.value) || 1024;
-    const sr = parseInt(document.getElementById('input-sr')?.value) || 4000;
-    const fast = document.getElementById('input-fast')?.checked ? 1 : 0;
-    const btn = document.getElementById('btn-aggiorna-misure');
-    if (btn) btn.disabled = true;
-    document.getElementById('misure-content').textContent = 'Caricamento...';
-    // Timeout helper
-    function fetchWithTimeout(resource, options = {}) {
-        const { timeout = 5000 } = options;
-        return Promise.race([
-            fetch(resource, options),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout richiesta')), timeout))
-        ]);
-    }
-    fetchWithTimeout(`http://${ip}/adc/scope_counts?sensor_id=${sid}&n=${n}&sr=${sr}&fast=${fast}`, {timeout: 5000})
-        .then(r => r.json())
-        .then(data => {
-            let html = '';
-            const chartId = 'misure-chart';
-            // Se ci sono almeno 2 campioni, mostra grafico
-            if (data && data.counts && Array.isArray(data.counts) && data.counts.length > 1) {
-                html += `<b>Campioni acquisiti:</b> ${data.counts.length}<br>`;
-                html += `<div style='max-height:120px; overflow:auto; font-size:0.95em; background:#fff; border:1px solid #eee; padding:6px; margin-top:0.5em;'>`;
-                html += data.counts.slice(0,32).join(', ') + (data.counts.length>32 ? ' ...' : '');
-                html += '</div>';
-                html += `<div style='margin-top:1em;'><canvas id='${chartId}' height='180'></canvas></div>`;
-            } else {
-                html = '<em>Dati non disponibili o formato non valido.</em>';
+let autoMisureBisTimeout = null;
+
+let autoBisSwitch = null;
+if (btnMisureBis) {
+    const autoBisSwitchLabel = document.createElement('label');
+    autoBisSwitchLabel.style.display = 'inline-flex';
+    autoBisSwitchLabel.style.alignItems = 'center';
+    autoBisSwitchLabel.style.marginLeft = '1em';
+
+    autoBisSwitch = document.createElement('input');
+    autoBisSwitch.type = 'checkbox';
+    autoBisSwitch.id = 'auto-bis-switch';
+    autoBisSwitch.style.marginRight = '0.5em';
+    autoBisSwitch.checked = false;
+
+    autoBisSwitchLabel.appendChild(autoBisSwitch);
+    const autoBisSwitchText = document.createElement('span');
+    autoBisSwitchText.textContent = 'Auto';
+    autoBisSwitchLabel.appendChild(autoBisSwitchText);
+
+    btnMisureBis.parentNode.insertBefore(autoBisSwitchLabel, btnMisureBis.nextSibling);
+
+    autoBisSwitch.addEventListener('change', function() {
+        if (autoBisSwitch.checked) {
+            console.log('Levetta BIS su: AUTO');
+        } else {
+            console.log('Levetta BIS su: NO AUTO');
+            if (autoMisureBisTimeout) {
+                clearTimeout(autoMisureBisTimeout);
+                autoMisureBisTimeout = null;
             }
-            document.getElementById('misure-content').innerHTML = html;
-            // Mostra grafico se possibile
-            if (window.Chart && data && data.counts && Array.isArray(data.counts) && data.counts.length > 1) {
-                const ctx = document.getElementById(chartId).getContext('2d');
-                if (window._misureChart) { window._misureChart.destroy(); }
-                window._misureChart = new Chart(ctx, {
-                    type: 'scatter',
-                    data: {
-                        datasets: [{
-                            label: 'ADC Counts',
-                            data: data.counts.map((y, x) => ({x: x + 1, y})),
-                            backgroundColor: 'rgba(32,120,240,1)', // colore dei punti
-                            pointRadius: 1.5,
-                            showLine: false, // nessuna linea
-                            fill: false,
-                        }]
-                    },
-                    options: {
-                        plugins: {legend: {display: false}},
-                        scales: {
-                            x: {title: {display: true, text: 'Campione'}},
-                            y: {title: {display: true, text: 'Counts'}}
-                        }
-                    }
-                });
-                // Calcolo valore efficace in Volt o Ampere se calibrazione disponibile
-                let valoreEff = null;
-                let labelEff = '';
-                // Recupera la calibrazione dal sensore selezionato
-                const sid = getSensorId();
-                const cal = window._lastCalibInfo && window._lastCalibInfo.sensor_id === sid ? (window._lastCalibInfo.cal || {}) : {};
-                // Prova a recuperare la calibrazione anche da fetchCalibInfo (se già caricata)
-                if (window._lastCalibInfo && window._lastCalibInfo.sensor_id === sid) {
-                    Object.assign(cal, window._lastCalibInfo.cal || {});
-                }
-                // Calcola RMS dei campioni rispetto alla baseline
-                let baseline = cal.baseline_mean;
-                if (typeof baseline !== 'number') baseline = 0;
-                let sum = 0;
-                for (let i = 0; i < data.counts.length; i++) {
-                    let d = data.counts[i] - baseline;
-                    sum += d * d;
-                }
-                let rms_counts = Math.sqrt(sum / data.counts.length);
-                // Determina tipo sensore e costante di calibrazione
-                let tipo = getSensorType();
-                if (tipo === 'voltage' && cal.k_V_per_count) {
-                    valoreEff = cal.k_V_per_count * rms_counts;
-                    labelEff = `Valore efficace: ${valoreEff.toFixed(2)} V`;
-                } else if (tipo === 'current' && cal.k_A_per_count) {
-                    valoreEff = cal.k_A_per_count * rms_counts;
-                    labelEff = `Valore efficace: ${valoreEff.toFixed(2)} A`;
-                }
-                // Mostra il label sotto il grafico
-                let effLabel = document.getElementById('misure-eff-label');
-                if (!effLabel) {
-                    effLabel = document.createElement('div');
-                    effLabel.id = 'misure-eff-label';
-                    effLabel.style = 'margin-top:0.7em; color:#2a7ae2; font-weight:bold;';
-                    document.getElementById('misure-content').appendChild(effLabel);
-                }
-                if (valoreEff !== null) {
-                    effLabel.textContent = labelEff;
-                    effLabel.style.display = '';
-                } else {
-                    effLabel.style.display = 'none';
-                }
-            }
-        })
-        .catch((e) => {
-            document.getElementById('misure-content').textContent = 'Errore nel recupero misure: ' + (e && e.message ? e.message : e);
-        })
-        .finally(() => {
-            if (btn) btn.disabled = false;
-        });
+        }
+    });
 }
-if (btnMisure) btnMisure.onclick = fetchMisure;
+
+
+function fetchMisure() {
+    return new Promise((resolve) => {
+        const sid = getSensorId();
+        console.log('Sensore selezionato per misure:', sid);
+        if (!sid) {
+            document.getElementById('misure-content').textContent = 'Seleziona un sensore per vedere le misure.';
+            resolve();
+            return;
+        }
+        // Prendi i valori dagli input
+        const n = 1024;
+        const sr = 4000;
+        const btn = document.getElementById('btn-aggiorna-misure');
+        if (btn) btn.disabled = true;
+        // Pulisci solo la parte testuale, non il canvas
+        let misureContent = document.getElementById('misure-content');
+        let chart = document.getElementById('misure-chart');
+        Array.from(misureContent.children).forEach(child => {
+            if (child.id !== 'misure-chart' && child.tagName !== 'DIV') misureContent.removeChild(child);
+        });
+        // Mostra messaggio di caricamento
+        let loadingMsg = document.createElement('div');
+        loadingMsg.id = 'misure-loading-msg';
+        loadingMsg.textContent = 'Caricamento...';
+        misureContent.insertBefore(loadingMsg, chart ? chart.parentNode.nextSibling : null);
+        // Timeout helper
+        function fetchWithTimeout(resource, options = {}) {
+            const { timeout = 5000 } = options;
+            return Promise.race([
+                fetch(resource, options),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout richiesta')), timeout))
+            ]);
+        }
+        fetchWithTimeout(`http://${ip}/adc/scope_counts?sensor_id=${sid}&n=${n}&sr=${sr}&fast=1`, {timeout: 5000})
+            .then(r => {
+                console.log('fetchWithTimeout: risposta ricevuta');
+                return r.json();
+            })
+            .then(data => {
+                console.log('fetchWithTimeout: dati json:', data);
+                // Aggiorna solo la parte testuale e la lista dei campioni
+                let misureContent = document.getElementById('misure-content');
+                let chart = document.getElementById('misure-chart');
+                console.log('misureContent:', misureContent, 'chart:', chart);
+                // Rimuovi messaggio di caricamento
+                let loadingMsg = document.getElementById('misure-loading-msg');
+                if (loadingMsg) misureContent.removeChild(loadingMsg);
+                // Se ci sono almeno 2 campioni, mostra grafico
+                if (data && data.counts && Array.isArray(data.counts) && data.counts.length > 1) {
+                    console.log('Dati validi, aggiorno grafico. Campioni:', data.counts.length);
+                    // Aggiorna la parte testuale e la lista dei campioni
+                    let infoDiv = document.getElementById('misure-info-div');
+                    if (!infoDiv) {
+                        infoDiv = document.createElement('div');
+                        infoDiv.id = 'misure-info-div';
+                        misureContent.insertBefore(infoDiv, chart ? chart.parentNode.nextSibling : null);
+                    }
+                    infoDiv.innerHTML = `<b>Campioni acquisiti:</b> ${data.counts.length}<br>` +
+                        `<div id='misure-campioni' style='display:none; max-height:120px; overflow:auto; font-size:0.95em; background:#fff; border:1px solid #eee; padding:6px; margin-top:0.5em;'>` +
+                        data.counts.slice(0,32).join(', ') + (data.counts.length>32 ? ' ...' : '') + '</div>';
+                    // Canvas già presente, aggiorna solo i dati
+                    const ctx = chart.getContext('2d');
+                    if (!window._misureChart) {
+                        window._misureChart = new Chart(ctx, {
+                            type: 'scatter',
+                            data: {
+                                datasets: [{
+                                    label: 'ADC Counts',
+                                    data: data.counts.map((y, x) => ({x: x + 1, y})),
+                                    backgroundColor: 'rgba(32,120,240,1)',
+                                    pointRadius: 1.5,
+                                    showLine: false,
+                                    fill: false,
+                                }]
+                            },
+                            options: {
+                                plugins: {legend: {display: false}},
+                                scales: {
+                                    x: {title: {display: true, text: 'Campione'}},
+                                    y: {title: {display: true, text: 'Counts'}}
+                                }
+                            }
+                        });
+                        console.log('Creato nuovo Chart.js');
+                    } else {
+                        window._misureChart.data.datasets[0].data = data.counts.map((y, x) => ({x: x + 1, y}));
+                        window._misureChart.update();
+                        console.log('Aggiornato Chart.js esistente');
+                    }
+                    // Calcolo valore efficace in Volt o Ampere se calibrazione disponibile
+                    let valoreEff = null;
+                    let labelEff = '';
+                    // Recupera la calibrazione dal sensore selezionato
+                    const sid = getSensorId();
+                    const cal = window._lastCalibInfo && window._lastCalibInfo.sensor_id === sid ? (window._lastCalibInfo.cal || {}) : {};
+                    if (window._lastCalibInfo && window._lastCalibInfo.sensor_id === sid) {
+                        Object.assign(cal, window._lastCalibInfo.cal || {});
+                    }
+                    // Calcola RMS dei campioni rispetto alla baseline
+                    let baseline = cal.baseline_mean;
+                    if (typeof baseline !== 'number') baseline = 0;
+                    let sum = 0;
+                    for (let i = 0; i < data.counts.length; i++) {
+                        let d = data.counts[i] - baseline;
+                        sum += d * d;
+                    }
+                    let rms_counts = Math.sqrt(sum / data.counts.length);
+                    // Determina tipo sensore e costante di calibrazione
+                    let tipo = getSensorType();
+                    if (tipo === 'voltage' && cal.k_V_per_count) {
+                        valoreEff = cal.k_V_per_count * rms_counts;
+                        labelEff = `Valore efficace: ${valoreEff.toFixed(2)} V`;
+                    } else if (tipo === 'current' && cal.k_A_per_count) {
+                        valoreEff = cal.k_A_per_count * rms_counts;
+                        labelEff = `Valore efficace: ${valoreEff.toFixed(2)} A`;
+                    }
+                    // Mostra il label sotto il grafico
+                    let effLabel = document.getElementById('misure-eff-label');
+                    if (!effLabel) {
+                        effLabel = document.createElement('div');
+                        effLabel.id = 'misure-eff-label';
+                        effLabel.style = 'margin-top:0.7em; color:#2a7ae2; font-weight:bold;';
+                        misureContent.appendChild(effLabel);
+                    }
+                    if (valoreEff !== null) {
+                        effLabel.textContent = labelEff;
+                        effLabel.style.display = '';
+                    } else {
+                        effLabel.style.display = 'none';
+                    }
+                } else {
+                    console.log('Dati non validi o meno di 2 campioni:', data);
+                    // Rimuovi messaggio di caricamento
+                    let loadingMsg = document.getElementById('misure-loading-msg');
+                    if (loadingMsg) misureContent.removeChild(loadingMsg);
+                    // Mostra solo canvas vuoto e messaggio
+                    let infoDiv = document.getElementById('misure-info-div');
+                    if (infoDiv) infoDiv.innerHTML = '<em>Dati non disponibili o formato non valido.</em>';
+                    if (window._misureChart) { window._misureChart.destroy(); window._misureChart = null; }
+                }
+            })
+            .catch((e) => {
+                console.log('Errore fetchMisure:', e);
+                document.getElementById('misure-content').textContent = 'Errore nel recupero misure: ' + (e && e.message ? e.message : e);
+            })
+            .finally(() => {
+                console.log('fetchMisure: finally');
+                if (btn) btn.disabled = false;
+                resolve();
+            });
+    });
+}
+
+
+
+function fetchMisureBisVolts() {
+    return new Promise((resolve) => {
+        const sid = getSensorId();
+        console.log('Sensore selezionato per misure BIS:', sid);
+        const rmsDiv = document.getElementById('misure-bis-rms');
+        const infoDiv = document.getElementById('misure-bis-info-div');
+        const btn = document.getElementById('btn-aggiorna-misure-bis');
+
+        if (!sid) {
+            if (infoDiv) infoDiv.innerHTML = '';
+            if (rmsDiv) rmsDiv.textContent = 'volts_rms: - V';
+            resolve();
+            return;
+        }
+
+        const n = 1024;
+        const sr = 4000;
+
+        if (btn) btn.disabled = true;
+        if (infoDiv) infoDiv.innerHTML = '';
+        if (rmsDiv) rmsDiv.textContent = 'volts_rms: - V';
+
+        function fetchWithTimeout(resource, options = {}) {
+            const { timeout = 5000 } = options;
+            return Promise.race([
+                fetch(resource, options),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout richiesta')), timeout))
+            ]);
+        }
+
+        fetchWithTimeout(`http://${ip}/volts?sensor_id=${sid}&n=${n}&sr=${sr}&fast=1`, {timeout: 5000})
+            .then(r => {
+                console.log('fetch /volts: risposta ricevuta');
+                return r.json();
+            })
+            .then(data => {
+                console.log('fetch /volts: dati json:', data);
+                if (!data || data.ok === false) {
+                    throw new Error('Risposta /volts non valida');
+                }
+
+                if (infoDiv) infoDiv.innerHTML = '';
+                if (rmsDiv) rmsDiv.textContent = `volts_rms: ${Number(data.volts_rms).toFixed(3)} V`;
+            })
+            .catch((e) => {
+                console.log('Errore fetchMisureBisVolts:', e);
+                if (infoDiv) infoDiv.innerHTML = '';
+                if (rmsDiv) rmsDiv.textContent = 'volts_rms: - V';
+            })
+            .finally(() => {
+                if (btn) btn.disabled = false;
+                if (autoBisSwitch && autoBisSwitch.checked) {
+                    autoMisureBisTimeout = setTimeout(() => {
+                        fetchMisureBisVolts();
+                    }, 5000);
+                }
+                resolve();
+            });
+    });
+}
+
+
+if (btnMisure) btnMisure.onclick = function() {
+    fetchMisure();
+};
+
+if (btnMisureBis) btnMisureBis.onclick = function() {
+    fetchMisureBisVolts();
+};

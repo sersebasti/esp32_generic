@@ -80,18 +80,21 @@
             </div>
             <div>
                 <h3>Misure</h3>
-                <div style="margin-bottom:0.7em;">
-                    <label for="input-n" style="margin-right:1em;">Numero punti (n):</label>
-                    <input type="number" id="input-n" value="1024" min="16" max="8192" step="1" style="width:80px;">
-                    <label for="input-sr" style="margin-left:1.5em; margin-right:1em;">Sample rate (Hz):</label>
-                    <input type="number" id="input-sr" value="4000" min="50" max="20000" step="1" style="width:90px;">
-                </div>
-                <div style="margin-bottom:0.7em;">
-                    <input type="checkbox" id="input-fast" checked>
-                    <label for="input-fast" style="margin-left:0.3em;">Acquisizione veloce (fast)</label>
-                </div>
                 <button id="btn-aggiorna-misure" type="button">Aggiorna misure</button>
-                <div id="misure-content" style="margin-top:1em;"></div>
+                <div id="misure-content" style="margin-top:1em;">
+                    <div style="margin-top:1em;">
+                        <canvas id="misure-chart" height="180" width="600" style="display:block; box-sizing:border-box; height:180px; width:600px;"></canvas>
+                    </div>
+                </div>
+
+                <div style="margin-top:1.5em; padding-top:1em; border-top:1px solid #e5e8ef;">
+                    <h3>Misure BIS (/volts)</h3>
+                    <button id="btn-aggiorna-misure-bis" type="button">Aggiorna misure BIS</button>
+                    <div id="misure-bis-content" style="margin-top:1em;">
+                        <div id="misure-bis-rms" style="font-size:1.35em; font-weight:700; color:#185a9d; margin-bottom:0.5em;">volts_rms: - V</div>
+                        <div id="misure-bis-info-div"></div>
+                    </div>
+                </div>
             </div>
         </div>
         <script>
