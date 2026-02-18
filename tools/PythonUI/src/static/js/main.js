@@ -50,6 +50,7 @@ function showCalibInfoHtml(cal) {
         showMsg("Attenzione: baseline mancante, grafico non mostrato.");
     }
     if (!hasPoints) {
+        html += '<em>Nessun punto di calibrazione.</em>';
         showMsg("Attenzione: nessun punto di calibrazione, grafico non mostrato.");
     }
     if (cal.points && cal.points.length) {
@@ -64,7 +65,7 @@ function showCalibInfoHtml(cal) {
         html += '<em>Nessun punto di calibrazione.</em>';
     }
     container.innerHTML = html;
-    // Aggiungi handler ai pulsanti Elimina punto
+    // Aggiungi handler ai pulsanti Elimina punto (dopo aver aggiornato l'HTML!)
     document.querySelectorAll('.btn-elimina-punto').forEach(btn => {
         btn.onclick = function() {
             const idx = this.getAttribute('data-idx');
@@ -124,6 +125,8 @@ function fetchCalibInfo() {
         .then(r => r.json())
         .then(data => {
             const cal = data.cal || {};
+            // Salva la calibrazione aggiornata globalmente
+            window._lastCalibInfo = {sensor_id: sid, cal: cal};
             showCalibInfoHtml(cal);
         })
         .catch(() => showCalibInfoHtml(null));
@@ -222,8 +225,9 @@ function fetchMisure() {
     // Prendi i valori dagli input
     const n = parseInt(document.getElementById('input-n')?.value) || 1024;
     const sr = parseInt(document.getElementById('input-sr')?.value) || 4000;
+    const fast = document.getElementById('input-fast')?.checked ? 1 : 0;
     document.getElementById('misure-content').textContent = 'Caricamento...';
-    fetch(`http://${ip}/adc/scope_counts?sensor_id=${sid}&n=${n}&sr=${sr}&fast=1`)
+    fetch(`http://${ip}/adc/scope_counts?sensor_id=${sid}&n=${n}&sr=${sr}&fast=${fast}`)
         .then(r => r.json())
         .then(data => {
             let html = '';
@@ -263,6 +267,48 @@ function fetchMisure() {
                         }
                     }
                 });
+                // Calcolo valore efficace in Volt o Ampere se calibrazione disponibile
+                let valoreEff = null;
+                let labelEff = '';
+                // Recupera la calibrazione dal sensore selezionato
+                const sid = getSensorId();
+                const cal = window.sensorsList && Array.isArray(window.sensorsList) ? (window.sensorsList.find(s => s.id === sid)?.cal || {}) : {};
+                // Prova a recuperare la calibrazione anche da fetchCalibInfo (se già caricata)
+                if (window._lastCalibInfo && window._lastCalibInfo.sensor_id === sid) {
+                    Object.assign(cal, window._lastCalibInfo.cal || {});
+                }
+                // Calcola RMS dei campioni rispetto alla baseline
+                let baseline = cal.baseline_mean;
+                if (typeof baseline !== 'number') baseline = 0;
+                let sum = 0;
+                for (let i = 0; i < data.counts.length; i++) {
+                    let d = data.counts[i] - baseline;
+                    sum += d * d;
+                }
+                let rms_counts = Math.sqrt(sum / data.counts.length);
+                // Determina tipo sensore e costante di calibrazione
+                let tipo = getSensorType();
+                if (tipo === 'voltage' && cal.k_V_per_count) {
+                    valoreEff = cal.k_V_per_count * rms_counts;
+                    labelEff = `Valore efficace: ${valoreEff.toFixed(2)} V`;
+                } else if (tipo === 'current' && cal.k_A_per_count) {
+                    valoreEff = cal.k_A_per_count * rms_counts;
+                    labelEff = `Valore efficace: ${valoreEff.toFixed(2)} A`;
+                }
+                // Mostra il label sotto il grafico
+                let effLabel = document.getElementById('misure-eff-label');
+                if (!effLabel) {
+                    effLabel = document.createElement('div');
+                    effLabel.id = 'misure-eff-label';
+                    effLabel.style = 'margin-top:0.7em; color:#2a7ae2; font-weight:bold;';
+                    document.getElementById('misure-content').appendChild(effLabel);
+                }
+                if (valoreEff !== null) {
+                    effLabel.textContent = labelEff;
+                    effLabel.style.display = '';
+                } else {
+                    effLabel.style.display = 'none';
+                }
             }
         })
         .catch(() => {
