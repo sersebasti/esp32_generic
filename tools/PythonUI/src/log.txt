@@ -4683,3 +4683,47 @@ jinja2.exceptions.TemplateAssertionError: No filter named 'escapejs'.
 2026-02-19 18:21:17,562 INFO 127.0.0.1 - - [19/Feb/2026 18:21:17] "POST / HTTP/1.1" 200 -
 2026-02-19 18:21:17,630 INFO 127.0.0.1 - - [19/Feb/2026 18:21:17] "GET /static/js/main.js HTTP/1.1" 200 -
 2026-02-19 18:21:17,640 INFO 127.0.0.1 - - [19/Feb/2026 18:21:17] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-19 18:22:59,658 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 18:22:59,658 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 18:23:01,702 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CC71960>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-19 18:23:01,702 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CC71960>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-19 18:23:01,703 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 18:23:01,703 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 18:23:03,707 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CC724D0>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-19 18:23:03,707 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CC724D0>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-19 18:23:03,707 INFO 127.0.0.1 - - [19/Feb/2026 18:23:03] "POST / HTTP/1.1" 200 -
+2026-02-19 18:23:03,752 INFO 127.0.0.1 - - [19/Feb/2026 18:23:03] "GET /static/js/main.js HTTP/1.1" 200 -
+2026-02-19 18:23:03,781 INFO 127.0.0.1 - - [19/Feb/2026 18:23:03] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-19 18:23:08,618 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 18:23:08,618 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 18:23:10,623 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CC73A30>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-19 18:23:10,623 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CC73A30>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-19 18:23:10,623 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 18:23:10,623 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 18:23:12,641 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CC71FF0>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-19 18:23:12,641 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CC71FF0>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-19 18:23:12,643 INFO 127.0.0.1 - - [19/Feb/2026 18:23:12] "POST / HTTP/1.1" 200 -
+2026-02-19 18:23:12,684 INFO 127.0.0.1 - - [19/Feb/2026 18:23:12] "GET /static/js/main.js HTTP/1.1" 200 -
+2026-02-19 18:23:12,700 INFO 127.0.0.1 - - [19/Feb/2026 18:23:12] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-19 18:23:16,505 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 18:23:16,505 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 18:23:17,913 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 310, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 76416, "rssi": -44, "version": "1.2.0"}
+2026-02-19 18:23:17,913 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 310, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 76416, "rssi": -44, "version": "1.2.0"}
+2026-02-19 18:23:17,914 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 18:23:17,914 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 18:23:18,264 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-19 18:23:18,264 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-19 18:23:18,274 INFO 127.0.0.1 - - [19/Feb/2026 18:23:18] "POST / HTTP/1.1" 200 -
+2026-02-19 18:23:18,330 INFO 127.0.0.1 - - [19/Feb/2026 18:23:18] "GET /static/js/main.js HTTP/1.1" 200 -
+2026-02-19 18:23:18,370 INFO 127.0.0.1 - - [19/Feb/2026 18:23:18] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-19 18:23:23,150 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 18:23:23,150 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 18:23:23,299 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 315, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 76704, "rssi": -41, "version": "1.2.0"}
+2026-02-19 18:23:23,299 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 315, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 76704, "rssi": -41, "version": "1.2.0"}
+2026-02-19 18:23:23,303 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 18:23:23,303 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 18:23:23,344 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-19 18:23:23,344 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-19 18:23:23,346 INFO 127.0.0.1 - - [19/Feb/2026 18:23:23] "POST / HTTP/1.1" 200 -
+2026-02-19 18:23:23,402 INFO 127.0.0.1 - - [19/Feb/2026 18:23:23] "GET /static/js/main.js HTTP/1.1" 200 -
+2026-02-19 18:23:23,440 INFO 127.0.0.1 - - [19/Feb/2026 18:23:23] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -

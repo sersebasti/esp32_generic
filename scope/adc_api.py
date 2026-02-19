@@ -5,6 +5,10 @@ try:
     from core.busy_lock import is_busy, busy_region
 except Exception:
     from busy_lock import is_busy, busy_region
+try:
+    import ustruct as struct
+except Exception:
+    import struct
 
 # Refactoring: supporto multi-sensore
 
@@ -15,6 +19,16 @@ from .generic_sensor import GenericSensor
 _SENSOR_MANAGER = CurrentSensorManager()
 
 _CAL_PATH = "scope/calibrate.json"
+
+_HTTP_200_OCTET_CORS = (
+    b"HTTP/1.1 200 OK\r\n"
+    b"Content-Type: application/octet-stream\r\n"
+    b"Cache-Control: no-store\r\n"
+    b"Access-Control-Allow-Origin: *\r\n"
+    b"Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS\r\n"
+    b"Access-Control-Allow-Headers: Content-Type\r\n"
+    b"Connection: close\r\n\r\n"
+)
 
 def _cal_load():
     try:
@@ -40,6 +54,10 @@ def _rms_with_baseline(arr, baseline):
     return sqrt(s / len(arr))
 
     # _fit_k removed; use GenericSensor.fit_k instead
+
+
+def _to_bool(v):
+    return v in ("1", "true", "True", "yes", "on")
 
 def handle(cl, method, path, req=None, _read_post_json=None):
     
@@ -93,6 +111,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             return True
         with busy_region():
             n = 1024; sr = 4000; sensor_id = "c1"; fast = False
+            binary = path.startswith("/adc/scope_counts_bin")
             if "?" in path:
                 q = path.split("?", 1)[1]
                 for p in q.split("&"):
@@ -102,7 +121,8 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                         elif k in ("sr","sample_rate_hz"): sr = int(v)
                         elif k == "sensor_id": sensor_id = v
                         elif k == "fast": fast = v in ("1","true","True")
-            print(f"[DEBUG] Parsed params: n={n}, sr={sr}, sensor_id={sensor_id}, fast={fast}")
+                        elif k == "binary": binary = _to_bool(v)
+            print(f"[DEBUG] Parsed params: n={n}, sr={sr}, sensor_id={sensor_id}, fast={fast}, binary={binary}")
             sensor = _SENSOR_MANAGER.get_sensor(sensor_id)
             print(f"[DEBUG] Sensor object: {sensor}")
             if not sensor:
@@ -113,6 +133,27 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             print(f"[DEBUG] Sampled counts: {arr[:10]}... (total {len(arr)})")
             mean, rms = sensor.stats_counts(arr)
             print(f"[DEBUG] Stats: mean={mean}, rms={rms}")
+            if binary:
+                cl.send(_HTTP_200_OCTET_CORS)
+                cl.send(struct.pack("<4sHII", b"SCB1", 1, len(arr), int(sr)))
+                i = 0
+                chunk_samples = 96
+                while i < len(arr):
+                    chunk = arr[i:i + chunk_samples]
+                    buf = bytearray(len(chunk) * 2)
+                    j = 0
+                    for v in chunk:
+                        cv = int(v)
+                        if cv < 0:
+                            cv = 0
+                        elif cv > 65535:
+                            cv = 65535
+                        buf[j] = cv & 0xFF
+                        buf[j + 1] = (cv >> 8) & 0xFF
+                        j += 2
+                    cl.send(buf)
+                    i += chunk_samples
+                return True
             payload = ujson.dumps({
                 "ok": True,
                 "n": len(arr),
