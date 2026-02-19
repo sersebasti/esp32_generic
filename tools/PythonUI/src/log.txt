@@ -4272,3 +4272,97 @@ jinja2.exceptions.TemplateAssertionError: No filter named 'escapejs'.
 2026-02-18 23:01:48,866 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
 2026-02-18 23:01:48,868 INFO 127.0.0.1 - - [18/Feb/2026 23:01:48] "POST / HTTP/1.1" 200 -
 2026-02-18 23:01:49,055 INFO 127.0.0.1 - - [18/Feb/2026 23:01:49] "GET /static/js/main.js HTTP/1.1" 200 -
+2026-02-18 23:08:12,725 INFO [SERVER] Flask app avviata
+2026-02-18 23:08:12,733 INFO [SERVER] Flask app avviata
+2026-02-18 23:08:12,819 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.1.15:8000
+2026-02-18 23:08:12,825 INFO [33mPress CTRL+C to quit[0m
+2026-02-18 23:08:14,115 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 23:08:14,115 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 23:08:14,440 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 467, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 74848, "rssi": -33, "version": "1.2.0"}
+2026-02-18 23:08:14,440 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 467, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 74848, "rssi": -33, "version": "1.2.0"}
+2026-02-18 23:08:14,442 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 23:08:14,442 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 23:08:14,493 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 23:08:14,493 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 23:08:14,536 INFO 127.0.0.1 - - [18/Feb/2026 23:08:14] "GET / HTTP/1.1" 200 -
+2026-02-18 23:08:15,145 INFO 127.0.0.1 - - [18/Feb/2026 23:08:15] "GET /static/js/main.js HTTP/1.1" 200 -
+2026-02-18 23:08:22,118 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 23:08:22,118 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-18 23:08:22,192 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 475, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 75248, "rssi": -35, "version": "1.2.0"}
+2026-02-18 23:08:22,192 INFO [RESPONSE] 200 {"ssid": "Vodafone-E34013225", "uptime_s": 475, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.6", "heap_free": 75248, "rssi": -35, "version": "1.2.0"}
+2026-02-18 23:08:22,193 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 23:08:22,193 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-18 23:08:22,242 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 23:08:22,242 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-18 23:08:22,245 INFO 127.0.0.1 - - [18/Feb/2026 23:08:22] "POST / HTTP/1.1" 200 -
+2026-02-18 23:08:22,297 INFO 127.0.0.1 - - [18/Feb/2026 23:08:22] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-19 07:15:31,468 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-19 07:15:31,468 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-19 07:15:34,069 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.6', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002A0D0912950>, 'Connection to 192.168.1.6 timed out. (connect timeout=2)'))
+2026-02-19 07:15:34,069 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.6', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002A0D0912950>, 'Connection to 192.168.1.6 timed out. (connect timeout=2)'))
+2026-02-19 07:15:34,075 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-19 07:15:34,075 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-19 07:15:36,121 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.6', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002A0D0912710>, 'Connection to 192.168.1.6 timed out. (connect timeout=2)'))
+2026-02-19 07:15:36,121 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.6', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002A0D0912710>, 'Connection to 192.168.1.6 timed out. (connect timeout=2)'))
+2026-02-19 07:15:36,186 INFO 127.0.0.1 - - [19/Feb/2026 07:15:36] "POST / HTTP/1.1" 200 -
+2026-02-19 17:36:37,551 INFO [SERVER] Flask app avviata
+2026-02-19 17:36:37,554 INFO [SERVER] Flask app avviata
+2026-02-19 17:36:37,708 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.1.231:8000
+2026-02-19 17:36:37,708 INFO [33mPress CTRL+C to quit[0m
+2026-02-19 17:36:39,668 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-19 17:36:39,668 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-19 17:36:42,120 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.6', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CAA9CC0>, 'Connection to 192.168.1.6 timed out. (connect timeout=2)'))
+2026-02-19 17:36:42,120 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.6', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CAA9CC0>, 'Connection to 192.168.1.6 timed out. (connect timeout=2)'))
+2026-02-19 17:36:42,123 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-19 17:36:42,123 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-19 17:36:44,142 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.6', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CAA93C0>, 'Connection to 192.168.1.6 timed out. (connect timeout=2)'))
+2026-02-19 17:36:44,142 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.6', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CAA93C0>, 'Connection to 192.168.1.6 timed out. (connect timeout=2)'))
+2026-02-19 17:36:44,358 INFO 127.0.0.1 - - [19/Feb/2026 17:36:44] "GET / HTTP/1.1" 200 -
+2026-02-19 17:36:45,151 INFO 127.0.0.1 - - [19/Feb/2026 17:36:45] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-19 17:36:45,366 INFO 127.0.0.1 - - [19/Feb/2026 17:36:45] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-02-19 17:40:01,565 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 17:40:01,565 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 17:40:02,123 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 42, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 73392, "rssi": -36, "version": "1.2.0"}
+2026-02-19 17:40:02,123 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 42, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 73392, "rssi": -36, "version": "1.2.0"}
+2026-02-19 17:40:02,219 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 17:40:02,219 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 17:40:02,740 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-19 17:40:02,740 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-19 17:40:02,879 INFO 127.0.0.1 - - [19/Feb/2026 17:40:02] "POST / HTTP/1.1" 200 -
+2026-02-19 17:40:03,199 INFO 127.0.0.1 - - [19/Feb/2026 17:40:03] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-19 17:40:39,759 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 17:40:39,759 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 17:40:41,827 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CC724D0>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-19 17:40:41,827 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CC724D0>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-19 17:40:41,829 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 17:40:41,829 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 17:40:43,842 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CAA19F0>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-19 17:40:43,842 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000001878CAA19F0>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-19 17:40:43,843 INFO 127.0.0.1 - - [19/Feb/2026 17:40:43] "POST / HTTP/1.1" 200 -
+2026-02-19 17:40:43,875 INFO 127.0.0.1 - - [19/Feb/2026 17:40:43] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-19 17:40:45,598 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 17:40:45,598 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 17:40:45,720 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 86, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 76320, "rssi": -36, "version": "1.2.0"}
+2026-02-19 17:40:45,720 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 86, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 76320, "rssi": -36, "version": "1.2.0"}
+2026-02-19 17:40:45,722 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 17:40:45,722 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 17:40:45,774 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-19 17:40:45,774 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-19 17:40:45,776 INFO 127.0.0.1 - - [19/Feb/2026 17:40:45] "POST / HTTP/1.1" 200 -
+2026-02-19 17:40:45,840 INFO 127.0.0.1 - - [19/Feb/2026 17:40:45] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-19 17:40:47,387 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 17:40:47,387 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-19 17:40:47,551 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 87, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 77760, "rssi": -36, "version": "1.2.0"}
+2026-02-19 17:40:47,551 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 87, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 77760, "rssi": -36, "version": "1.2.0"}
+2026-02-19 17:40:47,553 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 17:40:47,553 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-19 17:40:47,626 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-19 17:40:47,626 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-19 17:40:47,627 INFO 127.0.0.1 - - [19/Feb/2026 17:40:47] "POST / HTTP/1.1" 200 -
+2026-02-19 17:40:47,672 INFO 127.0.0.1 - - [19/Feb/2026 17:40:47] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -

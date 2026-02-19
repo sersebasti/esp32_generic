@@ -95,6 +95,25 @@
                         <div id="misure-bis-info-div"></div>
                     </div>
                 </div>
+
+                <div style="margin-top:1.5em; padding-top:1em; border-top:1px solid #e5e8ef;">
+                    <h3>Potenza (/power)</h3>
+                    <div style="display:flex; gap:1em; flex-wrap:wrap; align-items:flex-end;">
+                        <div>
+                            <label for="power-voltage-select"><b>Sensore tensione</b></label>
+                            <select id="power-voltage-select"></select>
+                        </div>
+                        <div>
+                            <label for="power-current-select"><b>Sensore corrente</b></label>
+                            <select id="power-current-select"></select>
+                        </div>
+                    </div>
+                    <button id="btn-aggiorna-potenza" type="button">Aggiorna potenza</button>
+                    <div id="power-content" style="margin-top:1em;">
+                        <div id="power-main" style="font-size:1.35em; font-weight:700; color:#185a9d; margin-bottom:0.5em;">power_w: - W</div>
+                        <div id="power-details"></div>
+                    </div>
+                </div>
             </div>
         </div>
         <script>

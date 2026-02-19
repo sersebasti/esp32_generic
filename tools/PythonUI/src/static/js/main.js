@@ -26,6 +26,10 @@ function getBisRmsMeta(sensorType) {
     }
     return { key: 'volts_rms', unit: 'V', endpoint: 'volts' };
 }
+function getSensorsByType(sensorType) {
+    if (!Array.isArray(sensorsList)) return [];
+    return sensorsList.filter(s => s && s.type === sensorType);
+}
 function showMsg(msg) {
     document.getElementById('calibrazione-msg').textContent = msg;
 }
@@ -240,6 +244,123 @@ function callCalibEndpoint(url) {
 const btnBaseline = document.getElementById('btn-baseline');
 const btnCorrente = document.getElementById('btn-corrente');
 const btnVolt = document.getElementById('btn-volt');
+const powerVoltageSelect = document.getElementById('power-voltage-select');
+const powerCurrentSelect = document.getElementById('power-current-select');
+const btnAggiornaPotenza = document.getElementById('btn-aggiorna-potenza');
+const powerMain = document.getElementById('power-main');
+const powerDetails = document.getElementById('power-details');
+
+function setPowerPlaceholder() {
+    if (powerMain) powerMain.textContent = 'power_w: - W';
+    if (powerDetails) powerDetails.innerHTML = '';
+}
+
+function populatePowerSensorSelects() {
+    if (!powerVoltageSelect || !powerCurrentSelect) return;
+    const voltageSensors = getSensorsByType('voltage');
+    const currentSensors = getSensorsByType('current');
+
+    powerVoltageSelect.innerHTML = '';
+    powerCurrentSelect.innerHTML = '';
+
+    if (voltageSensors.length === 0) {
+        powerVoltageSelect.innerHTML = '<option value="">Nessun sensore tensione</option>';
+        powerVoltageSelect.disabled = true;
+    } else {
+        voltageSensors.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = `${s.name || s.id} (${s.id})`;
+            powerVoltageSelect.appendChild(opt);
+        });
+        powerVoltageSelect.disabled = false;
+    }
+
+    if (currentSensors.length === 0) {
+        powerCurrentSelect.innerHTML = '<option value="">Nessun sensore corrente</option>';
+        powerCurrentSelect.disabled = true;
+    } else {
+        currentSensors.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = `${s.name || s.id} (${s.id})`;
+            powerCurrentSelect.appendChild(opt);
+        });
+        powerCurrentSelect.disabled = false;
+    }
+}
+
+function fetchPower() {
+    if (!powerVoltageSelect || !powerCurrentSelect) return;
+    const voltageSensorId = powerVoltageSelect.value;
+    const currentSensorId = powerCurrentSelect.value;
+
+    if (!voltageSensorId || !currentSensorId) {
+        setPowerPlaceholder();
+        return;
+    }
+
+    if (btnAggiornaPotenza) btnAggiornaPotenza.disabled = true;
+    if (powerMain) powerMain.textContent = 'power_w: ...';
+    if (powerDetails) powerDetails.innerHTML = '';
+
+    const n = 1600;
+    const sr = 4000;
+
+    fetch(`http://${ip}/power?voltage_sensor_id=${encodeURIComponent(voltageSensorId)}&current_sensor_id=${encodeURIComponent(currentSensorId)}&n=${n}&sr=${sr}&fast=1`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data || data.ok === false) {
+                throw new Error('Risposta /power non valida');
+            }
+
+            const powerW = Number(data.power_w);
+            const apparentPower = Number(data.apparent_power_va);
+            const pf = Number(data.power_factor);
+            const voltsRms = Number(data.volts_rms);
+            const ampsRms = Number(data.amps_rms);
+
+            if (powerMain) {
+                powerMain.textContent = Number.isFinite(powerW)
+                    ? `power_w: ${powerW.toFixed(3)} W`
+                    : 'power_w: - W';
+            }
+
+            if (powerDetails) {
+                const vMin = data.voltage && Number.isFinite(Number(data.voltage.min)) ? Number(data.voltage.min) : null;
+                const vMax = data.voltage && Number.isFinite(Number(data.voltage.max)) ? Number(data.voltage.max) : null;
+                const vBase = data.voltage && Number.isFinite(Number(data.voltage.baseline_mean)) ? Number(data.voltage.baseline_mean) : null;
+                const cMin = data.current && Number.isFinite(Number(data.current.min)) ? Number(data.current.min) : null;
+                const cMax = data.current && Number.isFinite(Number(data.current.max)) ? Number(data.current.max) : null;
+                const cBase = data.current && Number.isFinite(Number(data.current.baseline_mean)) ? Number(data.current.baseline_mean) : null;
+
+                powerDetails.innerHTML =
+                    `<b>volts_rms:</b> ${Number.isFinite(voltsRms) ? voltsRms.toFixed(3) : '-'} V<br>` +
+                    `<b>amps_rms:</b> ${Number.isFinite(ampsRms) ? ampsRms.toFixed(3) : '-'} A<br>` +
+                    `<b>apparent_power_va:</b> ${Number.isFinite(apparentPower) ? apparentPower.toFixed(3) : '-'} VA<br>` +
+                    `<b>power_factor:</b> ${Number.isFinite(pf) ? pf.toFixed(4) : '-'}<br>` +
+                    `<b>clipping:</b> ${data.clipping ? 'SI' : 'NO'}<br>` +
+                    `<b>mode:</b> ${data.mode || '-'}<br>` +
+                    `<b>fast:</b> ${data.fast === true ? 'true' : data.fast === false ? 'false' : '-'}<br>` +
+                    `<b>n:</b> ${Number.isFinite(Number(data.n)) ? Number(data.n) : '-'}<br>` +
+                    `<b>sample_rate_hz:</b> ${Number.isFinite(Number(data.sample_rate_hz)) ? Number(data.sample_rate_hz) : '-'}<br>` +
+                    `<b>voltage min/max/baseline:</b> ${vMin ?? '-'} / ${vMax ?? '-'} / ${vBase ?? '-'}<br>` +
+                    `<b>current min/max/baseline:</b> ${cMin ?? '-'} / ${cMax ?? '-'} / ${cBase ?? '-'}`;
+            }
+        })
+        .catch((e) => {
+            console.log('Errore fetchPower:', e);
+            setPowerPlaceholder();
+        })
+        .finally(() => {
+            if (btnAggiornaPotenza) btnAggiornaPotenza.disabled = false;
+        });
+}
+
+populatePowerSensorSelects();
+setPowerPlaceholder();
+if (btnAggiornaPotenza) btnAggiornaPotenza.onclick = fetchPower;
+
 if (btnBaseline) btnBaseline.onclick = function() {
     const sid = getSensorId();
     if (!sid) return showMsg('Seleziona un sensore!');
