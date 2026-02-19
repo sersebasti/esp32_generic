@@ -176,11 +176,10 @@ if (select) {
             let newCanvas = document.createElement('canvas');
             newCanvas.id = 'misure-chart';
             newCanvas.height = 180;
-            newCanvas.width = 600;
             newCanvas.style.display = 'block';
             newCanvas.style.boxSizing = 'border-box';
             newCanvas.style.height = '180px';
-            newCanvas.style.width = '600px';
+            newCanvas.style.width = '100%';
             chartDiv.appendChild(newCanvas);
             misureContent.appendChild(chartDiv);
             let infoDiv = document.getElementById('misure-info-div');

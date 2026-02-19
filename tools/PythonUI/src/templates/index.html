@@ -3,21 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 Desktop GUI</title>
-    <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fb; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #0001; padding: 32px; }
-        h1 { color: #2a3a4a; font-size: 2em; margin-bottom: 0.5em; }
-        label { display: block; margin-top: 1em; color: #444; }
-        input, button, select { font-size: 1em; padding: 8px; margin-top: 0.5em; border-radius: 6px; border: 1px solid #ccc; }
-        button { background: #2a7ae2; color: #fff; border: none; cursor: pointer; margin-top: 1em; }
-        button:hover { background: #185a9d; }
-        .result { margin-top: 2em; background: #f7f7fa; padding: 16px; border-radius: 8px; min-height: 40px; }
-    </style>
+    <title>ESP32 Desktop GUI X</title>
+    <link rel="stylesheet" href="/static/css/main.css">
 </head>
 <body>
     <div class="container">
-        <h1>ESP32 Desktop GUI</h1>
+        <h1>ESP32 Desktop GUI XXXX</h1>
         <form id="esp32-form" method="post">
             <label for="ip">Indirizzo IP ESP32:</label>
             <input type="text" id="ip" name="ip" placeholder="192.168.1.10" value="{{ ip }}" required>
@@ -31,7 +22,7 @@
         <div class="result">
             <strong>Info dispositivo:</strong><br>
             <ul>
-                <li><b>SSID:</b> {{ status_info.ssid }}</li>
+                <li><b>SSIDx:</b> {{ status_info.ssid }}</li>
                 <li><b>Uptime (s):</b> {{ status_info.uptime_s }}</li>
                 <li><b>Nome:</b> {{ status_info.name }}</li>
                 <li><b>MAC STA:</b> {{ status_info.mac_sta }}</li>
@@ -83,7 +74,7 @@
                 <button id="btn-aggiorna-misure" type="button">Aggiorna misure</button>
                 <div id="misure-content" style="margin-top:1em;">
                     <div style="margin-top:1em;">
-                        <canvas id="misure-chart" height="180" width="600" style="display:block; box-sizing:border-box; height:180px; width:600px;"></canvas>
+                            <canvas id="misure-chart" height="180" style="display:block; box-sizing:border-box; height:180px; width:100%;"></canvas>
                     </div>
                 </div>
 
@@ -122,7 +113,6 @@
             var sensorsList = JSON.parse('{{ sensors|default([])|tojson }}');
         </script>
         <script src="/static/js/main.js"></script>
-        </div>
     </div>
 </body>
 </html>
