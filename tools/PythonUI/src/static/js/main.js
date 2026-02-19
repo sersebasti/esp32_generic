@@ -197,6 +197,10 @@ if (select) {
                 clearTimeout(autoMisureBisTimeout);
                 autoMisureBisTimeout = null;
             }
+            if (autoMisureTimeout) {
+                clearTimeout(autoMisureTimeout);
+                autoMisureTimeout = null;
+            }
         } else {
             boxes.style.display = 'none';
             showMsg('');
@@ -219,6 +223,10 @@ if (select) {
             if (autoMisureBisTimeout) {
                 clearTimeout(autoMisureBisTimeout);
                 autoMisureBisTimeout = null;
+            }
+            if (autoMisureTimeout) {
+                clearTimeout(autoMisureTimeout);
+                autoMisureTimeout = null;
             }
         }
     });
@@ -423,6 +431,84 @@ updateCalibButtons();
 // --- Misure ---
 const btnMisure = document.getElementById('btn-aggiorna-misure');
 let autoMisureBisTimeout = null;
+let autoMisureTimeout = null;
+let misureN = 1024;
+let misureSr = 4000;
+
+let autoMisureSwitch = null;
+if (btnMisure) {
+    const autoMisureSwitchLabel = document.createElement('label');
+    autoMisureSwitchLabel.style.display = 'inline-flex';
+    autoMisureSwitchLabel.style.alignItems = 'center';
+    autoMisureSwitchLabel.style.marginLeft = '1em';
+
+    autoMisureSwitch = document.createElement('input');
+    autoMisureSwitch.type = 'checkbox';
+    autoMisureSwitch.id = 'auto-misure-switch';
+    autoMisureSwitch.style.marginRight = '0.5em';
+    autoMisureSwitch.checked = false;
+
+    autoMisureSwitchLabel.appendChild(autoMisureSwitch);
+    const autoMisureSwitchText = document.createElement('span');
+    autoMisureSwitchText.textContent = 'Auto';
+    autoMisureSwitchLabel.appendChild(autoMisureSwitchText);
+
+    btnMisure.parentNode.insertBefore(autoMisureSwitchLabel, btnMisure.nextSibling);
+
+    autoMisureSwitch.addEventListener('change', function() {
+        if (autoMisureSwitch.checked) {
+            console.log('Levetta MISURE su: AUTO');
+        } else {
+            console.log('Levetta MISURE su: NO AUTO');
+            if (autoMisureTimeout) {
+                clearTimeout(autoMisureTimeout);
+                autoMisureTimeout = null;
+            }
+        }
+    });
+
+    const btnSetN = document.createElement('button');
+    btnSetN.type = 'button';
+    btnSetN.id = 'btn-misure-set-n';
+    btnSetN.style.marginLeft = '0.5em';
+    btnSetN.textContent = `N: ${misureN}`;
+
+    const btnSetSr = document.createElement('button');
+    btnSetSr.type = 'button';
+    btnSetSr.id = 'btn-misure-set-sr';
+    btnSetSr.style.marginLeft = '0.5em';
+    btnSetSr.textContent = `SR: ${misureSr}`;
+
+    const insertBeforeNode = autoMisureSwitchLabel;
+    btnMisure.parentNode.insertBefore(btnSetSr, insertBeforeNode);
+    btnMisure.parentNode.insertBefore(btnSetN, btnSetSr);
+
+    btnSetN.onclick = function() {
+        const value = prompt('Imposta numero campioni N:', String(misureN));
+        if (value === null) return;
+        const parsed = Number(value);
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+            alert('Valore N non valido. Inserisci un intero positivo.');
+            return;
+        }
+        misureN = parsed;
+        btnSetN.textContent = `N: ${misureN}`;
+        console.log('Nuovo N misure:', misureN);
+    };
+
+    btnSetSr.onclick = function() {
+        const value = prompt('Imposta sample rate SR (Hz):', String(misureSr));
+        if (value === null) return;
+        const parsed = Number(value);
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+            alert('Valore SR non valido. Inserisci un intero positivo.');
+            return;
+        }
+        misureSr = parsed;
+        btnSetSr.textContent = `SR: ${misureSr}`;
+        console.log('Nuovo SR misure:', misureSr);
+    };
+}
 
 let autoBisSwitch = null;
 if (btnMisureBis) {
@@ -460,6 +546,10 @@ if (btnMisureBis) {
 
 function fetchMisure() {
     return new Promise((resolve) => {
+        if (autoMisureTimeout) {
+            clearTimeout(autoMisureTimeout);
+            autoMisureTimeout = null;
+        }
         const sid = getSensorId();
         console.log('Sensore selezionato per misure:', sid);
         if (!sid) {
@@ -468,8 +558,8 @@ function fetchMisure() {
             return;
         }
         // Prendi i valori dagli input
-        const n = 1024;
-        const sr = 4000;
+        const n = misureN;
+        const sr = misureSr;
         const btn = document.getElementById('btn-aggiorna-misure');
         if (btn) btn.disabled = true;
         // Pulisci solo la parte testuale, non il canvas
@@ -491,9 +581,57 @@ function fetchMisure() {
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout richiesta')), timeout))
             ]);
         }
-        fetchWithTimeout(`http://${ip}/adc/scope_counts?sensor_id=${sid}&n=${n}&sr=${sr}&fast=1`, {timeout: 5000})
-            .then(r => {
+        function decodeScopeCountsBinary(arrayBuffer) {
+            const view = new DataView(arrayBuffer);
+            if (view.byteLength < 14) {
+                throw new Error('Payload binario troppo corto');
+            }
+
+            const magic = String.fromCharCode(
+                view.getUint8(0),
+                view.getUint8(1),
+                view.getUint8(2),
+                view.getUint8(3)
+            );
+            if (magic !== 'SCB1') {
+                throw new Error('Magic header non valido');
+            }
+
+            const version = view.getUint16(4, true);
+            const nHeader = view.getUint32(6, true);
+            const sampleRateHz = view.getUint32(10, true);
+            const expectedLen = 14 + (nHeader * 2);
+            if (view.byteLength < expectedLen) {
+                throw new Error('Payload binario incompleto');
+            }
+
+            const counts = new Array(nHeader);
+            let off = 14;
+            for (let i = 0; i < nHeader; i++) {
+                counts[i] = view.getUint16(off, true);
+                off += 2;
+            }
+
+            return {
+                ok: true,
+                n: nHeader,
+                sample_rate_hz: sampleRateHz,
+                counts: counts,
+                binary_version: version
+            };
+        }
+
+        fetchWithTimeout(`http://${ip}/adc/scope_counts?sensor_id=${sid}&n=${n}&sr=${sr}&fast=1&binary=1`, {timeout: 5000})
+            .then(async (r) => {
                 console.log('fetchWithTimeout: risposta ricevuta');
+                if (!r.ok) {
+                    throw new Error(`HTTP ${r.status}`);
+                }
+                const contentType = (r.headers.get('content-type') || '').toLowerCase();
+                if (contentType.includes('application/octet-stream')) {
+                    const buf = await r.arrayBuffer();
+                    return decodeScopeCountsBinary(buf);
+                }
                 return r.json();
             })
             .then(data => {
@@ -606,6 +744,11 @@ function fetchMisure() {
             .finally(() => {
                 console.log('fetchMisure: finally');
                 if (btn) btn.disabled = false;
+                if (autoMisureSwitch && autoMisureSwitch.checked) {
+                    autoMisureTimeout = setTimeout(() => {
+                        fetchMisure();
+                    }, 1000);
+                }
                 resolve();
             });
     });
@@ -676,7 +819,7 @@ function fetchMisureBisVolts() {
                 if (autoBisSwitch && autoBisSwitch.checked) {
                     autoMisureBisTimeout = setTimeout(() => {
                         fetchMisureBisVolts();
-                    }, 5000);
+                    }, 1000);
                 }
                 resolve();
             });
