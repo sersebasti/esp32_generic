@@ -13,27 +13,35 @@ class GenericSensor:
 
     @staticmethod
     def measure_instant_power_pair(voltage_sensor, current_sensor, n=1600, sample_rate_hz=4000, fast=False):
+        # Inizializza i due ADC (tensione e corrente) una sola volta.
         voltage_sensor._init_adc()
         current_sensor._init_adc()
 
+        # Normalizza i parametri di acquisizione in un range sicuro.
         n = max(32, min(int(n), 4096))
         sr = max(200, min(int(sample_rate_hz), 20000))
+        # Periodo teorico tra campioni (microsecondi).
         dt_us = int(1_000_000 / sr)
 
+        # Offset DC (baseline) e coefficienti di conversione count->unità fisiche.
         v_baseline = GenericSensor._cal_float(voltage_sensor, "baseline_mean", 2048.0)
         i_baseline = GenericSensor._cal_float(current_sensor, "baseline_mean", 2048.0)
         k_v = GenericSensor._cal_float(voltage_sensor, "k_V_per_count", 0.0)
         k_i = GenericSensor._cal_float(current_sensor, "k_A_per_count", 0.0)
+        # TODO: in futuro validare calibrazione (es. k_v/k_i != 0) e bloccare la misura con errore esplicito se non pronta.
 
+        # Accumulatori per RMS e potenza attiva istantanea.
         sum_v2 = 0.0
         sum_i2 = 0.0
         sum_p = 0.0
 
+        # Limiti osservati per diagnostica clipping/saturazione ADC.
         v_min = 4095
         v_max = 0
         i_min = 4095
         i_max = 0
 
+        # Acquisizione accoppiata V-I: ogni iterazione produce un campione istantaneo.
         for _ in range(n):
             v_count = voltage_sensor._read_count()
             i_count = current_sensor._read_count()
@@ -47,16 +55,20 @@ class GenericSensor:
             if i_count > i_max:
                 i_max = i_count
 
+            # Rimuove offset e converte in Volt/Ampere istantanei.
             v_inst = (v_count - v_baseline) * k_v
             i_inst = (i_count - i_baseline) * k_i
 
+            # Somme per: Vrms, Irms e P attiva media.
             sum_v2 += v_inst * v_inst
             sum_i2 += i_inst * i_inst
             sum_p += v_inst * i_inst
 
+            # In modalità non-fast prova a rispettare la frequenza richiesta.
             if not fast:
                 time.sleep_us(dt_us)
 
+        # Grandezze finali: RMS, potenza attiva, apparente e fattore di potenza.
         v_rms = math.sqrt(sum_v2 / n)
         i_rms = math.sqrt(sum_i2 / n)
         p_active = sum_p / n

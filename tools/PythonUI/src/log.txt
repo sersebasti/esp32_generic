@@ -4907,3 +4907,66 @@ jinja2.exceptions.TemplateAssertionError: No filter named 'escapejs'.
 2026-02-19 18:58:03,402 INFO 127.0.0.1 - - [19/Feb/2026 18:58:03] "POST / HTTP/1.1" 200 -
 2026-02-19 18:58:03,457 INFO 127.0.0.1 - - [19/Feb/2026 18:58:03] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
 2026-02-19 18:58:03,486 INFO 127.0.0.1 - - [19/Feb/2026 18:58:03] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-20 08:28:41,387 INFO [SERVER] Flask app avviata
+2026-02-20 08:28:41,389 INFO [SERVER] Flask app avviata
+2026-02-20 08:28:41,525 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.114.145.63:8000
+2026-02-20 08:28:41,526 INFO [33mPress CTRL+C to quit[0m
+2026-02-20 08:28:43,334 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-20 08:28:43,334 INFO [REQUEST] GET http://192.168.1.6/status
+2026-02-20 08:28:45,428 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.6', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B6093F9CC0>, 'Connection to 192.168.1.6 timed out. (connect timeout=2)'))
+2026-02-20 08:28:45,428 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.6', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B6093F9CC0>, 'Connection to 192.168.1.6 timed out. (connect timeout=2)'))
+2026-02-20 08:28:45,429 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-20 08:28:45,429 INFO [REQUEST] GET http://192.168.1.6/sensors
+2026-02-20 08:28:47,448 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.6', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B6093F93C0>, 'Connection to 192.168.1.6 timed out. (connect timeout=2)'))
+2026-02-20 08:28:47,448 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.6', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B6093F93C0>, 'Connection to 192.168.1.6 timed out. (connect timeout=2)'))
+2026-02-20 08:28:47,549 INFO 127.0.0.1 - - [20/Feb/2026 08:28:47] "GET / HTTP/1.1" 200 -
+2026-02-20 08:28:47,906 INFO 127.0.0.1 - - [20/Feb/2026 08:28:47] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-20 08:28:47,980 INFO 127.0.0.1 - - [20/Feb/2026 08:28:47] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-20 08:28:48,129 INFO 127.0.0.1 - - [20/Feb/2026 08:28:48] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-02-20 08:28:51,931 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-20 08:28:51,931 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-20 08:28:53,946 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B609D729B0>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-20 08:28:53,946 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B609D729B0>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-20 08:28:53,946 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-20 08:28:53,946 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-20 08:28:55,951 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B609D71E70>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-20 08:28:55,951 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B609D71E70>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-20 08:28:55,971 INFO 127.0.0.1 - - [20/Feb/2026 08:28:55] "POST / HTTP/1.1" 200 -
+2026-02-20 08:28:56,062 INFO 127.0.0.1 - - [20/Feb/2026 08:28:56] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-20 08:28:56,092 INFO 127.0.0.1 - - [20/Feb/2026 08:28:56] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-20 08:29:31,655 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-20 08:29:31,655 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-20 08:29:33,667 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B6093F1AE0>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-20 08:29:33,667 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B6093F1AE0>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-20 08:29:33,667 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-20 08:29:33,667 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-20 08:29:35,672 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B609D72230>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-20 08:29:35,672 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B609D72230>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-20 08:29:35,673 INFO 127.0.0.1 - - [20/Feb/2026 08:29:35] "POST / HTTP/1.1" 200 -
+2026-02-20 08:29:35,708 INFO 127.0.0.1 - - [20/Feb/2026 08:29:35] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-20 08:29:35,712 INFO 127.0.0.1 - - [20/Feb/2026 08:29:35] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-20 08:29:39,459 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-20 08:29:39,459 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-20 08:29:41,468 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B609D73C10>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-20 08:29:41,468 ERROR [EXCEPTION] /status: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /status (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B609D73C10>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-20 08:29:41,469 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-20 08:29:41,469 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-20 08:29:43,474 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B609D70F10>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-20 08:29:43,474 ERROR [EXCEPTION] /sensors: HTTPConnectionPool(host='192.168.1.116', port=80): Max retries exceeded with url: /sensors (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002B609D70F10>, 'Connection to 192.168.1.116 timed out. (connect timeout=2)'))
+2026-02-20 08:29:43,474 INFO 127.0.0.1 - - [20/Feb/2026 08:29:43] "POST / HTTP/1.1" 200 -
+2026-02-20 08:29:43,496 INFO 127.0.0.1 - - [20/Feb/2026 08:29:43] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-20 08:29:43,503 INFO 127.0.0.1 - - [20/Feb/2026 08:29:43] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-20 08:30:14,290 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-20 08:30:14,290 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-20 08:30:14,635 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 56, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 75856, "rssi": -37, "version": "1.2.0"}
+2026-02-20 08:30:14,635 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 56, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 75856, "rssi": -37, "version": "1.2.0"}
+2026-02-20 08:30:14,671 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-20 08:30:14,671 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-20 08:30:14,853 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-20 08:30:14,853 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-20 08:30:14,876 INFO 127.0.0.1 - - [20/Feb/2026 08:30:14] "POST / HTTP/1.1" 200 -
+2026-02-20 08:30:14,913 INFO 127.0.0.1 - - [20/Feb/2026 08:30:14] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-20 08:30:14,941 INFO 127.0.0.1 - - [20/Feb/2026 08:30:14] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
