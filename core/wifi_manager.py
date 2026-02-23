@@ -269,14 +269,27 @@ def _enter_setup_once(self):
     except Exception:
         pass
     ip_ap = self._ap_enable()
+    self._setup_server_foreground_needed = False
+    started = False
     try:
-        self._start_server(port=80, allow_foreground=False)
+        started = bool(self._start_server(port=80, allow_foreground=False))
     except Exception as e:
         self.log.info(f"Start server fallito: {e!r}")
+    if not started:
+        self._setup_server_foreground_needed = True
+        try:
+            self.log.info("Server setup non avviato in background; userò avvio foreground")
+        except Exception:
+            pass
     if not ip_ap:
         ip_ap = "192.168.4.1"
     try:
-        self.log.info("UI WiFi: http://%s/wifi/ui" % ip_ap)
+        if self._port_open(ip_ap, 80):
+            self.log.info("UI WiFi: http://%s/wifi/ui" % ip_ap)
+        elif self._port_open(ip_ap, 8080):
+            self.log.info("UI WiFi: http://%s:8080/wifi/ui" % ip_ap)
+        else:
+            self.log.info("UI WiFi: server non raggiungibile su 80/8080 (ritento in foreground se necessario)")
     except Exception:
         pass
 
@@ -736,6 +749,12 @@ def run(self):
                     continue
                 break
     self._enter_setup_once()
+    if getattr(self, "_setup_server_foreground_needed", False):
+        try:
+            self.log.info("Avvio server setup in foreground")
+            self._start_server(port=SERVER_PORT, allow_foreground=True)
+        except Exception as e:
+            self.log.info(f"Avvio server setup foreground fallito: {e!r}")
     while True:
         self.log.info("Loop Access Point attivo (setup)")
         time.sleep(1)

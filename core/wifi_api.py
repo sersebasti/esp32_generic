@@ -9,6 +9,27 @@ from core.http_consts import _HTTP_200_JSON, _HTTP_200_HTML
 from core import wifi_store as wcfg
 
 
+def _send_all(cl, data):
+    mv = memoryview(data)
+    sent = 0
+    total = len(mv)
+    while sent < total:
+        n = cl.send(mv[sent:])
+        if not n:
+            raise OSError("send_failed")
+        sent += n
+
+
+def _send_file_chunked(cl, path, chunk_size=1024):
+    _send_all(cl, _HTTP_200_HTML)
+    with open(path, "rb") as f:
+        while True:
+            chunk = f.read(chunk_size)
+            if not chunk:
+                break
+            _send_all(cl, chunk)
+
+
 def _send_static_ui(cl):
     """Try to send the static UI HTML from common locations.
 
@@ -27,9 +48,8 @@ def _send_static_ui(cl):
     )
     for p in paths:
         try:
-            with open(p, "rb") as f:
-                cl.send(_HTTP_200_HTML + f.read())
-                return True
+            _send_file_chunked(cl, p)
+            return True
         except Exception:
             pass
     fallback = b"".join(
@@ -41,7 +61,7 @@ def _send_static_ui(cl):
             b"</body></html>",
         ]
     )
-    cl.send(_HTTP_200_HTML + fallback)
+    _send_all(cl, _HTTP_200_HTML + fallback)
     return True
 
 

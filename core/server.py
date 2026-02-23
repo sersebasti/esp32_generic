@@ -68,9 +68,28 @@ def _parse_path(line):
         parts = line.split(" ")
         method = parts[0]
         path = parts[1]
+        # Alcuni client (es. captive portal) inviano target assoluto:
+        # GET http://192.168.4.1/wifi/ui HTTP/1.1
+        # Normalizza sempre a path origin-form: /wifi/ui
+        if path.startswith("http://") or path.startswith("https://"):
+            slash = path.find("/", path.find("://") + 3)
+            if slash >= 0:
+                path = path[slash:]
+            else:
+                path = "/"
+        if not path.startswith("/"):
+            path = "/" + path
         return method, path
     except Exception:
         return "GET", "/"
+
+def _client_ip(addr):
+    try:
+        if isinstance(addr, tuple) and len(addr) > 0:
+            return str(addr[0])
+    except Exception:
+        pass
+    return "?"
 
 def start_server(preferred_port=80, fallback_port=8080, verbose=True):
     try:
@@ -110,28 +129,73 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                     cl.close(); continue
                 line = req.split(b"\r\n", 1)[0].decode("utf-8", "ignore")
                 method, path = _parse_path(line)
+                if verbose:
+                    try:
+                        print("[HTTP] %s %s %s" % (_client_ip(addr), method, path))
+                    except Exception:
+                        pass
                 if method == "OPTIONS":
                     cl.send(_HTTP_204_CORS)
+                    if verbose:
+                        try: print("[HTTP] 204 OPTIONS")
+                        except Exception: pass
+                    continue
+                if method == "GET" and path.startswith("/favicon.ico"):
+                    cl.send(_HTTP_204_CORS)
+                    if verbose:
+                        try: print("[HTTP] 204 favicon")
+                        except Exception: pass
                     continue
                 if path.startswith("/fs/"):
                     if fs_api is None:
                         cl.send(_HTTP_400)
+                        if verbose:
+                            try: print("[HTTP] 400 /fs/* (fs_api non disponibile)")
+                            except Exception: pass
                     else:
                         handled = fs_api.handle(cl, method, path, req, _read_post_json, _body_initial_and_len)
                         if not handled:
                             cl.send(_HTTP_400)
+                            if verbose:
+                                try: print("[HTTP] 400 /fs/* non gestita")
+                                except Exception: pass
+                        elif verbose:
+                            try: print("[HTTP] OK fs_api")
+                            except Exception: pass
                     continue
                 if status_api.handle(cl, method, path):
-                    pass
+                    if verbose:
+                        try: print("[HTTP] OK status_api")
+                        except Exception: pass
                 elif wifi_api.handle(cl, method, path, req, _read_post_json):
-                    pass
+                    if verbose:
+                        try: print("[HTTP] OK wifi_api")
+                        except Exception: pass
                 elif (adc_api is not None) and adc_api.handle(cl, method, path, req, _read_post_json):
-                    pass
+                    if verbose:
+                        try: print("[HTTP] OK adc_api")
+                        except Exception: pass
                 elif system_api.handle(cl, method, path):
-                    pass
+                    if verbose:
+                        try: print("[HTTP] OK system_api")
+                        except Exception: pass
                 else:
                     cl.send(_HTTP_400)
-            except Exception:
+                    if verbose:
+                        try: print("[HTTP] 400 route non trovata: %s %s" % (method, path))
+                        except Exception: pass
+            except Exception as e:
+                err_no = None
+                try:
+                    if isinstance(e, OSError) and len(e.args) > 0:
+                        err_no = e.args[0]
+                except Exception:
+                    err_no = None
+                # Timeout/socket transient: evita rumore e continua
+                if err_no not in (110, 116):
+                    if verbose:
+                        try: print("[HTTP] EXC %r" % (e,))
+                        except Exception: pass
                 try: cl.close()
                 except Exception: pass
                 continue
