@@ -17,6 +17,16 @@
         <div class="result" id="result">
             {% if status %}{{ status }}{% else %}Risultati e messaggi appariranno qui.{% endif %}
         </div>
+        <div class="feature-grid" aria-label="Moduli disponibili">
+            <button type="button" class="feature-box" aria-label="Modulo Sensori">
+                <span class="feature-title">Sensori</span>
+                <span class="feature-subtitle">In arrivo</span>
+            </button>
+            <button type="button" class="feature-box" aria-label="Modulo File System">
+                <span class="feature-title">File System</span>
+                <span class="feature-subtitle">In arrivo</span>
+            </button>
+        </div>
 
         {% if status_info %}
         <div class="result">
