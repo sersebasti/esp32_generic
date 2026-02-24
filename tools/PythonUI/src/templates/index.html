@@ -19,8 +19,32 @@
         </div>
         <div class="feature-grid" aria-label="Moduli disponibili">
             <button type="button" class="feature-box" aria-label="Modulo Sensori">
-                <span class="feature-title">Sensori</span>
-                <span class="feature-subtitle">In arrivo</span>
+                <span class="feature-title">Sensori singoli:</span>
+
+                <select id="sensor-select" {% if sensors|length == 0 %}disabled{% endif %}>
+                    <option value="">{% if sensors|length == 0 %}Nessun sensore disponibile{% else %}-- scegli --{% endif %}</option>
+                    {% for s in sensors %}
+                        <option value="{{ s.id }}">{{ s.name or s.id }} ({{ s.type }})</option>
+                    {% endfor %}
+                </select>
+        
+            </button>
+            <button type="button" class="feature-box" aria-label="Modulo File System">
+                <div class="feature-title" style="margin-bottom:0.5em;">Miusra Potenza</div>
+                <div class="power-section" style="padding:1em 0 0 0; border-top:1px solid #e5e8ef;">
+                    <h3 style="margin-top:0;">Potenza (/power)</h3>
+                    <div style="display:flex; gap:1em; flex-wrap:wrap; align-items:flex-end; margin-bottom:1em;">
+                        <div>
+                            <label for="power-voltage-select"><b>Sensore tensione</b></label><br>
+                            <select id="power-voltage-select"></select>
+                        </div>
+                        <div>
+                            <label for="power-current-select"><b>Sensore corrente</b></label><br>
+                            <select id="power-current-select"></select>
+                        </div>
+                    </div>
+
+                </div>
             </button>
             <button type="button" class="feature-box" aria-label="Modulo File System">
                 <span class="feature-title">File System</span>
@@ -29,42 +53,36 @@
         </div>
 
         {% if status_info %}
-        <div class="result">
-            <strong>Info dispositivo:</strong><br>
-            <ul>
-                <li><b>SSIDx:</b> {{ status_info.ssid }}</li>
-                <li><b>Uptime (s):</b> {{ status_info.uptime_s }}</li>
-                <li><b>Nome:</b> {{ status_info.name }}</li>
-                <li><b>MAC STA:</b> {{ status_info.mac_sta }}</li>
-                <li><b>IP:</b> {{ status_info.ip }}</li>
-                <li><b>Heap libero:</b> {{ status_info.heap_free }}</li>
-                <li><b>RSSI:</b> {{ status_info.rssi }}</li>
-                <li><b>Versione:</b> {{ status_info.version }}</li>
-            </ul>
+        <div class="result hidden">
+            <div class="hidden">
+                <strong>Info dispositivo:</strong><br>
+                <ul>
+                    <li><b>SSIDx:</b> {{ status_info.ssid }}</li>
+                    <li><b>Uptime (s):</b> {{ status_info.uptime_s }}</li>
+                    <li><b>Nome:</b> {{ status_info.name }}</li>
+                    <li><b>MAC STA:</b> {{ status_info.mac_sta }}</li>
+                    <li><b>IP:</b> {{ status_info.ip }}</li>
+                    <li><b>Heap libero:</b> {{ status_info.heap_free }}</li>
+                    <li><b>RSSI:</b> {{ status_info.rssi }}</li>
+                    <li><b>Versione:</b> {{ status_info.version }}</li>
+                </ul>
+            </div>
         </div>
         {% endif %}
 
         {% if status_raw %}
-        <div class="result">
-            <strong>Risposta grezza /status:</strong><br>
+        <div class="result hidden">
+            <div class="hidden">
+                <strong>Risposta grezza /status:</strong><br>
 
-            {% if status_raw is string %}
-                <pre style="font-size:0.95em; background:#f0f0f0; border-radius:6px; padding:8px; white-space:pre-wrap;">{{ status_raw }}</pre>
-            {% else %}
-                <pre style="font-size:0.95em; background:#f0f0f0; border-radius:6px; padding:8px;">{{ status_raw|tojson(indent=2) }}</pre>
-            {% endif %}
+                {% if status_raw is string %}
+                    <pre style="font-size:0.95em; background:#f0f0f0; border-radius:6px; padding:8px; white-space:pre-wrap;">{{ status_raw }}</pre>
+                {% else %}
+                    <pre style="font-size:0.95em; background:#f0f0f0; border-radius:6px; padding:8px;">{{ status_raw|tojson(indent=2) }}</pre>
+                {% endif %}
+            </div>
         </div>
         {% endif %}
-
-        <div id="sensor-menu-container" style="margin-top:2em;">
-            <label for="sensor-select"><b>Seleziona sensore:</b></label>
-            <select id="sensor-select" {% if sensors|length == 0 %}disabled{% endif %}>
-                <option value="">{% if sensors|length == 0 %}Nessun sensore disponibile{% else %}-- scegli --{% endif %}</option>
-                {% for s in sensors %}
-                    <option value="{{ s.id }}">{{ s.name or s.id }} ({{ s.type }})</option>
-                {% endfor %}
-            </select>
-        </div>
         <div id="sensor-boxes" style="display:none; margin-top:2em;">
             <div style="margin-bottom:1.5em;">
                 <h3>Calibrazione</h3>
@@ -97,24 +115,13 @@
                     </div>
                 </div>
 
-                <div style="margin-top:1.5em; padding-top:1em; border-top:1px solid #e5e8ef;">
-                    <h3>Potenza (/power)</h3>
-                    <div style="display:flex; gap:1em; flex-wrap:wrap; align-items:flex-end;">
-                        <div>
-                            <label for="power-voltage-select"><b>Sensore tensione</b></label>
-                            <select id="power-voltage-select"></select>
-                        </div>
-                        <div>
-                            <label for="power-current-select"><b>Sensore corrente</b></label>
-                            <select id="power-current-select"></select>
-                        </div>
-                    </div>
-                    <button id="btn-aggiorna-potenza" type="button">Aggiorna potenza</button>
-                    <div id="power-content" style="margin-top:1em;">
+            </div>
+            <div>
+                <button id="btn-aggiorna-potenza" type="button" style="margin-bottom:1em;">Aggiorna potenza</button>
+                    <div id="power-content">
                         <div id="power-main" style="font-size:1.35em; font-weight:700; color:#185a9d; margin-bottom:0.5em;">power_w: - W</div>
                         <div id="power-details"></div>
                     </div>
-                </div>
             </div>
         </div>
         <script>

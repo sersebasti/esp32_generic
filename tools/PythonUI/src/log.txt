@@ -5032,3 +5032,328 @@ jinja2.exceptions.TemplateAssertionError: No filter named 'escapejs'.
 2026-02-20 09:11:24,957 INFO 127.0.0.1 - - [20/Feb/2026 09:11:24] "POST / HTTP/1.1" 200 -
 2026-02-20 09:11:25,049 INFO 127.0.0.1 - - [20/Feb/2026 09:11:25] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
 2026-02-20 09:11:25,124 INFO 127.0.0.1 - - [20/Feb/2026 09:11:25] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:10:42,327 INFO [SERVER] Flask app avviata
+2026-02-24 16:10:42,329 INFO [SERVER] Flask app avviata
+2026-02-24 16:10:42,392 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:10:42,392 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:10:43,661 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:10:43,661 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:10:44,221 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2053, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 30976, "rssi": -56, "version": "1.2.0"}
+2026-02-24 16:10:44,221 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2053, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 30976, "rssi": -56, "version": "1.2.0"}
+2026-02-24 16:10:44,222 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:10:44,222 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:10:44,305 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:10:44,305 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:10:44,397 INFO 127.0.0.1 - - [24/Feb/2026 16:10:44] "GET / HTTP/1.1" 200 -
+2026-02-24 16:10:44,674 INFO 127.0.0.1 - - [24/Feb/2026 16:10:44] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:10:44,767 INFO 127.0.0.1 - - [24/Feb/2026 16:10:44] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:10:44,842 INFO 127.0.0.1 - - [24/Feb/2026 16:10:44] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-02-24 16:10:52,833 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:10:52,833 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:10:53,032 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2062, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 74336, "rssi": -54, "version": "1.2.0"}
+2026-02-24 16:10:53,032 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2062, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 74336, "rssi": -54, "version": "1.2.0"}
+2026-02-24 16:10:53,033 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:10:53,033 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:10:53,078 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:10:53,078 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:10:53,082 INFO 127.0.0.1 - - [24/Feb/2026 16:10:53] "POST / HTTP/1.1" 200 -
+2026-02-24 16:10:53,134 INFO 127.0.0.1 - - [24/Feb/2026 16:10:53] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:10:53,142 INFO 127.0.0.1 - - [24/Feb/2026 16:10:53] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:12:02,535 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:12:02,535 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:12:02,668 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2131, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 69472, "rssi": -57, "version": "1.2.0"}
+2026-02-24 16:12:02,668 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2131, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 69472, "rssi": -57, "version": "1.2.0"}
+2026-02-24 16:12:02,668 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:12:02,668 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:12:02,723 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:12:02,723 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:12:02,725 INFO 127.0.0.1 - - [24/Feb/2026 16:12:02] "POST / HTTP/1.1" 200 -
+2026-02-24 16:12:02,779 INFO 127.0.0.1 - - [24/Feb/2026 16:12:02] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:12:02,784 INFO 127.0.0.1 - - [24/Feb/2026 16:12:02] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:14:27,176 INFO [SERVER] Flask app avviata
+2026-02-24 16:14:27,178 INFO [SERVER] Flask app avviata
+2026-02-24 16:14:27,243 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:14:27,243 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:14:28,655 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:14:28,655 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:14:28,968 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2277, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 73408, "rssi": -55, "version": "1.2.0"}
+2026-02-24 16:14:28,968 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2277, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 73408, "rssi": -55, "version": "1.2.0"}
+2026-02-24 16:14:28,983 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:14:28,983 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:14:29,080 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:14:29,080 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:14:29,107 INFO 127.0.0.1 - - [24/Feb/2026 16:14:29] "GET / HTTP/1.1" 200 -
+2026-02-24 16:14:29,414 INFO 127.0.0.1 - - [24/Feb/2026 16:14:29] "GET /static/css/main.css HTTP/1.1" 200 -
+2026-02-24 16:14:29,429 INFO 127.0.0.1 - - [24/Feb/2026 16:14:29] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:14:51,149 INFO 127.0.0.1 - - [24/Feb/2026 16:14:51] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:14:51,277 INFO 127.0.0.1 - - [24/Feb/2026 16:14:51] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-24 16:16:35,710 INFO [SERVER] Flask app avviata
+2026-02-24 16:16:35,711 INFO [SERVER] Flask app avviata
+2026-02-24 16:16:35,757 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:16:35,758 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:16:37,029 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:16:37,029 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:16:37,281 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2406, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 64784, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:16:37,281 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2406, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 64784, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:16:37,282 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:16:37,282 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:16:37,320 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:16:37,320 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:16:37,344 INFO 127.0.0.1 - - [24/Feb/2026 16:16:37] "GET / HTTP/1.1" 200 -
+2026-02-24 16:16:37,614 INFO 127.0.0.1 - - [24/Feb/2026 16:16:37] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:16:37,638 INFO 127.0.0.1 - - [24/Feb/2026 16:16:37] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:16:43,336 INFO 127.0.0.1 - - [24/Feb/2026 16:16:43] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:16:43,398 INFO 127.0.0.1 - - [24/Feb/2026 16:16:43] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-24 16:17:50,985 INFO [SERVER] Flask app avviata
+2026-02-24 16:17:50,989 INFO [SERVER] Flask app avviata
+2026-02-24 16:17:51,056 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:17:51,057 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:17:52,389 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:17:52,389 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:17:52,647 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2481, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 73088, "rssi": -54, "version": "1.2.0"}
+2026-02-24 16:17:52,647 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2481, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 73088, "rssi": -54, "version": "1.2.0"}
+2026-02-24 16:17:52,653 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:17:52,653 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:17:52,708 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:17:52,708 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:17:52,745 INFO 127.0.0.1 - - [24/Feb/2026 16:17:52] "GET / HTTP/1.1" 200 -
+2026-02-24 16:17:53,084 INFO 127.0.0.1 - - [24/Feb/2026 16:17:53] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:17:53,103 INFO 127.0.0.1 - - [24/Feb/2026 16:17:53] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:17:55,157 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:17:55,157 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:17:55,315 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2484, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 74816, "rssi": -53, "version": "1.2.0"}
+2026-02-24 16:17:55,315 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2484, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 74816, "rssi": -53, "version": "1.2.0"}
+2026-02-24 16:17:55,316 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:17:55,316 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:17:55,356 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:17:55,356 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:17:55,365 INFO 127.0.0.1 - - [24/Feb/2026 16:17:55] "GET / HTTP/1.1" 200 -
+2026-02-24 16:17:55,408 INFO 127.0.0.1 - - [24/Feb/2026 16:17:55] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:17:55,428 INFO 127.0.0.1 - - [24/Feb/2026 16:17:55] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:18:14,309 INFO [SERVER] Flask app avviata
+2026-02-24 16:18:14,317 INFO [SERVER] Flask app avviata
+2026-02-24 16:18:14,483 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:18:14,485 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:18:15,975 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:18:15,975 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:18:16,215 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2505, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 73376, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:18:16,215 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2505, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 73376, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:18:16,217 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:18:16,217 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:18:16,302 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:18:16,302 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:18:16,335 INFO 127.0.0.1 - - [24/Feb/2026 16:18:16] "GET / HTTP/1.1" 200 -
+2026-02-24 16:18:16,706 INFO 127.0.0.1 - - [24/Feb/2026 16:18:16] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:18:16,842 INFO 127.0.0.1 - - [24/Feb/2026 16:18:16] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:19:26,297 INFO [SERVER] Flask app avviata
+2026-02-24 16:19:26,298 INFO [SERVER] Flask app avviata
+2026-02-24 16:19:26,347 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:19:26,347 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:19:27,703 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:19:27,703 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:19:27,876 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2576, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 69456, "rssi": -50, "version": "1.2.0"}
+2026-02-24 16:19:27,876 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 2576, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 69456, "rssi": -50, "version": "1.2.0"}
+2026-02-24 16:19:27,879 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:19:27,879 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:19:27,954 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:19:27,954 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:19:27,985 INFO 127.0.0.1 - - [24/Feb/2026 16:19:27] "GET / HTTP/1.1" 200 -
+2026-02-24 16:19:28,314 INFO 127.0.0.1 - - [24/Feb/2026 16:19:28] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:19:28,352 INFO 127.0.0.1 - - [24/Feb/2026 16:19:28] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:26:35,676 INFO [SERVER] Flask app avviata
+2026-02-24 16:26:35,677 INFO [SERVER] Flask app avviata
+2026-02-24 16:26:35,782 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:26:35,782 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:26:36,951 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:26:36,951 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:26:37,546 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3006, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 40688, "rssi": -53, "version": "1.2.0"}
+2026-02-24 16:26:37,546 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3006, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 40688, "rssi": -53, "version": "1.2.0"}
+2026-02-24 16:26:37,547 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:26:37,547 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:26:37,615 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:26:37,615 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:26:37,634 INFO 127.0.0.1 - - [24/Feb/2026 16:26:37] "GET / HTTP/1.1" 200 -
+2026-02-24 16:26:37,871 INFO 127.0.0.1 - - [24/Feb/2026 16:26:37] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:26:37,961 INFO 127.0.0.1 - - [24/Feb/2026 16:26:37] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:27:40,652 INFO [SERVER] Flask app avviata
+2026-02-24 16:27:40,655 INFO [SERVER] Flask app avviata
+2026-02-24 16:27:40,712 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:27:40,713 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:27:41,837 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:27:41,837 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:27:42,072 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3071, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 70144, "rssi": -55, "version": "1.2.0"}
+2026-02-24 16:27:42,072 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3071, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 70144, "rssi": -55, "version": "1.2.0"}
+2026-02-24 16:27:42,076 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:27:42,076 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:27:42,132 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:27:42,132 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:27:42,149 INFO 127.0.0.1 - - [24/Feb/2026 16:27:42] "GET / HTTP/1.1" 200 -
+2026-02-24 16:27:42,410 INFO 127.0.0.1 - - [24/Feb/2026 16:27:42] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:27:42,499 INFO 127.0.0.1 - - [24/Feb/2026 16:27:42] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:27:51,253 INFO 127.0.0.1 - - [24/Feb/2026 16:27:51] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:27:51,284 INFO 127.0.0.1 - - [24/Feb/2026 16:27:51] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+2026-02-24 16:28:21,022 INFO [SERVER] Flask app avviata
+2026-02-24 16:28:21,028 INFO [SERVER] Flask app avviata
+2026-02-24 16:28:21,115 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:28:21,115 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:28:22,529 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:28:22,529 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:28:22,822 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3111, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 71872, "rssi": -56, "version": "1.2.0"}
+2026-02-24 16:28:22,822 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3111, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 71872, "rssi": -56, "version": "1.2.0"}
+2026-02-24 16:28:22,828 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:28:22,828 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:28:22,882 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:28:22,882 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:28:22,917 INFO 127.0.0.1 - - [24/Feb/2026 16:28:22] "GET / HTTP/1.1" 200 -
+2026-02-24 16:28:23,277 INFO 127.0.0.1 - - [24/Feb/2026 16:28:23] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:28:23,414 INFO 127.0.0.1 - - [24/Feb/2026 16:28:23] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:31:14,736 INFO [SERVER] Flask app avviata
+2026-02-24 16:31:14,740 INFO [SERVER] Flask app avviata
+2026-02-24 16:31:14,860 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:31:14,872 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:31:15,988 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:31:15,988 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:31:16,075 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3285, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 64192, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:31:16,075 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3285, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 64192, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:31:16,087 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:31:16,087 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:31:16,169 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:31:16,169 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:31:16,212 INFO 127.0.0.1 - - [24/Feb/2026 16:31:16] "GET / HTTP/1.1" 200 -
+2026-02-24 16:31:16,549 INFO 127.0.0.1 - - [24/Feb/2026 16:31:16] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:31:16,588 INFO 127.0.0.1 - - [24/Feb/2026 16:31:16] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:32:09,808 INFO [SERVER] Flask app avviata
+2026-02-24 16:32:09,809 INFO [SERVER] Flask app avviata
+2026-02-24 16:32:09,863 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:32:09,864 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:32:11,062 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:32:11,062 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:32:11,168 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3340, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 70816, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:32:11,168 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3340, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 70816, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:32:11,171 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:32:11,171 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:32:11,231 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:32:11,231 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:32:11,255 INFO 127.0.0.1 - - [24/Feb/2026 16:32:11] "GET / HTTP/1.1" 200 -
+2026-02-24 16:32:11,578 INFO 127.0.0.1 - - [24/Feb/2026 16:32:11] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:32:11,600 INFO 127.0.0.1 - - [24/Feb/2026 16:32:11] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:34:06,847 INFO [SERVER] Flask app avviata
+2026-02-24 16:34:06,853 INFO [SERVER] Flask app avviata
+2026-02-24 16:34:06,946 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:34:06,947 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:34:08,499 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:34:08,499 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:34:08,811 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3457, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 71920, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:34:08,811 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3457, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 71920, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:34:08,826 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:34:08,826 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:34:08,944 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:34:08,944 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:34:08,985 INFO 127.0.0.1 - - [24/Feb/2026 16:34:08] "GET / HTTP/1.1" 200 -
+2026-02-24 16:34:09,310 INFO 127.0.0.1 - - [24/Feb/2026 16:34:09] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:34:09,368 INFO 127.0.0.1 - - [24/Feb/2026 16:34:09] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:34:51,888 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:34:51,888 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:34:52,154 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3501, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 73600, "rssi": -50, "version": "1.2.0"}
+2026-02-24 16:34:52,154 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3501, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 73600, "rssi": -50, "version": "1.2.0"}
+2026-02-24 16:34:52,156 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:34:52,156 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:34:52,209 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:34:52,209 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:34:52,213 INFO 127.0.0.1 - - [24/Feb/2026 16:34:52] "GET / HTTP/1.1" 200 -
+2026-02-24 16:34:52,295 INFO 127.0.0.1 - - [24/Feb/2026 16:34:52] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:34:52,303 INFO 127.0.0.1 - - [24/Feb/2026 16:34:52] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:36:23,063 INFO [SERVER] Flask app avviata
+2026-02-24 16:36:23,065 INFO [SERVER] Flask app avviata
+2026-02-24 16:36:23,174 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:36:23,175 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:36:24,889 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:36:24,889 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:36:25,546 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3594, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 67568, "rssi": -53, "version": "1.2.0"}
+2026-02-24 16:36:25,546 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3594, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 67568, "rssi": -53, "version": "1.2.0"}
+2026-02-24 16:36:25,556 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:36:25,556 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:36:25,652 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:36:25,652 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:36:25,704 INFO 127.0.0.1 - - [24/Feb/2026 16:36:25] "GET / HTTP/1.1" 200 -
+2026-02-24 16:36:26,153 INFO 127.0.0.1 - - [24/Feb/2026 16:36:26] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:36:26,198 INFO 127.0.0.1 - - [24/Feb/2026 16:36:26] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:36:44,233 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:36:44,233 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:36:44,366 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3613, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 73888, "rssi": -53, "version": "1.2.0"}
+2026-02-24 16:36:44,366 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3613, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 73888, "rssi": -53, "version": "1.2.0"}
+2026-02-24 16:36:44,366 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:36:44,366 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:36:44,405 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:36:44,405 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:36:44,406 INFO 127.0.0.1 - - [24/Feb/2026 16:36:44] "GET / HTTP/1.1" 200 -
+2026-02-24 16:36:44,481 INFO 127.0.0.1 - - [24/Feb/2026 16:36:44] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:36:44,515 INFO 127.0.0.1 - - [24/Feb/2026 16:36:44] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 16:39:48,926 INFO [SERVER] Flask app avviata
+2026-02-24 16:39:48,929 INFO [SERVER] Flask app avviata
+2026-02-24 16:39:49,028 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 16:39:49,028 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 16:39:50,435 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:39:50,435 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:39:50,559 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3799, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 61504, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:39:50,559 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3799, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 61504, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:39:50,562 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:39:50,562 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:39:50,633 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:39:50,633 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:39:50,663 INFO 127.0.0.1 - - [24/Feb/2026 16:39:50] "GET / HTTP/1.1" 200 -
+2026-02-24 16:39:50,986 INFO 127.0.0.1 - - [24/Feb/2026 16:39:50] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:39:51,156 INFO 127.0.0.1 - - [24/Feb/2026 16:39:51] "GET /static/js/main.js HTTP/1.1" 200 -
+2026-02-24 16:40:00,762 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:40:00,762 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 16:40:00,982 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3810, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 74192, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:40:00,982 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 3810, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 74192, "rssi": -51, "version": "1.2.0"}
+2026-02-24 16:40:00,983 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:40:00,983 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 16:40:01,020 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:40:01,020 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 16:40:01,023 INFO 127.0.0.1 - - [24/Feb/2026 16:40:01] "POST / HTTP/1.1" 200 -
+2026-02-24 16:40:01,053 INFO 127.0.0.1 - - [24/Feb/2026 16:40:01] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 16:40:01,072 INFO 127.0.0.1 - - [24/Feb/2026 16:40:01] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -

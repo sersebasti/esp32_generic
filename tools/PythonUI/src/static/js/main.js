@@ -1,3 +1,4 @@
+
 // --- Variabili globali iniettate dal template ---
 // ip, sensorsList
 
