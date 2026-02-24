@@ -203,7 +203,7 @@ def _reset_wifi(self):
     except Exception:
         pass
 
-def _ap_enable(self, essid="ESP-SETUP", password="12345678"):
+def _ap_enable(self, essid="ESP-SETUP", password=""):
     try:
         if not essid or essid == "ESP-SETUP":
             try:
