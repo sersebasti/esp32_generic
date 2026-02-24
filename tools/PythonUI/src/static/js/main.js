@@ -827,9 +827,18 @@ function fetchMisureBisVolts() {
                 }
 
                 if (infoDiv) infoDiv.innerHTML = '';
-                const rmsValue = data[bisMeta.key] ?? data.volts_rms ?? data.amps_rms;
-                if (rmsDiv) {
-                    let span = document.getElementById('misura-bis-val');
+                // Recupera la calibrazione dal sensore selezionato
+                const sid = getSensorId();
+                const cal = window._lastCalibInfo && window._lastCalibInfo.sensor_id === sid ? (window._lastCalibInfo.cal || {}) : {};
+                const hasBaseline = typeof cal.baseline_mean === 'number';
+                const hasPoints = Array.isArray(cal.points) && cal.points.length > 0;
+                let span = rmsDiv ? rmsDiv.querySelector('#misura-bis-val') : null;
+                if (!hasBaseline || !hasPoints) {
+                    // Mostra messaggio se calibrazione non disponibile
+                    if (span) span.textContent = '';
+                    if (infoDiv) infoDiv.innerHTML = '<span style="color:#c00;font-weight:bold;">Esegui calibrazione per ottenere il valore.</span>';
+                } else {
+                    const rmsValue = data[bisMeta.key] ?? data.volts_rms ?? data.amps_rms;
                     if (span) {
                         if (typeof rmsValue === 'number') {
                             span.textContent = rmsValue.toFixed(3);

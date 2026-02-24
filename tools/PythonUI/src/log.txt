@@ -5867,3 +5867,21 @@ jinja2.exceptions.TemplateAssertionError: No filter named 'escapejs'.
 2026-02-24 18:18:16,838 INFO 127.0.0.1 - - [24/Feb/2026 18:18:16] "GET / HTTP/1.1" 200 -
 2026-02-24 18:18:17,147 INFO 127.0.0.1 - - [24/Feb/2026 18:18:17] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
 2026-02-24 18:18:17,200 INFO 127.0.0.1 - - [24/Feb/2026 18:18:17] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-02-24 18:35:32,864 INFO [SERVER] Flask app avviata
+2026-02-24 18:35:32,868 INFO [SERVER] Flask app avviata
+2026-02-24 18:35:33,032 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://10.1.6.20:8000
+2026-02-24 18:35:33,035 INFO [33mPress CTRL+C to quit[0m
+2026-02-24 18:35:35,316 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 18:35:35,316 INFO [REQUEST] GET http://192.168.1.116/status
+2026-02-24 18:35:35,504 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 10744, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 54416, "rssi": -44, "version": "1.2.0"}
+2026-02-24 18:35:35,504 INFO [RESPONSE] 200 {"ssid": "RUT241_D437", "uptime_s": 10744, "name": "esp32", "mac_sta": "44:1d:64:f3:d2:f4", "ip": "192.168.1.116", "heap_free": 54416, "rssi": -44, "version": "1.2.0"}
+2026-02-24 18:35:35,510 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 18:35:35,510 INFO [REQUEST] GET http://192.168.1.116/sensors
+2026-02-24 18:35:35,575 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 18:35:35,575 INFO [RESPONSE] 200 {"sensors": [{"id": "c1", "type": "current", "adc_pin": 34}, {"id": "c2", "type": "current", "adc_pin": 35}, {"id": "v1", "type": "voltage", "adc_pin": 33}], "ok": true}
+2026-02-24 18:35:35,752 INFO 127.0.0.1 - - [24/Feb/2026 18:35:35] "GET / HTTP/1.1" 200 -
+2026-02-24 18:35:36,108 INFO 127.0.0.1 - - [24/Feb/2026 18:35:36] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-02-24 18:35:36,261 INFO 127.0.0.1 - - [24/Feb/2026 18:35:36] "GET /static/js/main.js HTTP/1.1" 200 -
