@@ -157,6 +157,17 @@ function fetchCalibInfo() {
 }
 if (select) {
     select.addEventListener('change', function() {
+        const sensorType = getSensorType();
+        let bisRmsDiv = document.getElementById('misure-bis-rms');
+        let span = bisRmsDiv ? bisRmsDiv.querySelector('#misura-bis-val') : null;
+        // Aggiorna il label dinamicamente
+        if (bisRmsDiv) {
+            if (sensorType === 'current') {
+                bisRmsDiv.innerHTML = 'Amper (rms): <span id="misura-bis-val"></span>';
+            } else {
+                bisRmsDiv.innerHTML = 'Volts (rms): <span id="misura-bis-val"></span>';
+            }
+        }
         if (this.value) {
             boxes.style.display = 'block';
             showMsg('');
@@ -189,11 +200,10 @@ if (select) {
             if (effLabel) effLabel.style.display = 'none';
             let bisInfoDiv = document.getElementById('misure-bis-info-div');
             if (bisInfoDiv) bisInfoDiv.innerHTML = '';
-            let bisRmsDiv = document.getElementById('misure-bis-rms');
-            if (bisRmsDiv) {
-                const bisMeta = getBisRmsMeta(getSensorType());
-                bisRmsDiv.textContent = `${bisMeta.key}: - ${bisMeta.unit}`;
-            }
+            // svuota solo il valore
+            let bisRmsDiv2 = document.getElementById('misure-bis-rms');
+            let span2 = bisRmsDiv2 ? bisRmsDiv2.querySelector('#misura-bis-val') : null;
+            if (span2) span2.textContent = '';
             if (autoMisureBisTimeout) {
                 clearTimeout(autoMisureBisTimeout);
                 autoMisureBisTimeout = null;
@@ -219,8 +229,10 @@ if (select) {
             if (effLabel) effLabel.style.display = 'none';
             let bisInfoDiv = document.getElementById('misure-bis-info-div');
             if (bisInfoDiv) bisInfoDiv.innerHTML = '';
-            let bisRmsDiv = document.getElementById('misure-bis-rms');
-            if (bisRmsDiv) bisRmsDiv.textContent = 'volts_rms: - V';
+            let bisRmsDiv2 = document.getElementById('misure-bis-rms');
+            if (bisRmsDiv2) {
+                bisRmsDiv2.innerHTML = 'Volts (rms): <span id="misura-bis-val"></span>';
+            }
             if (autoMisureBisTimeout) {
                 clearTimeout(autoMisureBisTimeout);
                 autoMisureBisTimeout = null;
@@ -231,6 +243,18 @@ if (select) {
             }
         }
     });
+// Imposta il label corretto all'avvio
+window.addEventListener('DOMContentLoaded', function() {
+    const sensorType = getSensorType();
+    let bisRmsDiv = document.getElementById('misure-bis-rms');
+    if (bisRmsDiv) {
+        if (sensorType === 'current') {
+            bisRmsDiv.innerHTML = 'Amper (rms): <span id="misura-bis-val"></span>';
+        } else {
+            bisRmsDiv.innerHTML = 'Volts (rms): <span id="misura-bis-val"></span>';
+        }
+    }
+});
 }
 // Aggiorna la visibilità dei pulsanti in base al tipo sensore selezionato
 function updateCalibButtons() {
@@ -278,7 +302,7 @@ function populatePowerSensorSelects() {
         voltageSensors.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id;
-            opt.textContent = `${s.name || s.id} (${s.id})`;
+            opt.textContent = `${s.name || s.id} (${s.type})`;
             powerVoltageSelect.appendChild(opt);
         });
         powerVoltageSelect.disabled = false;
@@ -291,7 +315,7 @@ function populatePowerSensorSelects() {
         currentSensors.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id;
-            opt.textContent = `${s.name || s.id} (${s.id})`;
+            opt.textContent = `${s.name || s.id} (${s.type})`;
             powerCurrentSelect.appendChild(opt);
         });
         powerCurrentSelect.disabled = false;
@@ -769,7 +793,8 @@ function fetchMisureBisVolts() {
 
         if (!sid) {
             if (infoDiv) infoDiv.innerHTML = '';
-            if (rmsDiv) rmsDiv.textContent = `${bisMeta.key}: - ${bisMeta.unit}`;
+            let span = rmsDiv ? rmsDiv.querySelector('#misura-bis-val') : null;
+            if (span) span.textContent = '';
             resolve();
             return;
         }
@@ -779,7 +804,8 @@ function fetchMisureBisVolts() {
 
         if (btn) btn.disabled = true;
         if (infoDiv) infoDiv.innerHTML = '';
-        if (rmsDiv) rmsDiv.textContent = `${bisMeta.key}: - ${bisMeta.unit}`;
+        let span = rmsDiv ? rmsDiv.querySelector('#misura-bis-val') : null;
+        if (span) span.textContent = '';
 
         function fetchWithTimeout(resource, options = {}) {
             const { timeout = 5000 } = options;
@@ -803,17 +829,30 @@ function fetchMisureBisVolts() {
                 if (infoDiv) infoDiv.innerHTML = '';
                 const rmsValue = data[bisMeta.key] ?? data.volts_rms ?? data.amps_rms;
                 if (rmsDiv) {
-                    if (typeof rmsValue === 'number') {
-                        rmsDiv.textContent = `${bisMeta.key}: ${rmsValue.toFixed(3)} ${bisMeta.unit}`;
-                    } else {
-                        rmsDiv.textContent = `${bisMeta.key}: - ${bisMeta.unit}`;
+                    let span = document.getElementById('misura-bis-val');
+                    if (span) {
+                        if (typeof rmsValue === 'number') {
+                            span.textContent = rmsValue.toFixed(3);
+                        } else {
+                            span.textContent = '';
+                        }
                     }
                 }
+
+// Svuota il valore quando cambi sensore
+const sensorSelect = document.getElementById('sensor-select');
+if (sensorSelect) {
+    sensorSelect.addEventListener('change', function() {
+        const span = document.getElementById('misura-bis-val');
+        if (span) span.textContent = '';
+    });
+}
             })
             .catch((e) => {
                 console.log('Errore fetchMisureBisVolts:', e);
                 if (infoDiv) infoDiv.innerHTML = '';
-                if (rmsDiv) rmsDiv.textContent = `${bisMeta.key}: - ${bisMeta.unit}`;
+                let span = rmsDiv ? rmsDiv.querySelector('#misura-bis-val') : null;
+                if (span) span.textContent = '';
             })
             .finally(() => {
                 if (btn) btn.disabled = false;

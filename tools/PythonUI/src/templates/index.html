@@ -36,17 +36,21 @@
                     <div style="display:flex; gap:1em; flex-wrap:wrap; align-items:flex-end; margin-bottom:1em;">
                         <div>
                             <label for="power-voltage-select"><b>Sensore tensione</b></label><br>
-                            <select id="power-voltage-select"></select>
+                            <select id="power-voltage-select">
+                                <option value="">-- scegli --</option>
+                            </select>
                         </div>
                         <div>
                             <label for="power-current-select"><b>Sensore corrente</b></label><br>
-                            <select id="power-current-select"></select>
+                            <select id="power-current-select">
+                                <option value="">-- scegli --</option>
+                            </select>
                         </div>
                     </div>
 
                 </div>
             </button>
-            <button type="button" class="feature-box" aria-label="Modulo File System">
+            <button type="button" class="feature-box result hidden" aria-label="Modulo File System">
                 <span class="feature-title">File System</span>
                 <span class="feature-subtitle">In arrivo</span>
             </button>
@@ -84,6 +88,16 @@
         </div>
         {% endif %}
         <div id="sensor-boxes" style="display:none; margin-top:2em;">
+            <!-- MISURA: ora PRIMA di tutto -->
+            <div style="margin-bottom:1.5em; padding-bottom:1em; border-bottom:1px solid #e5e8ef;">
+                <h3>Misura</h3>
+                <button id="btn-aggiorna-misure-bis" type="button">Rileva valore</button>
+                <div id="misure-bis-content" style="margin-top:1em;">
+                    <div id="misure-bis-rms" style="font-size:1.35em; font-weight:700; color:#185a9d; margin-bottom:0.5em;">Volts (rms): <span id="misura-bis-val"></span></div>
+                    <div id="misure-bis-info-div"></div>
+                </div>
+            </div>
+            <!-- CALIBRAZIONE -->
             <div style="margin-bottom:1.5em;">
                 <h3>Calibrazione</h3>
                 <div id="calibrazione-list"></div>
@@ -97,31 +111,22 @@
                 </div>
                 <div id="calibrazione-msg" style="margin-top:0.7em; color:#185a9d;"></div>
             </div>
+            <!-- CAMPIONAMENTO -->
             <div>
-                <h3>Misure</h3>
-                <button id="btn-aggiorna-misure" type="button">Aggiorna misure</button>
+                <h3>Campionamento</h3>
+                <button id="btn-aggiorna-misure" type="button">Esegui campionamento</button>
                 <div id="misure-content" style="margin-top:1em;">
                     <div style="margin-top:1em;">
-                            <canvas id="misure-chart" height="180" style="display:block; box-sizing:border-box; height:180px; width:100%;"></canvas>
+                        <canvas id="misure-chart" height="180" style="display:block; box-sizing:border-box; height:180px; width:100%;"></canvas>
                     </div>
                 </div>
-
-                <div style="margin-top:1.5em; padding-top:1em; border-top:1px solid #e5e8ef;">
-                    <h3>Misure BIS (/volts)</h3>
-                    <button id="btn-aggiorna-misure-bis" type="button">Aggiorna misure BIS</button>
-                    <div id="misure-bis-content" style="margin-top:1em;">
-                        <div id="misure-bis-rms" style="font-size:1.35em; font-weight:700; color:#185a9d; margin-bottom:0.5em;">volts_rms: - V</div>
-                        <div id="misure-bis-info-div"></div>
-                    </div>
-                </div>
-
             </div>
-            <div>
+            <div style="display:none;" id="power-block">
                 <button id="btn-aggiorna-potenza" type="button" style="margin-bottom:1em;">Aggiorna potenza</button>
-                    <div id="power-content">
-                        <div id="power-main" style="font-size:1.35em; font-weight:700; color:#185a9d; margin-bottom:0.5em;">power_w: - W</div>
-                        <div id="power-details"></div>
-                    </div>
+                <div id="power-content">
+                    <div id="power-main" style="font-size:1.35em; font-weight:700; color:#185a9d; margin-bottom:0.5em;">power_w: - W</div>
+                    <div id="power-details"></div>
+                </div>
             </div>
         </div>
         <script>
