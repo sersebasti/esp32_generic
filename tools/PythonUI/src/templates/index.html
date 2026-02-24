@@ -29,8 +29,8 @@
                 </select>
         
             </button>
-            <button type="button" class="feature-box" aria-label="Modulo File System">
-                <div class="feature-title" style="margin-bottom:0.5em;">Miusra Potenza</div>
+            <div class="feature-box" aria-label="Misura Potenza">
+                <div class="feature-title" style="margin-bottom:0.5em;">Misura Potenza</div>
                 <div class="power-section" style="padding:1em 0 0 0; border-top:1px solid #e5e8ef;">
                     <h3 style="margin-top:0;">Potenza (/power)</h3>
                     <div style="display:flex; gap:1em; flex-wrap:wrap; align-items:flex-end; margin-bottom:1em;">
@@ -47,9 +47,18 @@
                             </select>
                         </div>
                     </div>
-
+                    <!-- Blocco potenza custom -->
+                    <div id="potenza-custom-block" style="margin-top:1em; padding:1em; background:#f7f9fc; border-radius:8px; border:1px solid #e5e8ef;">
+                        <button id="btn-rileva-potenza" type="button" style="margin-bottom:1em;">Rileva valore</button>
+                        <label style="margin-left:1em;">
+                            <input type="checkbox" id="auto-potenza-switch" checked style="margin-right:0.5em;">Auto
+                        </label>
+                        <div style="margin-top:1em; font-size:1.25em; font-weight:700; color:#185a9d;">
+                            Watt: <span id="potenza-val">-</span>
+                        </div>
+                    </div>
                 </div>
-            </button>
+            </div>
             <button type="button" class="feature-box result hidden" aria-label="Modulo File System">
                 <span class="feature-title">File System</span>
                 <span class="feature-subtitle">In arrivo</span>
@@ -121,13 +130,7 @@
                     </div>
                 </div>
             </div>
-            <div style="display:none;" id="power-block">
-                <button id="btn-aggiorna-potenza" type="button" style="margin-bottom:1em;">Aggiorna potenza</button>
-                <div id="power-content">
-                    <div id="power-main" style="font-size:1.35em; font-weight:700; color:#185a9d; margin-bottom:0.5em;">power_w: - W</div>
-                    <div id="power-details"></div>
-                </div>
-            </div>
+            <!-- TUTTO dentro potenza-custom-block, nessun power-block separato -->
         </div>
         <script>
             // Variabili globali per JS esterno

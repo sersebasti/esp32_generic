@@ -254,6 +254,15 @@ window.addEventListener('DOMContentLoaded', function() {
             bisRmsDiv.innerHTML = 'Volts (rms): <span id="misura-bis-val"></span>';
         }
     }
+    // Imposta i menu a tendina Potenza su '-- scegli --' all'avvio
+    const powerVoltageSelect = document.getElementById('power-voltage-select');
+    const powerCurrentSelect = document.getElementById('power-current-select');
+    if (powerVoltageSelect) {
+        powerVoltageSelect.selectedIndex = 0;
+    }
+    if (powerCurrentSelect) {
+        powerCurrentSelect.selectedIndex = 0;
+    }
 });
 }
 // Aggiorna la visibilità dei pulsanti in base al tipo sensore selezionato
@@ -292,11 +301,12 @@ function populatePowerSensorSelects() {
     const voltageSensors = getSensorsByType('voltage');
     const currentSensors = getSensorsByType('current');
 
-    powerVoltageSelect.innerHTML = '';
-    powerCurrentSelect.innerHTML = '';
+    // Prima opzione '-- scegli --' sempre presente
+    powerVoltageSelect.innerHTML = '<option value="">-- scegli --</option>';
+    powerCurrentSelect.innerHTML = '<option value="">-- scegli --</option>';
 
     if (voltageSensors.length === 0) {
-        powerVoltageSelect.innerHTML = '<option value="">Nessun sensore tensione</option>';
+        powerVoltageSelect.innerHTML += '<option value="">Nessun sensore tensione</option>';
         powerVoltageSelect.disabled = true;
     } else {
         voltageSensors.forEach(s => {
@@ -309,7 +319,7 @@ function populatePowerSensorSelects() {
     }
 
     if (currentSensors.length === 0) {
-        powerCurrentSelect.innerHTML = '<option value="">Nessun sensore corrente</option>';
+        powerCurrentSelect.innerHTML += '<option value="">Nessun sensore corrente</option>';
         powerCurrentSelect.disabled = true;
     } else {
         currentSensors.forEach(s => {
