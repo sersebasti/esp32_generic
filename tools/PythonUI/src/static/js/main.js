@@ -25,6 +25,7 @@ function getBisRmsMeta(sensorType) {
     if (sensorType === 'current') {
         return { key: 'amps_rms', unit: 'A', endpoint: 'amps' };
     }
+    // Solo metadati, nessun aggiornamento DOM qui
     return { key: 'volts_rms', unit: 'V', endpoint: 'volts' };
 }
 function getSensorsByType(sensorType) {
@@ -290,6 +291,56 @@ const powerCurrentSelect = document.getElementById('power-current-select');
 const btnAggiornaPotenza = document.getElementById('btn-aggiorna-potenza');
 const powerMain = document.getElementById('power-main');
 const powerDetails = document.getElementById('power-details');
+// --- Auto Power ---
+let autoPowerSwitch = null;
+let autoPowerTimeout = null;
+if (btnAggiornaPotenza) {
+    const autoPowerSwitchLabel = document.createElement('label');
+    autoPowerSwitchLabel.style.display = 'inline-flex';
+    autoPowerSwitchLabel.style.alignItems = 'center';
+    autoPowerSwitchLabel.style.marginLeft = '1em';
+
+    autoPowerSwitch = document.createElement('input');
+    autoPowerSwitch.type = 'checkbox';
+    autoPowerSwitch.id = 'auto-power-switch';
+    autoPowerSwitch.style.marginRight = '0.5em';
+    autoPowerSwitch.checked = false;
+
+    autoPowerSwitchLabel.appendChild(autoPowerSwitch);
+    const autoPowerSwitchText = document.createElement('span');
+    autoPowerSwitchText.textContent = 'Auto';
+    autoPowerSwitchLabel.appendChild(autoPowerSwitchText);
+
+    btnAggiornaPotenza.parentNode.insertBefore(autoPowerSwitchLabel, btnAggiornaPotenza.nextSibling);
+
+    autoPowerSwitch.addEventListener('change', function() {
+        if (autoPowerSwitch.checked) {
+            console.log('Levetta POTENZA su: AUTO');
+            // Avvia polling
+            if (autoPowerTimeout) {
+                clearTimeout(autoPowerTimeout);
+                autoPowerTimeout = null;
+            }
+            function autoPowerPoll() {
+                fetchPower();
+                if (autoPowerSwitch.checked) {
+                    autoPowerTimeout = setTimeout(autoPowerPoll, 1000);
+                }
+            }
+            autoPowerPoll();
+        } else {
+            console.log('Levetta POTENZA su: NO AUTO');
+            if (autoPowerTimeout) {
+                clearTimeout(autoPowerTimeout);
+                autoPowerTimeout = null;
+            }
+        }
+    });
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const btnRilevaPotenza = document.getElementById('btn-rileva-potenza');
+    if (btnRilevaPotenza) btnRilevaPotenza.addEventListener('click', fetchPower);
+});
 
 function setPowerPlaceholder() {
     if (powerMain) powerMain.textContent = 'power_w: - W';
@@ -352,6 +403,7 @@ function fetchPower() {
     fetch(`http://${ip}/power?voltage_sensor_id=${encodeURIComponent(voltageSensorId)}&current_sensor_id=${encodeURIComponent(currentSensorId)}&n=${n}&sr=${sr}&fast=1`)
         .then(r => r.json())
         .then(data => {
+            console.log('Dati potenza ricevuti:', data);
             if (!data || data.ok === false) {
                 throw new Error('Risposta /power non valida');
             }
@@ -361,6 +413,13 @@ function fetchPower() {
             const pf = Number(data.power_factor);
             const voltsRms = Number(data.volts_rms);
             const ampsRms = Number(data.amps_rms);
+
+               // Debug: aggiorna campo Watt visibile
+               const potenzaVal = document.getElementById('potenza-val');
+               console.log('Aggiorno potenza-val:', powerW, potenzaVal);
+               if (potenzaVal) {
+                   potenzaVal.textContent = Number.isFinite(powerW) ? powerW.toFixed(3) : '-';
+               }
 
             if (powerMain) {
                 powerMain.textContent = Number.isFinite(powerW)
@@ -792,11 +851,15 @@ function fetchMisure() {
 
 
 function fetchMisureBisVolts() {
+    console.log('fetchMisureBisVolts: chiamata funzione');
     return new Promise((resolve) => {
         const sid = getSensorId();
         const sensorType = getSensorType();
         const bisMeta = getBisRmsMeta(sensorType);
-        console.log('Sensore selezionato per misure BIS:', sid);
+        console.log('[fetchMisureBisVolts] INIZIO');
+        console.log('[fetchMisureBisVolts] Sensor ID:', sid);
+        console.log('[fetchMisureBisVolts] Sensor Type:', sensorType);
+        console.log('[fetchMisureBisVolts] Endpoint:', bisMeta.endpoint);
         const rmsDiv = document.getElementById('misure-bis-rms');
         const infoDiv = document.getElementById('misure-bis-info-div');
         const btn = document.getElementById('btn-aggiorna-misure-bis');
@@ -805,6 +868,7 @@ function fetchMisureBisVolts() {
             if (infoDiv) infoDiv.innerHTML = '';
             let span = rmsDiv ? rmsDiv.querySelector('#misura-bis-val') : null;
             if (span) span.textContent = '';
+            console.log('[fetchMisureBisVolts] Nessun sensore selezionato, esco.');
             resolve();
             return;
         }
@@ -827,12 +891,13 @@ function fetchMisureBisVolts() {
 
         fetchWithTimeout(`http://${ip}/${bisMeta.endpoint}?sensor_id=${sid}&n=${n}&sr=${sr}&fast=1`, {timeout: 5000})
             .then(r => {
-                console.log(`fetch /${bisMeta.endpoint}: risposta ricevuta`);
+                console.log(`[fetchMisureBisVolts] fetch /${bisMeta.endpoint}: risposta ricevuta`, r);
                 return r.json();
             })
             .then(data => {
-                console.log(`fetch /${bisMeta.endpoint}: dati json:`, data);
+                console.log(`[fetchMisureBisVolts] fetch /${bisMeta.endpoint}: dati json:`, data);
                 if (!data || data.ok === false) {
+                    console.log(`[fetchMisureBisVolts] ERRORE: Risposta /${bisMeta.endpoint} non valida`, data);
                     throw new Error(`Risposta /${bisMeta.endpoint} non valida`);
                 }
 
@@ -842,36 +907,44 @@ function fetchMisureBisVolts() {
                 const cal = window._lastCalibInfo && window._lastCalibInfo.sensor_id === sid ? (window._lastCalibInfo.cal || {}) : {};
                 const hasBaseline = typeof cal.baseline_mean === 'number';
                 const hasPoints = Array.isArray(cal.points) && cal.points.length > 0;
+                console.log('[fetchMisureBisVolts] Calibrazione:', cal);
+                console.log('[fetchMisureBisVolts] hasBaseline:', hasBaseline, 'hasPoints:', hasPoints);
                 let span = rmsDiv ? rmsDiv.querySelector('#misura-bis-val') : null;
                 if (!hasBaseline || !hasPoints) {
                     // Mostra messaggio se calibrazione non disponibile
                     if (span) span.textContent = '';
                     if (infoDiv) infoDiv.innerHTML = '<span style="color:#c00;font-weight:bold;">Esegui calibrazione per ottenere il valore.</span>';
+                    console.log('[fetchMisureBisVolts] Calibrazione mancante, non mostro valore.');
                 } else {
                     const rmsValue = data[bisMeta.key] ?? data.volts_rms ?? data.amps_rms;
+                    console.log('[fetchMisureBisVolts] Valore RMS:', rmsValue);
                     if (span) {
                         if (typeof rmsValue === 'number') {
                             span.textContent = rmsValue.toFixed(3);
+                            console.log('[fetchMisureBisVolts] Aggiorno DOM misura-bis-val:', rmsValue.toFixed(3));
                         } else {
                             span.textContent = '';
+                            console.log('[fetchMisureBisVolts] Valore RMS non numerico, DOM svuotato.');
                         }
                     }
                 }
 
-// Svuota il valore quando cambi sensore
-const sensorSelect = document.getElementById('sensor-select');
-if (sensorSelect) {
-    sensorSelect.addEventListener('change', function() {
-        const span = document.getElementById('misura-bis-val');
-        if (span) span.textContent = '';
-    });
-}
+                // Svuota il valore quando cambi sensore
+                const sensorSelect = document.getElementById('sensor-select');
+                if (sensorSelect) {
+                    sensorSelect.addEventListener('change', function() {
+                        const span = document.getElementById('misura-bis-val');
+                        if (span) span.textContent = '';
+                        console.log('[fetchMisureBisVolts] Cambio sensore, svuoto misura-bis-val');
+                    });
+                }
             })
             .catch((e) => {
-                console.log('Errore fetchMisureBisVolts:', e);
+                console.log('[fetchMisureBisVolts] ERRORE:', e);
                 if (infoDiv) infoDiv.innerHTML = '';
                 let span = rmsDiv ? rmsDiv.querySelector('#misura-bis-val') : null;
                 if (span) span.textContent = '';
+                console.log('[fetchMisureBisVolts] DOM svuotato per errore.');
             })
             .finally(() => {
                 if (btn) btn.disabled = false;
@@ -880,6 +953,7 @@ if (sensorSelect) {
                         fetchMisureBisVolts();
                     }, 1000);
                 }
+                console.log('[fetchMisureBisVolts] FINE');
                 resolve();
             });
     });
