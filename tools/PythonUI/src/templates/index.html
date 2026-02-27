@@ -1,3 +1,19 @@
+<!--
+  ===============================
+  GLOSSARIO VARIABILI GLOBALI
+  ===============================
+  - ip: stringa, indirizzo IP dell’ESP32 selezionato
+  - sensorsList: array di oggetti sensore {id, name, type, ...}
+  - status, status_info, status_raw: info di stato ESP32
+  ===============================
+  STRUTTURA SEZIONI:
+  - Connessione ESP32: inserimento IP e connessione
+  - Sensori: selezione sensore singolo
+  - Potenza: selezione sensori tensione/corrente e calcolo potenza
+  - Calibrazione: gestione calibrazione sensori
+  - Campionamento: esecuzione e visualizzazione campionamenti
+  ===============================
+-->
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -9,6 +25,11 @@
 <body>
     <div class="container">
         <h1>ESP32 Desktop GUI XXXX</h1>
+
+        <!-- =============================== -->
+        <!-- SEZIONE: Connessione ESP32      -->
+        <!-- Permette di inserire l’IP dell’ESP32 e connettersi. Usa la variabile globale 'ip'. -->
+        <!-- =============================== -->
         <form id="esp32-form" method="post">
             <label for="ip">Indirizzo IP ESP32:</label>
             <input type="text" id="ip" name="ip" placeholder="192.168.1.10" value="{{ ip }}" required>
@@ -17,18 +38,32 @@
         <div class="result" id="result">
             {% if status %}{{ status }}{% else %}Risultati e messaggi appariranno qui.{% endif %}
         </div>
+
+        <!-- =============================== -->
+        <!-- SEZIONE: Moduli disponibili     -->
+        <!-- Contiene Sensori, Potenza, File System (placeholder) -->
+        <!-- =============================== -->
         <div class="feature-grid" aria-label="Moduli disponibili">
+
+            <!-- =============================== -->
+            <!-- SEZIONE: Sensori singoli        -->
+            <!-- Mostra la lista dei sensori disponibili. Dipende da 'sensorsList'. -->
+            <!-- =============================== -->
             <button type="button" class="feature-box" aria-label="Modulo Sensori">
                 <span class="feature-title">Sensori singoli:</span>
-
                 <select id="sensor-select" {% if sensors|length == 0 %}disabled{% endif %}>
                     <option value="">{% if sensors|length == 0 %}Nessun sensore disponibile{% else %}-- scegli --{% endif %}</option>
                     {% for s in sensors %}
                         <option value="{{ s.id }}">{{ s.name or s.id }} ({{ s.type }})</option>
                     {% endfor %}
                 </select>
-        
             </button>
+
+            <!-- =============================== -->
+            <!-- SEZIONE: Misura Potenza         -->
+            <!-- Permette di selezionare sensori di tensione/corrente e calcolare la potenza. -->
+            <!-- Usa i select con id 'power-voltage-select' e 'power-current-select'. -->
+            <!-- =============================== -->
             <div class="feature-box" aria-label="Misura Potenza">
                 <div class="feature-title" style="margin-bottom:0.5em;">Misura Potenza</div>
                 <div class="power-section" style="padding:1em 0 0 0; border-top:1px solid #e5e8ef;">
@@ -56,15 +91,26 @@
                         <div style="margin-top:1em; font-size:1.25em; font-weight:700; color:#185a9d;">
                             Watt: <span id="potenza-val">-</span>
                         </div>
+                        <!-- Dettagli potenza -->
+                        <div id="power-details" style="margin-top:0.7em; font-size:1em;"></div>
                     </div>
                 </div>
             </div>
+
+            <!-- =============================== -->
+            <!-- SEZIONE: File System (placeholder) -->
+            <!-- In arrivo -->
+            <!-- =============================== -->
             <button type="button" class="feature-box result hidden" aria-label="Modulo File System">
                 <span class="feature-title">File System</span>
                 <span class="feature-subtitle">In arrivo</span>
             </button>
         </div>
 
+        <!-- =============================== -->
+        <!-- SEZIONE: Info dispositivo       -->
+        <!-- Mostra informazioni dettagliate sull’ESP32 se disponibili. -->
+        <!-- =============================== -->
         {% if status_info %}
         <div class="result hidden">
             <div class="hidden">
@@ -83,11 +129,14 @@
         </div>
         {% endif %}
 
+        <!-- =============================== -->
+        <!-- SEZIONE: Risposta grezza /status -->
+        <!-- Mostra la risposta JSON grezza di /status se disponibile. -->
+        <!-- =============================== -->
         {% if status_raw %}
         <div class="result hidden">
             <div class="hidden">
                 <strong>Risposta grezza /status:</strong><br>
-
                 {% if status_raw is string %}
                     <pre style="font-size:0.95em; background:#f0f0f0; border-radius:6px; padding:8px; white-space:pre-wrap;">{{ status_raw }}</pre>
                 {% else %}
@@ -96,8 +145,15 @@
             </div>
         </div>
         {% endif %}
+
+        <!-- =============================== -->
+        <!-- SEZIONE: Sensor Boxes (dettagli) -->
+        <!-- Contiene Misura, Calibrazione, Campionamento per il sensore selezionato. -->
+        <!-- =============================== -->
         <div id="sensor-boxes" style="display:none; margin-top:2em;">
-            <!-- MISURA: ora PRIMA di tutto -->
+            <!-- =============================== -->
+            <!-- MISURA: Valore rapido          -->
+            <!-- =============================== -->
             <div style="margin-bottom:1.5em; padding-bottom:1em; border-bottom:1px solid #e5e8ef;">
                 <h3>Misura</h3>
                 <button id="btn-aggiorna-misure-bis" type="button">Rileva valore</button>
@@ -106,7 +162,10 @@
                     <div id="misure-bis-info-div"></div>
                 </div>
             </div>
-            <!-- CALIBRAZIONE -->
+
+            <!-- =============================== -->
+            <!-- CALIBRAZIONE: Gestione punti    -->
+            <!-- =============================== -->
             <div style="margin-bottom:1.5em;">
                 <h3>Calibrazione</h3>
                 <div id="calibrazione-list"></div>
@@ -120,7 +179,10 @@
                 </div>
                 <div id="calibrazione-msg" style="margin-top:0.7em; color:#185a9d;"></div>
             </div>
-            <!-- CAMPIONAMENTO -->
+
+            <!-- =============================== -->
+            <!-- CAMPIONAMENTO: Acquisizione dati -->
+            <!-- =============================== -->
             <div>
                 <h3>Campionamento</h3>
                 <button id="btn-aggiorna-misure" type="button">Esegui campionamento</button>
@@ -132,6 +194,11 @@
             </div>
             <!-- TUTTO dentro potenza-custom-block, nessun power-block separato -->
         </div>
+
+        <!-- =============================== -->
+        <!-- SEZIONE: Variabili globali JS   -->
+        <!-- Inietta variabili per lo script JS esterno. -->
+        <!-- =============================== -->
         <script>
             // Variabili globali per JS esterno
             const ip = '{{ ip }}';

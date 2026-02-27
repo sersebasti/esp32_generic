@@ -1,26 +1,51 @@
+// =====================================================
+// GLOSSARIO VARIABILI GLOBALI (iniettate dal template)
+// =====================================================
+// ip: stringa, indirizzo IP ESP32
+// sensorsList: array di oggetti sensore {id, name, type, ...}
+// =====================================================
+// SEZIONI PRINCIPALI:
+// - Mappatura sensori e funzioni di utilità
+// - Gestione Calibrazione
+// - Gestione Potenza
+// - Gestione Campionamento
+// - Eventi UI e aggiornamento DOM
+// =====================================================
 
-// --- Variabili globali iniettate dal template ---
-// ip, sensorsList
-
-const select = document.getElementById('sensor-select');
-const btnMisureBis = document.getElementById('btn-aggiorna-misure-bis');
-const boxes = document.getElementById('sensor-boxes');
+// ===============================
+// SEZIONE: Elementi DOM principali
+// ===============================
 // ip e sensorsList devono essere iniettati dal template
 // Esempio:
 // <script>const ip = '{{ ip }}'; var sensorsList = ...</script>
+const select = document.getElementById('sensor-select');
+const btnMisureBis = document.getElementById('btn-aggiorna-misure-bis');
+const boxes = document.getElementById('sensor-boxes');
 
+// ===============================
+// SEZIONE: Funzioni di utilità sensori
+// ===============================
+// Mappa id sensore -> tipo
 var sensorTypeMap = {};
 if (typeof sensorsList !== 'undefined' && Array.isArray(sensorsList)) {
     sensorsList.forEach(function(s) { sensorTypeMap[s.id] = s.type; });
 }
+
+// Restituisce l'id del sensore selezionato
 function getSensorId() { return select.value; }
+
+// Restituisce il tipo del sensore selezionato
 function getSensorType() { return sensorTypeMap[select.value] || ''; }
+
+// Restituisce il valore di riferimento (amp/volt) per un punto di calibrazione
 function getPointReferenceValue(point, sensorType) {
     if (sensorType === 'current') {
         return point.amps ?? point.amp ?? point.current ?? point.volts;
     }
     return point.volts ?? point.amp ?? point.amps;
 }
+
+// Restituisce metadati per la misura BIS (rms)
 function getBisRmsMeta(sensorType) {
     if (sensorType === 'current') {
         return { key: 'amps_rms', unit: 'A', endpoint: 'amps' };
@@ -28,14 +53,22 @@ function getBisRmsMeta(sensorType) {
     // Solo metadati, nessun aggiornamento DOM qui
     return { key: 'volts_rms', unit: 'V', endpoint: 'volts' };
 }
+
+// Filtra i sensori per tipo
 function getSensorsByType(sensorType) {
     if (!Array.isArray(sensorsList)) return [];
     return sensorsList.filter(s => s && s.type === sensorType);
 }
+
+// Mostra un messaggio nella sezione calibrazione
 function showMsg(msg) {
     document.getElementById('calibrazione-msg').textContent = msg;
 }
-// Chart.js CDN
+
+// ===============================
+// SEZIONE: Chart.js CDN loader
+// ===============================
+// Carica Chart.js se non già presente
 if (!window.Chart) {
   var script = document.createElement('script');
   script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
@@ -292,31 +325,16 @@ const btnAggiornaPotenza = document.getElementById('btn-aggiorna-potenza');
 const powerMain = document.getElementById('power-main');
 const powerDetails = document.getElementById('power-details');
 // --- Auto Power ---
-let autoPowerSwitch = null;
 let autoPowerTimeout = null;
-if (btnAggiornaPotenza) {
-    const autoPowerSwitchLabel = document.createElement('label');
-    autoPowerSwitchLabel.style.display = 'inline-flex';
-    autoPowerSwitchLabel.style.alignItems = 'center';
-    autoPowerSwitchLabel.style.marginLeft = '1em';
+const btnRilevaPotenza = document.getElementById('btn-rileva-potenza');
+const autoPowerSwitch = document.getElementById('auto-potenza-switch');
 
-    autoPowerSwitch = document.createElement('input');
-    autoPowerSwitch.type = 'checkbox';
-    autoPowerSwitch.id = 'auto-power-switch';
-    autoPowerSwitch.style.marginRight = '0.5em';
-    autoPowerSwitch.checked = false;
+if (btnRilevaPotenza) btnRilevaPotenza.onclick = fetchPower;
 
-    autoPowerSwitchLabel.appendChild(autoPowerSwitch);
-    const autoPowerSwitchText = document.createElement('span');
-    autoPowerSwitchText.textContent = 'Auto';
-    autoPowerSwitchLabel.appendChild(autoPowerSwitchText);
-
-    btnAggiornaPotenza.parentNode.insertBefore(autoPowerSwitchLabel, btnAggiornaPotenza.nextSibling);
-
+if (autoPowerSwitch) {
     autoPowerSwitch.addEventListener('change', function() {
         if (autoPowerSwitch.checked) {
             console.log('Levetta POTENZA su: AUTO');
-            // Avvia polling
             if (autoPowerTimeout) {
                 clearTimeout(autoPowerTimeout);
                 autoPowerTimeout = null;
@@ -324,7 +342,7 @@ if (btnAggiornaPotenza) {
             function autoPowerPoll() {
                 fetchPower();
                 if (autoPowerSwitch.checked) {
-                    autoPowerTimeout = setTimeout(autoPowerPoll, 1000);
+                    autoPowerTimeout = setTimeout(autoPowerPoll, 5000);
                 }
             }
             autoPowerPoll();
@@ -337,10 +355,6 @@ if (btnAggiornaPotenza) {
         }
     });
 }
-document.addEventListener('DOMContentLoaded', function() {
-    const btnRilevaPotenza = document.getElementById('btn-rileva-potenza');
-    if (btnRilevaPotenza) btnRilevaPotenza.addEventListener('click', fetchPower);
-});
 
 function setPowerPlaceholder() {
     if (powerMain) powerMain.textContent = 'power_w: - W';
@@ -393,7 +407,7 @@ function fetchPower() {
         return;
     }
 
-    if (btnAggiornaPotenza) btnAggiornaPotenza.disabled = true;
+    if (btnRilevaPotenza) btnRilevaPotenza.disabled = true;
     if (powerMain) powerMain.textContent = 'power_w: ...';
     if (powerDetails) powerDetails.innerHTML = '';
 
@@ -414,18 +428,14 @@ function fetchPower() {
             const voltsRms = Number(data.volts_rms);
             const ampsRms = Number(data.amps_rms);
 
-               // Debug: aggiorna campo Watt visibile
-               const potenzaVal = document.getElementById('potenza-val');
-               console.log('Aggiorno potenza-val:', powerW, potenzaVal);
-               if (potenzaVal) {
-                   potenzaVal.textContent = Number.isFinite(powerW) ? powerW.toFixed(3) : '-';
-               }
-
-            if (powerMain) {
-                powerMain.textContent = Number.isFinite(powerW)
-                    ? `power_w: ${powerW.toFixed(3)} W`
-                    : 'power_w: - W';
+            // Debug: aggiorna campo Watt visibile
+            const potenzaVal = document.getElementById('potenza-val');
+            console.log('Aggiorno potenza-val:', powerW, potenzaVal);
+            if (potenzaVal) {
+                potenzaVal.textContent = Number.isFinite(powerW) ? powerW.toFixed(3) : '-';
             }
+
+            // Rimosso: aggiornamento powerMain non necessario, elemento non presente
 
             if (powerDetails) {
                 const vMin = data.voltage && Number.isFinite(Number(data.voltage.min)) ? Number(data.voltage.min) : null;
@@ -454,7 +464,13 @@ function fetchPower() {
             setPowerPlaceholder();
         })
         .finally(() => {
-            if (btnAggiornaPotenza) btnAggiornaPotenza.disabled = false;
+            // Struttura identica a fetchMisure: gestisce polling auto e reset pulsante
+            if (btnRilevaPotenza) btnRilevaPotenza.disabled = false;
+            if (autoPowerSwitch && autoPowerSwitch.checked) {
+                autoPowerTimeout = setTimeout(() => {
+                    fetchPower();
+                }, 5000);
+            }
         });
 }
 

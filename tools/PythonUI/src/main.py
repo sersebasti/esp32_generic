@@ -7,7 +7,7 @@ import threading
 import webbrowser
 
 
-DEFAULT_ESP32_IP = "192.168.1.6"
+DEFAULT_ESP32_IP = "192.168.1.116"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
