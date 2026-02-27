@@ -189,6 +189,8 @@ function fetchCalibInfo() {
         })
         .catch(() => showCalibInfoHtml(null));
 }
+
+
 if (select) {
     select.addEventListener('change', function() {
         const sensorType = getSensorType();
@@ -331,30 +333,6 @@ const autoPowerSwitch = document.getElementById('auto-potenza-switch');
 
 if (btnRilevaPotenza) btnRilevaPotenza.onclick = fetchPower;
 
-if (autoPowerSwitch) {
-    autoPowerSwitch.addEventListener('change', function() {
-        if (autoPowerSwitch.checked) {
-            console.log('Levetta POTENZA su: AUTO');
-            if (autoPowerTimeout) {
-                clearTimeout(autoPowerTimeout);
-                autoPowerTimeout = null;
-            }
-            function autoPowerPoll() {
-                fetchPower();
-                if (autoPowerSwitch.checked) {
-                    autoPowerTimeout = setTimeout(autoPowerPoll, 5000);
-                }
-            }
-            autoPowerPoll();
-        } else {
-            console.log('Levetta POTENZA su: NO AUTO');
-            if (autoPowerTimeout) {
-                clearTimeout(autoPowerTimeout);
-                autoPowerTimeout = null;
-            }
-        }
-    });
-}
 
 function setPowerPlaceholder() {
     if (powerMain) powerMain.textContent = 'power_w: - W';
@@ -404,11 +382,11 @@ function fetchPower() {
 
     if (!voltageSensorId || !currentSensorId) {
         setPowerPlaceholder();
+        alert('Seleziona sia un sensore di tensione che uno di corrente!');
         return;
     }
 
     if (btnRilevaPotenza) btnRilevaPotenza.disabled = true;
-    if (powerMain) powerMain.textContent = 'power_w: ...';
     if (powerDetails) powerDetails.innerHTML = '';
 
     const n = 1600;
@@ -435,7 +413,26 @@ function fetchPower() {
                 potenzaVal.textContent = Number.isFinite(powerW) ? powerW.toFixed(3) : '-';
             }
 
-            // Rimosso: aggiornamento powerMain non necessario, elemento non presente
+            // Debug: aggiorna campo Watt visibile
+            const tensioneVal = document.getElementById('tensione-val');
+            console.log('Aggiorno tensione-val:', voltsRms, tensioneVal);
+            if (tensioneVal) {
+                tensioneVal.textContent = Number.isFinite(voltsRms) ? voltsRms.toFixed(3) : '-';
+            }
+
+            // Debug: aggiorna campo Amper visibile
+            const correnteVal = document.getElementById('corrente-val');
+            console.log('Aggiorno corrente-val:', ampsRms, correnteVal);
+            if (correnteVal) {
+                correnteVal.textContent = Number.isFinite(ampsRms) ? ampsRms.toFixed(3) : '-';
+            }
+
+            // Debug: aggiorna campo PF visibile
+            const pfVal = document.getElementById('pf-val');
+            console.log('Aggiorno pf-val:', pf, pfVal);
+            if (pfVal) {
+                pfVal.textContent = Number.isFinite(pf) ? pf.toFixed(4) : '-';
+            }
 
             if (powerDetails) {
                 const vMin = data.voltage && Number.isFinite(Number(data.voltage.min)) ? Number(data.voltage.min) : null;
@@ -469,7 +466,7 @@ function fetchPower() {
             if (autoPowerSwitch && autoPowerSwitch.checked) {
                 autoPowerTimeout = setTimeout(() => {
                     fetchPower();
-                }, 5000);
+                }, 1000);
             }
         });
 }

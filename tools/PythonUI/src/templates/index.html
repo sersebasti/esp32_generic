@@ -45,19 +45,6 @@
         <!-- =============================== -->
         <div class="feature-grid" aria-label="Moduli disponibili">
 
-            <!-- =============================== -->
-            <!-- SEZIONE: Sensori singoli        -->
-            <!-- Mostra la lista dei sensori disponibili. Dipende da 'sensorsList'. -->
-            <!-- =============================== -->
-            <button type="button" class="feature-box" aria-label="Modulo Sensori">
-                <span class="feature-title">Sensori singoli:</span>
-                <select id="sensor-select" {% if sensors|length == 0 %}disabled{% endif %}>
-                    <option value="">{% if sensors|length == 0 %}Nessun sensore disponibile{% else %}-- scegli --{% endif %}</option>
-                    {% for s in sensors %}
-                        <option value="{{ s.id }}">{{ s.name or s.id }} ({{ s.type }})</option>
-                    {% endfor %}
-                </select>
-            </button>
 
             <!-- =============================== -->
             <!-- SEZIONE: Misura Potenza         -->
@@ -91,11 +78,39 @@
                         <div style="margin-top:1em; font-size:1.25em; font-weight:700; color:#185a9d;">
                             Watt: <span id="potenza-val">-</span>
                         </div>
+                        
+                        <div style="margin-top:1em; font-size:1.25em; font-weight:700; color:#185a9d;">
+                            Volt: <span id="tensione-val">-</span>
+                        </div>
+                        
+                        <div style="margin-top:1em; font-size:1.25em; font-weight:700; color:#185a9d;">
+                            Amper: <span id="corrente-val">-</span>
+                        </div>
+
+                        <div style="margin-top:1em; font-size:1.25em; font-weight:700; color:#185a9d;">
+                            PF: <span id="pf-val">-</span>
+                        </div>
+
                         <!-- Dettagli potenza -->
-                        <div id="power-details" style="margin-top:0.7em; font-size:1em;"></div>
+                        <div id="power-details" style="margin-top:0.7em; font-size:1em; display:none;"></div>
                     </div>
                 </div>
             </div>
+
+
+                        <!-- =============================== -->
+            <!-- SEZIONE: Sensori singoli        -->
+            <!-- Mostra la lista dei sensori disponibili. Dipende da 'sensorsList'. -->
+            <!-- =============================== -->
+            <button type="button" class="feature-box" aria-label="Modulo Sensori">
+                <span class="feature-title">Sensori singoli:</span>
+                <select id="sensor-select" {% if sensors|length == 0 %}disabled{% endif %}>
+                    <option value="">{% if sensors|length == 0 %}Nessun sensore disponibile{% else %}-- scegli --{% endif %}</option>
+                    {% for s in sensors %}
+                        <option value="{{ s.id }}">{{ s.name or s.id }} ({{ s.type }})</option>
+                    {% endfor %}
+                </select>
+            </button>
 
             <!-- =============================== -->
             <!-- SEZIONE: File System (placeholder) -->
