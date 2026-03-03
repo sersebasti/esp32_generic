@@ -80,7 +80,6 @@
                     <h3>Campionamento</h3>
                     <div class="row compact">
                         <label>N <input type="number" min="1" x-model.number="sampleN"></label>
-                        <label>SR <input type="number" min="1" x-model.number="sampleSr"></label>
                         <button type="button" @click="fetchSample()" :disabled="!selectedSensorId || loading.sample">Esegui</button>
                         <label class="inline"><input type="checkbox" x-model="autoSample"> Auto</label>
                     </div>

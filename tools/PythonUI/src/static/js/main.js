@@ -372,7 +372,7 @@ window.esp32Ui = function esp32Ui(defaultIp) {
       if (!this.selectedSensorId) return;
       this.loading.sample = true;
       try {
-        const q = `sensor_id=${encodeURIComponent(this.selectedSensorId)}&n=${encodeURIComponent(this.sampleN)}&sr=${encodeURIComponent(this.sampleSr)}&fast=1&binary=true`;
+        const q = `sensor_id=${encodeURIComponent(this.selectedSensorId)}&n=${encodeURIComponent(this.sampleN)}&fast=1&binary=true`;
         const data = await this.fetchSampleData(`http://${this.ip}/adc/scope_counts?${q}`);
         this.sampleData = data;
         this.renderSampleChart(data);
