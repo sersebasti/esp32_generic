@@ -1,7 +1,7 @@
 # Logging robusto anche per processi figli Flask
 import logging
 import os
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session, jsonify, Response
 import requests
 import threading
 import webbrowser
@@ -12,6 +12,7 @@ DEFAULT_ESP32_IP = "192.168.1.116"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 app = Flask(__name__, template_folder=TEMPLATES_DIR)
+app.secret_key = 'esp32gui-secret-key'
 current_ip = DEFAULT_ESP32_IP
 
 
@@ -39,77 +40,104 @@ logging.basicConfig(
 logging.info("[SERVER] Flask app avviata")
 
 
-
-
-
-
-
-@app.route("/", methods=["GET", "POST"])
+@app.route('/', methods=['GET'])
 def index():
-        global current_ip
-        status = ""
-        sensors = None
-        status_info = None
-        status_raw = None
+    return render_template('index.html', default_ip=current_ip)
 
-        # Gestione IP da POST o GET
-        ip = current_ip
-        if request.method == "POST":
-            ip = request.form.get("ip", "").strip() or current_ip
-            current_ip = ip
 
-        # Chiamata a /status sempre (sia GET che POST)
+@app.route('/api/generic-get', methods=['GET'])
+def generic_get():
+    ip = (request.args.get("ip") or current_ip or "").strip()
+    path = (request.args.get("path") or "/").strip()
+
+    if not ip:
+        return jsonify({"ok": False, "error": "missing_ip"}), 400
+
+    if not path.startswith("/"):
+        path = "/" + path
+
+    target_url = f"http://{ip}{path}"
+
+    try:
+        upstream = requests.get(target_url, timeout=12)
+    except requests.RequestException as exc:
+        return jsonify({
+            "ok": False,
+            "error": "upstream_unreachable",
+            "detail": str(exc),
+            "target": target_url,
+        }), 502
+
+    content_type = (upstream.headers.get("Content-Type") or "").lower()
+
+    if "application/json" in content_type:
         try:
-            url_status = f"http://{ip}/status"
-            logger.info(f"[REQUEST] GET {url_status}")
-            resp = requests.get(url_status, timeout=2)
-            logger.info(f"[RESPONSE] {resp.status_code} {resp.text}")
-            if resp.ok:
-                try:
-                    data = resp.json()
-                    status_raw = data
-                except Exception as e:
-                    status_raw = f"Errore parsing JSON: {e}"
-                    logger.error(f"[ERROR] Parsing JSON /status: {e}")
-                # Verifica che abbia i campi attesi
-                if isinstance(status_raw, dict) and status_raw.get("ip") and status_raw.get("ssid"):
-                    status_info = status_raw
-                    status = f"Connesso a {status_info.get('ssid')} (IP: {status_info.get('ip')})"
-                else:
-                    status = "Risposta /status non valida."
-                    logger.warning(f"[WARNING] Risposta /status non valida: {status_raw}")
-            else:
-                status = f"Errore HTTP /status: {resp.status_code}"
-                status_raw = status
-                logger.error(f"[ERROR] HTTP /status: {resp.status_code}")
-        except Exception as e:
-            status = f"Errore /status: {e}"
-            status_raw = status
-            logger.error(f"[EXCEPTION] /status: {e}")
+            body = upstream.json()
+        except ValueError:
+            body = {
+                "ok": False,
+                "error": "invalid_upstream_json",
+                "target": target_url,
+                "raw": upstream.text,
+            }
+        return jsonify(body), upstream.status_code
 
-        # Prova a recuperare la lista sensori dall'ESP32
+    pass_headers = {}
+    for name in ("Content-Type", "Content-Length", "Content-Disposition", "Cache-Control"):
+        value = upstream.headers.get(name)
+        if value:
+            pass_headers[name] = value
+
+    return Response(upstream.content, status=upstream.status_code, headers=pass_headers)
+
+
+@app.route('/api/generic-post', methods=['POST'])
+def generic_post():
+    body = request.get_json(silent=True) or {}
+
+    ip = str(body.get("ip") or request.args.get("ip") or current_ip or "").strip()
+    path = str(body.get("path") or request.args.get("path") or "/").strip()
+    payload = body.get("payload", {})
+
+    if not ip:
+        return jsonify({"ok": False, "error": "missing_ip"}), 400
+
+    if not path.startswith("/"):
+        path = "/" + path
+
+    target_url = f"http://{ip}{path}"
+
+    try:
+        upstream = requests.post(target_url, json=payload, timeout=12)
+    except requests.RequestException as exc:
+        return jsonify({
+            "ok": False,
+            "error": "upstream_unreachable",
+            "detail": str(exc),
+            "target": target_url,
+        }), 502
+
+    content_type = (upstream.headers.get("Content-Type") or "").lower()
+
+    if "application/json" in content_type:
         try:
-            url_sensors = f"http://{ip}/sensors"
-            logger.info(f"[REQUEST] GET {url_sensors}")
-            resp = requests.get(url_sensors, timeout=2)
-            logger.info(f"[RESPONSE] {resp.status_code} {resp.text}")
-            if resp.ok:
-                data = resp.json()
-                if isinstance(data, dict) and data.get("ok") and isinstance(data.get("sensors"), list):
-                    sensors = data["sensors"]
-                else:
-                    sensors = "Nessun sensore trovato o risposta non valida."
-                    logger.warning(f"[WARNING] Risposta /sensors non valida: {data}")
-            else:
-                sensors = f"Errore HTTP: {resp.status_code}"
-                logger.error(f"[ERROR] HTTP /sensors: {resp.status_code}")
-        except Exception as e:
-            sensors = f"Errore: {e}"
-            logger.error(f"[EXCEPTION] /sensors: {e}")
-        # Garantisce che sensors sia sempre una lista per il template
-        if not isinstance(sensors, list):
-            sensors = []
-        return render_template("index.html", ip=ip, status=status, sensors=sensors, status_info=status_info, status_raw=status_raw)
+            response_body = upstream.json()
+        except ValueError:
+            response_body = {
+                "ok": False,
+                "error": "invalid_upstream_json",
+                "target": target_url,
+                "raw": upstream.text,
+            }
+        return jsonify(response_body), upstream.status_code
+
+    pass_headers = {}
+    for name in ("Content-Type", "Content-Length", "Content-Disposition", "Cache-Control"):
+        value = upstream.headers.get(name)
+        if value:
+            pass_headers[name] = value
+
+    return Response(upstream.content, status=upstream.status_code, headers=pass_headers)
 
 
 if __name__ == "__main__":

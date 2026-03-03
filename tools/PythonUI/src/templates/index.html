@@ -1,225 +1,134 @@
-<!--
-  ===============================
-  GLOSSARIO VARIABILI GLOBALI
-  ===============================
-  - ip: stringa, indirizzo IP dell’ESP32 selezionato
-  - sensorsList: array di oggetti sensore {id, name, type, ...}
-  - status, status_info, status_raw: info di stato ESP32
-  ===============================
-  STRUTTURA SEZIONI:
-  - Connessione ESP32: inserimento IP e connessione
-  - Sensori: selezione sensore singolo
-  - Potenza: selezione sensori tensione/corrente e calcolo potenza
-  - Calibrazione: gestione calibrazione sensori
-  - Campionamento: esecuzione e visualizzazione campionamenti
-  ===============================
--->
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 Desktop GUI X</title>
+    <title>ESP32 Desktop GUI</title>
     <link rel="stylesheet" href="/static/css/main.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4"></script>
+    <script defer src="/static/js/main.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>ESP32 Desktop GUI XXXX</h1>
+    <div class="container" x-data="esp32Ui('{{ default_ip }}')" x-init="init()">
+        <h1>ESP32 Desktop GUI</h1>
 
-        <!-- =============================== -->
-        <!-- SEZIONE: Connessione ESP32      -->
-        <!-- Permette di inserire l’IP dell’ESP32 e connettersi. Usa la variabile globale 'ip'. -->
-        <!-- =============================== -->
-        <form id="esp32-form" method="post">
-            <label for="ip">Indirizzo IP ESP32:</label>
-            <input type="text" id="ip" name="ip" placeholder="192.168.1.10" value="{{ ip }}" required>
-            <button type="submit">Connetti</button>
-        </form>
-        <div class="result" id="result">
-            {% if status %}{{ status }}{% else %}Risultati e messaggi appariranno qui.{% endif %}
+        <div class="card">
+            <h2>Connessione ESP32</h2>
+            <div class="row">
+                <label for="ip">Indirizzo IP ESP32</label>
+                <input id="ip" type="text" x-model="ip" placeholder="192.168.1.10">
+                <button type="button" @click="connect()" :disabled="loading.connect">Connetti</button>
+            </div>
+            <div class="result" x-text="statusMessage || 'Inserisci IP e premi Connetti'"></div>
         </div>
 
-        <!-- =============================== -->
-        <!-- SEZIONE: Moduli disponibili     -->
-        <!-- Contiene Sensori, Potenza, File System (placeholder) -->
-        <!-- =============================== -->
-        <div class="feature-grid" aria-label="Moduli disponibili">
-
-
-            <!-- =============================== -->
-            <!-- SEZIONE: Misura Potenza         -->
-            <!-- Permette di selezionare sensori di tensione/corrente e calcolare la potenza. -->
-            <!-- Usa i select con id 'power-voltage-select' e 'power-current-select'. -->
-            <!-- =============================== -->
-            <div class="feature-box" aria-label="Misura Potenza">
-                <div class="feature-title" style="margin-bottom:0.5em;">Misura Potenza</div>
-                <div class="power-section" style="padding:1em 0 0 0; border-top:1px solid #e5e8ef;">
-                    <h3 style="margin-top:0;">Potenza (/power)</h3>
-                    <div style="display:flex; gap:1em; flex-wrap:wrap; align-items:flex-end; margin-bottom:1em;">
-                        <div>
-                            <label for="power-voltage-select"><b>Sensore tensione</b></label><br>
-                            <select id="power-voltage-select">
-                                <option value="">-- scegli --</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="power-current-select"><b>Sensore corrente</b></label><br>
-                            <select id="power-current-select">
-                                <option value="">-- scegli --</option>
-                            </select>
-                        </div>
-                    </div>
-                    <!-- Blocco potenza custom -->
-                    <div id="potenza-custom-block" style="margin-top:1em; padding:1em; background:#f7f9fc; border-radius:8px; border:1px solid #e5e8ef;">
-                        <button id="btn-rileva-potenza" type="button" style="margin-bottom:1em;">Rileva valore</button>
-                        <label style="margin-left:1em;">
-                            <input type="checkbox" id="auto-potenza-switch" checked style="margin-right:0.5em;">Auto
-                        </label>
-                        <div style="margin-top:1em; font-size:1.25em; font-weight:700; color:#185a9d;">
-                            Watt: <span id="potenza-val">-</span>
-                        </div>
-                        
-                        <div style="margin-top:1em; font-size:1.25em; font-weight:700; color:#185a9d;">
-                            Volt: <span id="tensione-val">-</span>
-                        </div>
-                        
-                        <div style="margin-top:1em; font-size:1.25em; font-weight:700; color:#185a9d;">
-                            Amper: <span id="corrente-val">-</span>
-                        </div>
-
-                        <div style="margin-top:1em; font-size:1.25em; font-weight:700; color:#185a9d;">
-                            PF: <span id="pf-val">-</span>
-                        </div>
-
-                        <!-- Dettagli potenza -->
-                        <div id="power-details" style="margin-top:0.7em; font-size:1em; display:none;"></div>
-                    </div>
-                </div>
-            </div>
-
-
-                        <!-- =============================== -->
-            <!-- SEZIONE: Sensori singoli        -->
-            <!-- Mostra la lista dei sensori disponibili. Dipende da 'sensorsList'. -->
-            <!-- =============================== -->
-            <button type="button" class="feature-box" aria-label="Modulo Sensori">
-                <span class="feature-title">Sensori singoli:</span>
-                <select id="sensor-select" {% if sensors|length == 0 %}disabled{% endif %}>
-                    <option value="">{% if sensors|length == 0 %}Nessun sensore disponibile{% else %}-- scegli --{% endif %}</option>
-                    {% for s in sensors %}
-                        <option value="{{ s.id }}">{{ s.name or s.id }} ({{ s.type }})</option>
-                    {% endfor %}
+        <div class="grid">
+            <div class="card">
+                <h2>Sensori singoli</h2>
+                <label for="sensor-select">Sensore</label>
+                <select id="sensor-select" x-model="selectedSensorId">
+                    <option value="">-- scegli --</option>
+                    <template x-for="s in sensors" :key="s.id">
+                        <option :value="s.id" x-text="sensorOptionLabel(s)"></option>
+                    </template>
                 </select>
-            </button>
 
-            <!-- =============================== -->
-            <!-- SEZIONE: File System (placeholder) -->
-            <!-- In arrivo -->
-            <!-- =============================== -->
-            <button type="button" class="feature-box result hidden" aria-label="Modulo File System">
-                <span class="feature-title">File System</span>
-                <span class="feature-subtitle">In arrivo</span>
-            </button>
-        </div>
+                <div class="section section-box">
+                    <h3>Misura</h3>
+                    <div class="row compact">
+                        <button type="button" @click="fetchMeasure()" :disabled="!selectedSensorId || loading.measure || !canQuickMeasure()">Rileva valore</button>
+                        <label class="inline"><input type="checkbox" x-model="autoMeasure"> Auto</label>
+                    </div>
+                    <div class="value" x-text="measureLabel()"></div>
+                    <pre class="result" x-text="measureRawPretty"></pre>
+                </div>
 
-        <!-- =============================== -->
-        <!-- SEZIONE: Info dispositivo       -->
-        <!-- Mostra informazioni dettagliate sull’ESP32 se disponibili. -->
-        <!-- =============================== -->
-        {% if status_info %}
-        <div class="result hidden">
-            <div class="hidden">
-                <strong>Info dispositivo:</strong><br>
-                <ul>
-                    <li><b>SSIDx:</b> {{ status_info.ssid }}</li>
-                    <li><b>Uptime (s):</b> {{ status_info.uptime_s }}</li>
-                    <li><b>Nome:</b> {{ status_info.name }}</li>
-                    <li><b>MAC STA:</b> {{ status_info.mac_sta }}</li>
-                    <li><b>IP:</b> {{ status_info.ip }}</li>
-                    <li><b>Heap libero:</b> {{ status_info.heap_free }}</li>
-                    <li><b>RSSI:</b> {{ status_info.rssi }}</li>
-                    <li><b>Versione:</b> {{ status_info.version }}</li>
-                </ul>
-            </div>
-        </div>
-        {% endif %}
+                <div class="section section-box">
+                    <h3>Calibrazione</h3>
+                    <div class="row compact">
+                        <button type="button" @click="acquireBaseline()" :disabled="!selectedSensorId || loading.calibrate">Baseline</button>
+                        <button type="button" x-show="showCurrentPointButton()" @click="addCurrentPoint()" :disabled="!selectedSensorId || loading.calibrate">Punto corrente</button>
+                        <button type="button" x-show="showVoltagePointButton()" @click="addVoltagePoint()" :disabled="!selectedSensorId || loading.calibrate">Punto tensione</button>
+                    </div>
 
-        <!-- =============================== -->
-        <!-- SEZIONE: Risposta grezza /status -->
-        <!-- Mostra la risposta JSON grezza di /status se disponibile. -->
-        <!-- =============================== -->
-        {% if status_raw %}
-        <div class="result hidden">
-            <div class="hidden">
-                <strong>Risposta grezza /status:</strong><br>
-                {% if status_raw is string %}
-                    <pre style="font-size:0.95em; background:#f0f0f0; border-radius:6px; padding:8px; white-space:pre-wrap;">{{ status_raw }}</pre>
-                {% else %}
-                    <pre style="font-size:0.95em; background:#f0f0f0; border-radius:6px; padding:8px;">{{ status_raw|tojson(indent=2) }}</pre>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
+                    <div class="result calibration-compact">
+                        <div class="calibration-head">
+                            <strong>Baseline:</strong>
+                            <span x-text="calibrationBaselineText()"></span>
+                        </div>
+                        <div class="calibration-subtitle"><strong>Punti:</strong></div>
+                        <ul class="calibration-points-list">
+                            <template x-for="(p, idx) in calibrationPoints" :key="idx">
+                                <li class="calibration-point-row">
+                                    <span class="calibration-point-text" x-text="calibrationPointText(p)"></span>
+                                    <button type="button" class="calibration-delete-btn" @click="deleteCalibrationPoint(idx)" :disabled="loading.calibrate">Elimina</button>
+                                </li>
+                            </template>
+                            <li x-show="calibrationPoints.length === 0"><em>Nessun punto di calibrazione</em></li>
+                        </ul>
+                    </div>
 
-        <!-- =============================== -->
-        <!-- SEZIONE: Sensor Boxes (dettagli) -->
-        <!-- Contiene Misura, Calibrazione, Campionamento per il sensore selezionato. -->
-        <!-- =============================== -->
-        <div id="sensor-boxes" style="display:none; margin-top:2em;">
-            <!-- =============================== -->
-            <!-- MISURA: Valore rapido          -->
-            <!-- =============================== -->
-            <div style="margin-bottom:1.5em; padding-bottom:1em; border-bottom:1px solid #e5e8ef;">
-                <h3>Misura</h3>
-                <button id="btn-aggiorna-misure-bis" type="button">Rileva valore</button>
-                <div id="misure-bis-content" style="margin-top:1em;">
-                    <div id="misure-bis-rms" style="font-size:1.35em; font-weight:700; color:#185a9d; margin-bottom:0.5em;">Volts (rms): <span id="misura-bis-val"></span></div>
-                    <div id="misure-bis-info-div"></div>
+                    <div x-show="calibrationChartVisible" style="margin-top:10px;">
+                        <canvas id="calibration-chart" height="140"></canvas>
+                    </div>
+
+                    <div class="result" x-text="calibrationMessage || 'Nessuna operazione calibrazione eseguita'" ></div>
+                </div>
+
+                <div class="section section-box">
+                    <h3>Campionamento</h3>
+                    <div class="row compact">
+                        <label>N <input type="number" min="1" x-model.number="sampleN"></label>
+                        <label>SR <input type="number" min="1" x-model.number="sampleSr"></label>
+                        <button type="button" @click="fetchSample()" :disabled="!selectedSensorId || loading.sample">Esegui</button>
+                        <label class="inline"><input type="checkbox" x-model="autoSample"> Auto</label>
+                    </div>
+                    <div class="chart-meta">
+                        <button type="button" class="chart-meta-btn" @click="changeSampleYMin()" x-text="`Y min: ${sampleYMin}`"></button>
+                        <button type="button" class="chart-meta-btn" @click="changeSampleYMax()" x-text="`Y max: ${sampleYMax}`"></button>
+                    </div>
+                    <canvas id="sample-chart" height="140"></canvas>
+                    <pre class="result" x-text="sampleRawPretty"></pre>
                 </div>
             </div>
 
-            <!-- =============================== -->
-            <!-- CALIBRAZIONE: Gestione punti    -->
-            <!-- =============================== -->
-            <div style="margin-bottom:1.5em;">
-                <h3>Calibrazione</h3>
-                <div id="calibrazione-list"></div>
-                <div id="calibrazione-chart-container" style="display:none; margin-top:1em;">
-                    <canvas id="calibrazione-chart" height="160"></canvas>
-                </div>
-                <div style="margin-top:1em;">
-                    <button id="btn-baseline" type="button">Acquisisci Baseline</button>
-                    <button id="btn-corrente" type="button">Aggiungi punto corrente</button>
-                    <button id="btn-volt" type="button">Aggiungi punto tensione</button>
-                </div>
-                <div id="calibrazione-msg" style="margin-top:0.7em; color:#185a9d;"></div>
-            </div>
-
-            <!-- =============================== -->
-            <!-- CAMPIONAMENTO: Acquisizione dati -->
-            <!-- =============================== -->
-            <div>
-                <h3>Campionamento</h3>
-                <button id="btn-aggiorna-misure" type="button">Esegui campionamento</button>
-                <div id="misure-content" style="margin-top:1em;">
-                    <div style="margin-top:1em;">
-                        <canvas id="misure-chart" height="180" style="display:block; box-sizing:border-box; height:180px; width:100%;"></canvas>
+            <div class="card">
+                <h2>Potenza</h2>
+                <div class="row compact">
+                    <div>
+                        <label for="v-sensor">Sensore tensione</label>
+                        <select id="v-sensor" x-model="powerVoltageSensorId">
+                            <option value="">-- scegli --</option>
+                            <template x-for="s in voltageSensors" :key="s.id">
+                                <option :value="s.id" x-text="s.name || s.id"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="i-sensor">Sensore corrente</label>
+                        <select id="i-sensor" x-model="powerCurrentSensorId">
+                            <option value="">-- scegli --</option>
+                            <template x-for="s in currentSensors" :key="s.id">
+                                <option :value="s.id" x-text="s.name || s.id"></option>
+                            </template>
+                        </select>
                     </div>
                 </div>
-            </div>
-            <!-- TUTTO dentro potenza-custom-block, nessun power-block separato -->
-        </div>
+                <div class="row compact">
+                    <button type="button" @click="fetchPower()" :disabled="!powerVoltageSensorId || !powerCurrentSensorId || loading.power || !canMeasurePower()">Rileva potenza</button>
+                    <label class="inline"><input type="checkbox" x-model="autoPower"> Auto</label>
+                </div>
 
-        <!-- =============================== -->
-        <!-- SEZIONE: Variabili globali JS   -->
-        <!-- Inietta variabili per lo script JS esterno. -->
-        <!-- =============================== -->
-        <script>
-            // Variabili globali per JS esterno
-            const ip = '{{ ip }}';
-            var sensorsList = JSON.parse('{{ sensors|default([])|tojson }}');
-        </script>
-        <script src="/static/js/main.js"></script>
+                <div class="metric-grid">
+                    <div class="metric"><span>Watt</span><strong x-text="fmt(powerData.watt)">-</strong></div>
+                    <div class="metric"><span>PF</span><strong x-text="fmt(powerData.pf)">-</strong></div>
+                    <div class="metric"><span>Volt</span><strong x-text="fmt(powerData.volt)">-</strong></div>
+                    <div class="metric"><span>Ampere</span><strong x-text="fmt(powerData.amp)">-</strong></div>
+                </div>
+                <pre class="result" x-text="powerRawPretty"></pre>
+            </div>
+        </div>
     </div>
 </body>
 </html>
