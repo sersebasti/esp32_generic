@@ -8951,3 +8951,5 @@ jinja2.exceptions.TemplateAssertionError: No filter named 'escapejs'.
 2026-03-03 18:05:37,929 INFO 127.0.0.1 - - [03/Mar/2026 18:05:37] "GET /api/generic-get?ip=192.168.1.116&path=/adc/scope_counts?sensor_id%3Dc1%26n%3D1024%26fast%3D1%26binary%3Dtrue HTTP/1.1" 200 -
 2026-03-03 18:07:02,273 INFO 127.0.0.1 - - [03/Mar/2026 18:07:02] "GET /api/generic-get?ip=192.168.1.116&path=/adc/scope_counts?sensor_id%3Dc1%26n%3D1024%26fast%3D1%26binary%3Dtrue HTTP/1.1" 200 -
 2026-03-03 18:07:04,744 INFO 127.0.0.1 - - [03/Mar/2026 18:07:04] "GET /api/generic-get?ip=192.168.1.116&path=/adc/scope_counts?sensor_id%3Dc1%26n%3D1024%26fast%3D1%26binary%3Dtrue HTTP/1.1" 200 -
+2026-03-03 18:08:15,976 INFO 127.0.0.1 - - [03/Mar/2026 18:08:15] "GET /api/generic-get?ip=192.168.1.116&path=/sensors HTTP/1.1" 200 -
+2026-03-03 18:08:16,035 INFO 127.0.0.1 - - [03/Mar/2026 18:08:16] "GET /api/generic-get?ip=192.168.1.116&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
