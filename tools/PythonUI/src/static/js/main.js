@@ -11,6 +11,7 @@ window.esp32Ui = function esp32Ui(defaultIp) {
 
     powerVoltageSensorId: '',
     powerCurrentSensorId: '',
+    powerPhaseShift: 0,
     powerData: { watt: null, volt: null, amp: null, pf: null },
 
     measureData: null,
@@ -388,7 +389,8 @@ window.esp32Ui = function esp32Ui(defaultIp) {
       if (!this.powerVoltageSensorId || !this.powerCurrentSensorId) return;
       this.loading.power = true;
       try {
-        const q = `voltage_sensor_id=${encodeURIComponent(this.powerVoltageSensorId)}&current_sensor_id=${encodeURIComponent(this.powerCurrentSensorId)}&n=1600&sr=4000&fast=1`;
+        const phase = Number(this.powerPhaseShift) || 0;
+        const q = `voltage_sensor_id=${encodeURIComponent(this.powerVoltageSensorId)}&current_sensor_id=${encodeURIComponent(this.powerCurrentSensorId)}&n=1600&sr=4000&fast=1&phase_shift=${encodeURIComponent(phase)}`;
         const data = await this.fetchJson(`http://${this.ip}/power?${q}`);
         this.powerData = {
           watt: data?.watt ?? data?.power_w ?? data?.p,

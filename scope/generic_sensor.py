@@ -12,24 +12,53 @@ class GenericSensor:
             return float(default_val)
 
     @staticmethod
-    def measure_instant_power_pair(voltage_sensor, current_sensor, n=1600, sample_rate_hz=4000, fast=False):
+    def measure_instant_power_pair(voltage_sensor, current_sensor, n=1600, sample_rate_hz=4000, fast=False, phase_shift=None):
         # Inizializza i due ADC (tensione e corrente) una sola volta.
         voltage_sensor._init_adc()
         current_sensor._init_adc()
 
         # Normalizza i parametri di acquisizione in un range sicuro.
         n = max(32, min(int(n), 4096))
+        
         sr = max(200, min(int(sample_rate_hz), 20000))
         # Periodo teorico tra campioni (microsecondi).
         dt_us = int(1_000_000 / sr)
 
-        # Offset DC (baseline) e coefficienti di conversione count->unità fisiche.
+        # ensure mains_freq is defined and initialize phase shift variable
+        try:
+            mains_freq = float(voltage_sensor.cal.get("mains_freq", 50.0))
+        except Exception:
+            mains_freq = 50.0
+        sh = 0
+
         v_baseline = GenericSensor._cal_float(voltage_sensor, "baseline_mean", 2048.0)
         i_baseline = GenericSensor._cal_float(current_sensor, "baseline_mean", 2048.0)
         k_v = GenericSensor._cal_float(voltage_sensor, "k_V_per_count", 0.0)
         k_i = GenericSensor._cal_float(current_sensor, "k_A_per_count", 0.0)
         # TODO: in futuro validare calibrazione (es. k_v/k_i != 0) e bloccare la misura con errore esplicito se non pronta.
 
+        
+        # Determina lo shift: normalizzazione basata su sample_rate e mains_freq, preservando il segno
+        if phase_shift is not None:
+            s_in = int(phase_shift)
+
+            samples_per_cycle = max(1, int(round(float(sr) / float(mains_freq))))
+            max_shift = max(1, samples_per_cycle // 2)
+
+            # preserva il segno dell'input: riduce il valore modulo samples_per_cycle mantenendo la direzione
+            if s_in >= 0:
+                s_mod = s_in % samples_per_cycle
+                if s_mod > max_shift:
+                    s_mod -= samples_per_cycle
+                sh = int(s_mod)
+            else:
+                s_mod = (-s_in) % samples_per_cycle
+                if s_mod > max_shift:
+                    s_mod -= samples_per_cycle
+                sh = -int(s_mod)
+
+        
+        print("[DEBUG] phase_shift:", phase_shift, "->", sh)
         # Accumulatori per RMS e potenza attiva istantanea.
         sum_v2 = 0.0
         sum_i2 = 0.0
@@ -41,48 +70,133 @@ class GenericSensor:
         i_min = 4095
         i_max = 0
 
-        # Acquisizione accoppiata V-I: ogni iterazione produce un campione istantaneo.
-        for _ in range(n):
-            v_count = voltage_sensor._read_count()
-            i_count = current_sensor._read_count()
+        # Acquisizione e calcolo in streaming: non teniamo tutti i campioni in memoria
+        if sh == 0:
+            # comportamento classico: n coppie v/i
+            for _ in range(n):
+                v_count = voltage_sensor._read_count()
+                i_count = current_sensor._read_count()
 
-            if v_count < v_min:
-                v_min = v_count
-            if v_count > v_max:
-                v_max = v_count
-            if i_count < i_min:
-                i_min = i_count
-            if i_count > i_max:
-                i_max = i_count
+                if v_count < v_min:
+                    v_min = v_count
+                if v_count > v_max:
+                    v_max = v_count
+                if i_count < i_min:
+                    i_min = i_count
+                if i_count > i_max:
+                    i_max = i_count
 
-            # Rimuove offset e converte in Volt/Ampere istantanei.
-            v_inst = (v_count - v_baseline) * k_v
-            i_inst = (i_count - i_baseline) * k_i
+                # Rimuove offset e converte in Volt/Ampere istantanei.
+                v_inst = (v_count - v_baseline) * k_v
+                i_inst = (i_count - i_baseline) * k_i
 
-            # Somme per: Vrms, Irms e P attiva media.
-            sum_v2 += v_inst * v_inst
-            sum_i2 += i_inst * i_inst
-            sum_p += v_inst * i_inst
+                # Somme per: Vrms, Irms e P attiva media.
+                sum_v2 += v_inst * v_inst
+                sum_i2 += i_inst * i_inst
+                sum_p += v_inst * i_inst
 
-            # In modalità non-fast prova a rispettare la frequenza richiesta.
-            if not fast:
-                time.sleep_us(dt_us)
+                if not fast:
+                    time.sleep_us(dt_us)
+        else:
+            # versione con shift: usiamo un piccolo buffer di size abs_sh per allineare i campioni
+            abs_sh = abs(sh)
+            n_eff = n - abs_sh
+            if n_eff <= 0:
+                raise ValueError("Phase shift magnitude >= n: increase n or reduce phase_shift")
+
+            if sh > 0:
+                # la tensione è in anticipo: leggiamo e memorizziamo i primi 'abs_sh' campioni di tensione
+                vbuf = []
+                for _ in range(abs_sh):
+                    vbuf.append(voltage_sensor._read_count())
+                    if not fast:
+                        time.sleep_us(dt_us)
+                # poi leggiamo n_eff volte: per ciascuna lettura prendiamo il nuovo campione di tensione,
+                # lo applichiamo con il campione di corrente letto subito dopo
+                for _ in range(n_eff):
+                    v_new = voltage_sensor._read_count()
+                    vbuf.append(v_new)
+                    i_count = current_sensor._read_count()
+
+                    # il campione di tensione allineato è l'ultimo inserito (v_new)
+                    v_count = vbuf.pop()
+
+                    if v_count < v_min:
+                        v_min = v_count
+                    if v_count > v_max:
+                        v_max = v_count
+                    if i_count < i_min:
+                        i_min = i_count
+                    if i_count > i_max:
+                        i_max = i_count
+
+                    v_inst = (v_count - v_baseline) * k_v
+                    i_inst = (i_count - i_baseline) * k_i
+
+                    sum_v2 += v_inst * v_inst
+                    sum_i2 += i_inst * i_inst
+                    sum_p += v_inst * i_inst
+
+                    if not fast:
+                        time.sleep_us(dt_us)
+            else:
+                # sh < 0 -> la corrente è in anticipo: memorizziamo i primi 'abs_sh' campioni di corrente
+                ibuf = []
+                for _ in range(abs_sh):
+                    ibuf.append(current_sensor._read_count())
+                    if not fast:
+                        time.sleep_us(dt_us)
+                for _ in range(n_eff):
+                    i_new = current_sensor._read_count()
+                    ibuf.append(i_new)
+                    v_count = voltage_sensor._read_count()
+
+                    i_count = ibuf.pop()
+
+                    if v_count < v_min:
+                        v_min = v_count
+                    if v_count > v_max:
+                        v_max = v_count
+                    if i_count < i_min:
+                        i_min = i_count
+                    if i_count > i_max:
+                        i_max = i_count
+
+                    v_inst = (v_count - v_baseline) * k_v
+                    i_inst = (i_count - i_baseline) * k_i
+
+                    sum_v2 += v_inst * v_inst
+                    sum_i2 += i_inst * i_inst
+                    sum_p += v_inst * i_inst
+
+                    if not fast:
+                        time.sleep_us(dt_us)
+        
+        # Determina quale numero di campioni usare per il calcolo finale
+        n_used = n
+        try:
+            # se sh è stato definito e diverso da zero, usa n_eff calcolato nel ramo streaming
+            if sh != 0:
+                n_used = n - abs(sh)
+        except Exception:
+            n_used = n
 
         # Grandezze finali: RMS, potenza attiva, apparente e fattore di potenza.
-        v_rms = math.sqrt(sum_v2 / n)
-        i_rms = math.sqrt(sum_i2 / n)
-        p_active = sum_p / n
+        v_rms = math.sqrt(sum_v2 / n_used) if n_used > 0 else 0.0
+        i_rms = math.sqrt(sum_i2 / n_used) if n_used > 0 else 0.0
+        p_active = sum_p / n_used if n_used > 0 else 0.0
         p_apparent = v_rms * i_rms
         power_factor = (p_active / p_apparent) if p_apparent > 0 else 0.0
 
         return {
-            "n": n,
+            "n": n_used,
             "sample_rate_hz": sr,
             "volts_rms": v_rms,
             "amps_rms": i_rms,
             "power_w": p_active,
             "apparent_power_va": p_apparent,
             "power_factor": power_factor,
+            "phase_shift_samples": sh,
             "voltage": {
                 "baseline_mean": v_baseline,
                 "min": v_min,

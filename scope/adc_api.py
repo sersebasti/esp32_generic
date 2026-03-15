@@ -289,6 +289,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             n = 1600; sr = 4000; fast = False
             voltage_sensor_id = "v1"
             current_sensor_id = "c1"
+            phase_shift = None
             if "?" in path:
                 q = path.split("?", 1)[1]
                 for p in q.split("&"):
@@ -296,11 +297,16 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                         k, v = p.split("=", 1)
                         if k == "n": n = int(v)
                         elif k in ("sr", "sample_rate_hz"): sr = int(v)
-                        elif k == "fast": fast = v in ("1", "true", "True")
+                        elif k == "fast": fast = v in ("1","true","True")
                         elif k in ("voltage_sensor_id", "voltage_id", "v_sensor_id"):
                             voltage_sensor_id = v
                         elif k in ("current_sensor_id", "current_id", "i_sensor_id"):
                             current_sensor_id = v
+                        elif k in ("phase_shift", "phase-shift", "v_phase_shift"):
+                            try:
+                                phase_shift = int(v)
+                            except Exception:
+                                phase_shift = None
 
             voltage_sensor = _SENSOR_MANAGER.get_sensor(voltage_sensor_id)
             current_sensor = _SENSOR_MANAGER.get_sensor(current_sensor_id)
@@ -322,12 +328,14 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                 cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "err": "not_current_sensor", "sensor_id": current_sensor_id}).encode())
                 return True
 
+            # Pass optional phase_shift to measurement
             p = GenericSensor.measure_instant_power_pair(
                 voltage_sensor,
                 current_sensor,
                 n=n,
                 sample_rate_hz=sr,
                 fast=fast,
+                phase_shift=phase_shift,
             )
 
             out = {
@@ -343,6 +351,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                 "power_w": round(p["power_w"], 3),
                 "apparent_power_va": round(p["apparent_power_va"], 3),
                 "power_factor": round(p["power_factor"], 4),
+                "phase_shift_samples": int(p.get("phase_shift_samples", 0)),
                 "clipping": bool(p["voltage"]["clipping"] or p["current"]["clipping"]),
                 "voltage": {
                     "baseline_mean": round(p["voltage"]["baseline_mean"], 2),
