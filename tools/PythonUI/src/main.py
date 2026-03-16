@@ -140,6 +140,55 @@ def generic_post():
     return Response(upstream.content, status=upstream.status_code, headers=pass_headers)
 
 
+@app.route('/api/generic-delete', methods=['POST'])
+def generic_delete():
+    body = request.get_json(silent=True) or {}
+
+    ip = str(body.get("ip") or request.args.get("ip") or current_ip or "").strip()
+    path = str(body.get("path") or request.args.get("path") or "/").strip()
+    payload = body.get("payload", {})
+
+    if not ip:
+        return jsonify({"ok": False, "error": "missing_ip"}), 400
+
+    if not path.startswith("/"):
+        path = "/" + path
+
+    target_url = f"http://{ip}{path}"
+
+    try:
+        upstream = requests.delete(target_url, json=payload, timeout=12)
+    except requests.RequestException as exc:
+        return jsonify({
+            "ok": False,
+            "error": "upstream_unreachable",
+            "detail": str(exc),
+            "target": target_url,
+        }), 502
+
+    content_type = (upstream.headers.get("Content-Type") or "").lower()
+
+    if "application/json" in content_type:
+        try:
+            response_body = upstream.json()
+        except ValueError:
+            response_body = {
+                "ok": False,
+                "error": "invalid_upstream_json",
+                "target": target_url,
+                "raw": upstream.text,
+            }
+        return jsonify(response_body), upstream.status_code
+
+    pass_headers = {}
+    for name in ("Content-Type", "Content-Length", "Content-Disposition", "Cache-Control"):
+        value = upstream.headers.get(name)
+        if value:
+            pass_headers[name] = value
+
+    return Response(upstream.content, status=upstream.status_code, headers=pass_headers)
+
+
 if __name__ == "__main__":
     host = "0.0.0.0"
     port = 8000

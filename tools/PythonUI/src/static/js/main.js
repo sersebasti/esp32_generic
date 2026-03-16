@@ -411,7 +411,23 @@ window.esp32Ui = function esp32Ui(defaultIp) {
       if (!this.selectedSensorId) return;
       this.loading.calibrate = true;
       try {
-        const data = await this.fetchJson(`http://${this.ip}/calibrate?amp=0&sensor_id=${encodeURIComponent(this.selectedSensorId)}&fast=1`);
+        const type = this.selectedSensorType();
+        const payload = {
+          sensor_id: this.selectedSensorId,
+          fast: 1,
+          n: Number(this.sampleN) || 1024,
+          sr: Number(this.sampleSr) || 4000,
+        };
+        // invia amp=0 per sensori di corrente, volt=0 per gli altri (tensione)
+        if (type && type.includes('curr')) {
+          payload.amp = 0;
+        } else {
+          payload.volt = 0;
+        }
+
+        console.log('Acquisizione baseline con payload:', payload);
+
+        const data = await this.postJson(`http://${this.ip}/calibrate`, payload);
         this.calibrationMessage = `Baseline acquisita: ${this.pretty(data)}`;
         await this.fetchCalibrationInfo();
       } catch (err) {
@@ -424,11 +440,23 @@ window.esp32Ui = function esp32Ui(defaultIp) {
     async addCurrentPoint() {
       if (!this.selectedSensorId) return;
       if (!this.showCurrentPointButton()) return;
-      const amp = window.prompt('Inserisci il valore della corrente (A):', '7.0');
-      if (amp === null) return;
+      const raw = window.prompt('Inserisci il valore della corrente (A):', '7.0');
+      if (raw === null) return;
+      const amp = Number(raw);
+      if (!Number.isFinite(amp)) {
+        this.calibrationMessage = 'Valore corrente non valido';
+        return;
+      }
       this.loading.calibrate = true;
       try {
-        const data = await this.fetchJson(`http://${this.ip}/calibrate?amp=${encodeURIComponent(amp)}&sensor_id=${encodeURIComponent(this.selectedSensorId)}&fast=1`);
+        const payload = {
+          amp: amp,
+          sensor_id: this.selectedSensorId,
+          n: Number(this.sampleN) || 1024,
+          sr: Number(this.sampleSr) || 4000,
+          fast: 1,
+        };
+        const data = await this.postJson(`http://${this.ip}/calibrate`, payload);
         this.calibrationMessage = `Punto corrente aggiunto: ${this.pretty(data)}`;
         await this.fetchCalibrationInfo();
       } catch (err) {
@@ -441,11 +469,23 @@ window.esp32Ui = function esp32Ui(defaultIp) {
     async addVoltagePoint() {
       if (!this.selectedSensorId) return;
       if (!this.showVoltagePointButton()) return;
-      const volt = window.prompt('Inserisci il valore della tensione (V):', '220');
-      if (volt === null) return;
+      const raw = window.prompt('Inserisci il valore della tensione (V):', '220');
+      if (raw === null) return;
+      const volt = Number(raw);
+      if (!Number.isFinite(volt)) {
+        this.calibrationMessage = 'Valore tensione non valido';
+        return;
+      }
       this.loading.calibrate = true;
       try {
-        const data = await this.fetchJson(`http://${this.ip}/calibrate?volt=${encodeURIComponent(volt)}&sensor_id=${encodeURIComponent(this.selectedSensorId)}&fast=1`);
+        const payload = {
+          volt: volt,
+          sensor_id: this.selectedSensorId,
+          n: Number(this.sampleN) || 1024,
+          sr: Number(this.sampleSr) || 4000,
+          fast: 1,
+        };
+        const data = await this.postJson(`http://${this.ip}/calibrate`, payload);
         this.calibrationMessage = `Punto tensione aggiunto: ${this.pretty(data)}`;
         await this.fetchCalibrationInfo();
       } catch (err) {
@@ -453,6 +493,25 @@ window.esp32Ui = function esp32Ui(defaultIp) {
       } finally {
         this.loading.calibrate = false;
       }
+    },
+
+    async deleteJson(url, payload) {
+      const parsed = new URL(url, window.location.origin);
+      const ip = parsed.host;
+      const path = `${parsed.pathname}${parsed.search}`;
+      const proxyUrl = '/api/generic-delete';
+
+      const response = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip, path, payload }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      return response.json();
     },
 
     async deleteCalibrationPoint(index) {
@@ -463,7 +522,9 @@ window.esp32Ui = function esp32Ui(defaultIp) {
           index,
           sensor_id: this.selectedSensorId,
         };
-        const data = await this.postJson(`http://${this.ip}/calibrate/delete`, payload);
+        console.log('Eliminazione punto calibrazione con payload:', payload);
+        
+        const data = await this.deleteJson(`http://${this.ip}/calibrate/delete`, payload);
         if (data && data.ok === false) {
           throw new Error(data.err || 'delete_failed');
         }

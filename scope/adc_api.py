@@ -369,7 +369,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             cl.send(_HTTP_200_JSON + ujson.dumps(out).encode())
         return True
 
-    if method == "POST" and path.startswith("/calibrate/delete"):
+    if method in ("POST", "DELETE") and path.startswith("/calibrate/delete"):
         try:
             if _read_post_json is None or req is None:
                 raise Exception("no_json_parser")
@@ -446,6 +446,94 @@ def handle(cl, method, path, req=None, _read_post_json=None):
         except Exception:
             pass
         cl.send(_HTTP_200_JSON + b'{"ok":true}')
+        return True
+
+    # --- Endpoint per calibrazione (POST) ---
+    if method == "POST" and path.startswith("/calibrate"):
+        try:
+            if _read_post_json is None or req is None:
+                raise Exception("no_json_parser")
+            body = _read_post_json(req, cl) or {}
+
+            # defaults
+            n = int(body.get("n", 1600))
+            sr = int(body.get("sr", body.get("sample_rate_hz", 4000)))
+            sensor_id = body.get("sensor_id", "c1")
+            fast = bool(body.get("fast", False))
+
+            value = None
+            value_key = "amps"
+            k_key = "k_A_per_count"
+            hint = "usa /calibrate?amp=0 per baseline, /calibrate?amp=<A> per aggiungere un punto"
+
+            # decide which value is present in payload
+            if "amp" in body:
+                try:
+                    value = float(body.get("amp"))
+                except Exception:
+                    value = None
+                value_key = "amps"
+                k_key = "k_A_per_count"
+            if "volt" in body:
+                try:
+                    value = float(body.get("volt"))
+                except Exception:
+                    value = None
+                value_key = "volts"
+                k_key = "k_V_per_count"
+
+            sensor = _SENSOR_MANAGER.get_sensor(sensor_id)
+            if not sensor:
+                cl.send(_HTTP_200_JSON_CORS + ujson.dumps({"ok": False, "err": "sensor_not_found"}).encode())
+                return True
+
+            # if sensor is voltage, adjust keys/hint
+            if hasattr(sensor, 'type') and getattr(sensor, 'type', None) == 'voltage':
+                value_key = "volts"
+                k_key = "k_V_per_count"
+                hint = "usa /calibrate?volt=0 per baseline, /calibrate?volt=<V> per aggiungere un punto"
+
+            # if no value provided return calibration info
+            if value is None:
+                cal = sensor._load_calibration()
+                if "points" not in cal:
+                    cal["points"] = []
+                resp = {"ok": True, "cal": cal, "hint": hint}
+                cl.send(_HTTP_200_JSON_CORS + ujson.dumps(resp).encode())
+                return True
+
+            # baseline acquisition
+            if float(value) == 0.0:
+                if is_busy():
+                    cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"busy"}')
+                    return True
+                with busy_region():
+                    baseline = sensor.calibrate_baseline(n, sr, fast=fast)
+                    cal = sensor._load_calibration()
+                    resp = {"ok": True, "saved": {"baseline_mean": cal.get("baseline_mean"), "n0": cal.get("n0"), "sr0": cal.get("sr0")}}
+                    cl.send(_HTTP_200_JSON_CORS + ujson.dumps(resp).encode())
+                return True
+
+            # add calibration point
+            if is_busy():
+                cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"busy"}')
+                return True
+            with busy_region():
+                pt, k = sensor.add_calibration_point(value, n, sr, fast=fast, value_key=value_key, rms_key="rms_counts", k_key=k_key)
+                arr, sr = sensor.sample_counts(n, sr, fast=fast)
+                baseline = float(sensor.cal.get("baseline_mean", sum(arr)/len(arr)))
+                mn = min(arr); mx = max(arr)
+                clipping = (mn < 50) or (mx > 4040)
+                resp = {"ok": True, "added": pt, k_key: k,
+                        "num_points": len(sensor.cal.get("points", [])), "baseline_mean": round(baseline, 2),
+                        "min": int(mn), "max": int(mx), "clipping": bool(clipping)}
+                cl.send(_HTTP_200_JSON_CORS + ujson.dumps(resp).encode())
+            return True
+        except Exception:
+            try:
+                cl.send(_HTTP_200_JSON_CORS + b'{"ok":false,"err":"invalid_request"}')
+            except Exception:
+                pass
         return True
 
     return False
