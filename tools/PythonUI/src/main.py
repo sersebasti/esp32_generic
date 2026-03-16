@@ -5,6 +5,7 @@ from flask import Flask, render_template, request, session, jsonify, Response
 import requests
 import threading
 import webbrowser
+import json
 
 
 DEFAULT_ESP32_IP = "192.168.1.116"
@@ -187,6 +188,9 @@ def generic_delete():
             pass_headers[name] = value
 
     return Response(upstream.content, status=upstream.status_code, headers=pass_headers)
+
+
+# /api/save-phase endpoint removed — the UI now forwards phase_shift to the device via /calibrate
 
 
 if __name__ == "__main__":

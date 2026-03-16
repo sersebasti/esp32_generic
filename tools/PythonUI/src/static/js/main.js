@@ -425,6 +425,12 @@ window.esp32Ui = function esp32Ui(defaultIp) {
           payload.volt = 0;
         }
 
+        // includi phase_shift se impostato
+        const ps = Number(this.powerPhaseShift);
+        if (Number.isFinite(ps)) {
+          payload.phase_shift = ps;
+        }
+
         console.log('Acquisizione baseline con payload:', payload);
 
         const data = await this.postJson(`http://${this.ip}/calibrate`, payload);
@@ -456,6 +462,10 @@ window.esp32Ui = function esp32Ui(defaultIp) {
           sr: Number(this.sampleSr) || 4000,
           fast: 1,
         };
+        const ps = Number(this.powerPhaseShift);
+        if (Number.isFinite(ps)) {
+          payload.phase_shift = ps;
+        }
         const data = await this.postJson(`http://${this.ip}/calibrate`, payload);
         this.calibrationMessage = `Punto corrente aggiunto: ${this.pretty(data)}`;
         await this.fetchCalibrationInfo();
@@ -485,6 +495,10 @@ window.esp32Ui = function esp32Ui(defaultIp) {
           sr: Number(this.sampleSr) || 4000,
           fast: 1,
         };
+        const ps = Number(this.powerPhaseShift);
+        if (Number.isFinite(ps)) {
+          payload.phase_shift = ps;
+        }
         const data = await this.postJson(`http://${this.ip}/calibrate`, payload);
         this.calibrationMessage = `Punto tensione aggiunto: ${this.pretty(data)}`;
         await this.fetchCalibrationInfo();
@@ -765,6 +779,27 @@ window.esp32Ui = function esp32Ui(defaultIp) {
       if (this[timerName]) {
         clearTimeout(this[timerName]);
         this[timerName] = null;
+      }
+    },
+
+    async savePhaseShift() {
+      // abilitato solo se ci sono sensori tensione e corrente selezionati
+      if (!this.powerVoltageSensorId || !this.powerCurrentSensorId) return;
+      console.log(`Aggiornamento file specifico sensore tensione: ${this.powerVoltageSensorId}, phase_shift: ${this.powerPhaseShift}`);
+      this.statusMessage = `Salvataggio phase shift in corso...`;
+
+      try {
+        const payload = {
+          sensor_id: this.powerVoltageSensorId,
+          phase_shift: Number(this.powerPhaseShift),
+        };
+        // usa il proxy generico per inoltrare la POST al device (/calibrate)
+        const data = await this.postJson(`http://${this.ip}/calibrate`, payload);
+        this.calibrationMessage = `Phase shift salvato sul device: ${this.pretty(data)}`;
+        // aggiorna stato locale leggendo la calibrazione dal device
+        await this.fetchCalibrationInfo();
+      } catch (err) {
+        this.calibrationMessage = `Errore salvataggio phase shift: ${err.message}`;
       }
     },
   };

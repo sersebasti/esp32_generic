@@ -493,11 +493,24 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                 k_key = "k_V_per_count"
                 hint = "usa /calibrate?volt=0 per baseline, /calibrate?volt=<V> per aggiungere un punto"
 
+            # support saving phase_shift if provided in payload
+            try:
+                if 'phase_shift' in body:
+                    try:
+                        ps = int(body.get('phase_shift'))
+                        sensor.cal = sensor._load_calibration() if getattr(sensor, 'cal', None) is None else sensor.cal
+                        sensor.cal['phase_shift'] = ps
+                        sensor._save_calibration()
+                    except Exception:
+                        # ignore invalid phase_shift value, do not fail the whole request
+                        pass
+            except Exception:
+                pass
+
             # if no value provided return calibration info
             if value is None:
                 cal = sensor._load_calibration()
-                if "points" not in cal:
-                    cal["points"] = []
+                if "points" not in cal: cal["points"] = []
                 resp = {"ok": True, "cal": cal, "hint": hint}
                 cl.send(_HTTP_200_JSON_CORS + ujson.dumps(resp).encode())
                 return True
@@ -509,8 +522,23 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                     return True
                 with busy_region():
                     baseline = sensor.calibrate_baseline(n, sr, fast=fast)
+                    # if phase_shift provided, ensure it's stored (again) and persisted
+                    try:
+                        if 'phase_shift' in body:
+                            try:
+                                ps = int(body.get('phase_shift'))
+                                sensor.cal = sensor._load_calibration() if getattr(sensor, 'cal', None) is None else sensor.cal
+                                sensor.cal['phase_shift'] = ps
+                                sensor._save_calibration()
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
                     cal = sensor._load_calibration()
                     resp = {"ok": True, "saved": {"baseline_mean": cal.get("baseline_mean"), "n0": cal.get("n0"), "sr0": cal.get("sr0")}}
+                    # include phase_shift in response if present
+                    if 'phase_shift' in cal:
+                        resp['phase_shift'] = cal.get('phase_shift')
                     cl.send(_HTTP_200_JSON_CORS + ujson.dumps(resp).encode())
                 return True
 
@@ -524,9 +552,25 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                 baseline = float(sensor.cal.get("baseline_mean", sum(arr)/len(arr)))
                 mn = min(arr); mx = max(arr)
                 clipping = (mn < 50) or (mx > 4040)
+                # if phase_shift provided, persist it alongside the added point
+                try:
+                    if 'phase_shift' in body:
+                        try:
+                            ps = int(body.get('phase_shift'))
+                            sensor.cal = sensor._load_calibration() if getattr(sensor, 'cal', None) is None else sensor.cal
+                            sensor.cal['phase_shift'] = ps
+                            sensor._save_calibration()
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
                 resp = {"ok": True, "added": pt, k_key: k,
                         "num_points": len(sensor.cal.get("points", [])), "baseline_mean": round(baseline, 2),
                         "min": int(mn), "max": int(mx), "clipping": bool(clipping)}
+                # include phase_shift in response if present
+                cal_now = sensor._load_calibration()
+                if 'phase_shift' in cal_now:
+                    resp['phase_shift'] = cal_now.get('phase_shift')
                 cl.send(_HTTP_200_JSON_CORS + ujson.dumps(resp).encode())
             return True
         except Exception:

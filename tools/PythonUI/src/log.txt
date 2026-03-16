@@ -10031,3 +10031,104 @@ jinja2.exceptions.TemplateAssertionError: No filter named 'escapejs'.
 2026-03-16 10:54:28,824 INFO 127.0.0.1 - - [16/Mar/2026 10:54:28] "GET /api/generic-get?ip=192.168.1.5&path=/adc/scope_counts?sensor_id%3Dc1%26n%3D1024%26fast%3D1%26binary%3Dtrue HTTP/1.1" 200 -
 2026-03-16 10:54:35,946 INFO 127.0.0.1 - - [16/Mar/2026 10:54:35] "GET /api/generic-get?ip=192.168.1.5&path=/power?voltage_sensor_id%3Dv1%26current_sensor_id%3Dc1%26n%3D1600%26sr%3D4000%26fast%3D1%26phase_shift%3D0 HTTP/1.1" 200 -
 2026-03-16 10:54:37,295 INFO 127.0.0.1 - - [16/Mar/2026 10:54:37] "GET /api/generic-get?ip=192.168.1.5&path=/power?voltage_sensor_id%3Dv1%26current_sensor_id%3Dc1%26n%3D1600%26sr%3D4000%26fast%3D1%26phase_shift%3D0 HTTP/1.1" 200 -
+2026-03-16 11:13:26,698 INFO [SERVER] Flask app avviata
+2026-03-16 11:13:26,698 INFO [SERVER] Flask app avviata
+2026-03-16 11:13:26,703 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.1.155:8000
+2026-03-16 11:13:26,703 INFO [33mPress CTRL+C to quit[0m
+2026-03-16 11:13:28,183 INFO 127.0.0.1 - - [16/Mar/2026 11:13:28] "GET / HTTP/1.1" 200 -
+2026-03-16 11:13:28,352 INFO 127.0.0.1 - - [16/Mar/2026 11:13:28] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-03-16 11:13:28,358 INFO 127.0.0.1 - - [16/Mar/2026 11:13:28] "GET /static/js/main.js HTTP/1.1" 200 -
+2026-03-16 11:13:40,332 INFO [SERVER] Flask app avviata
+2026-03-16 11:13:40,332 INFO [SERVER] Flask app avviata
+2026-03-16 11:13:40,336 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.1.155:8000
+2026-03-16 11:13:40,337 INFO [33mPress CTRL+C to quit[0m
+2026-03-16 11:13:41,701 INFO 127.0.0.1 - - [16/Mar/2026 11:13:41] "GET / HTTP/1.1" 200 -
+2026-03-16 11:13:41,819 INFO 127.0.0.1 - - [16/Mar/2026 11:13:41] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-03-16 11:13:41,920 INFO 127.0.0.1 - - [16/Mar/2026 11:13:41] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2026-03-16 11:13:47,125 INFO 127.0.0.1 - - [16/Mar/2026 11:13:47] "GET /api/generic-get?ip=192.168.1.5&path=/sensors HTTP/1.1" 200 -
+2026-03-16 11:13:47,200 INFO 127.0.0.1 - - [16/Mar/2026 11:13:47] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:13:47,280 INFO 127.0.0.1 - - [16/Mar/2026 11:13:47] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:13:47,322 INFO 127.0.0.1 - - [16/Mar/2026 11:13:47] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:13:47,369 INFO 127.0.0.1 - - [16/Mar/2026 11:13:47] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:13:47,417 INFO 127.0.0.1 - - [16/Mar/2026 11:13:47] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:13:47,471 INFO 127.0.0.1 - - [16/Mar/2026 11:13:47] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:13:47,541 INFO 127.0.0.1 - - [16/Mar/2026 11:13:47] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:13:47,604 INFO 127.0.0.1 - - [16/Mar/2026 11:13:47] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:23:03,471 INFO 127.0.0.1 - - [16/Mar/2026 11:23:03] "GET /api/generic-get?ip=192.168.1.5&path=/sensors HTTP/1.1" 200 -
+2026-03-16 11:23:03,545 INFO 127.0.0.1 - - [16/Mar/2026 11:23:03] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:36:50,499 INFO 127.0.0.1 - - [16/Mar/2026 11:36:50] "GET /api/generic-get?ip=192.168.1.5&path=/sensors HTTP/1.1" 200 -
+2026-03-16 11:36:50,762 INFO 127.0.0.1 - - [16/Mar/2026 11:36:50] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:36:53,733 INFO 127.0.0.1 - - [16/Mar/2026 11:36:53] "GET /api/generic-get?ip=192.168.1.5&path=/amps?n%3D1024%26sr%3D4000%26sensor_id%3Dc1%26fast%3D1 HTTP/1.1" 200 -
+2026-03-16 11:36:56,065 INFO 127.0.0.1 - - [16/Mar/2026 11:36:56] "POST /api/generic-post HTTP/1.1" 200 -
+2026-03-16 11:36:56,136 INFO 127.0.0.1 - - [16/Mar/2026 11:36:56] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:37:00,944 INFO 127.0.0.1 - - [16/Mar/2026 11:37:00] "POST /api/generic-post HTTP/1.1" 200 -
+2026-03-16 11:37:01,034 INFO 127.0.0.1 - - [16/Mar/2026 11:37:01] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:37:03,240 INFO 127.0.0.1 - - [16/Mar/2026 11:37:03] "POST /api/generic-delete HTTP/1.1" 200 -
+2026-03-16 11:37:03,381 INFO 127.0.0.1 - - [16/Mar/2026 11:37:03] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:37:05,893 INFO 127.0.0.1 - - [16/Mar/2026 11:37:05] "GET /api/generic-get?ip=192.168.1.5&path=/adc/scope_counts?sensor_id%3Dc1%26n%3D1024%26fast%3D1%26binary%3Dtrue HTTP/1.1" 200 -
+2026-03-16 11:37:12,800 INFO 127.0.0.1 - - [16/Mar/2026 11:37:12] "GET /api/generic-get?ip=192.168.1.5&path=/power?voltage_sensor_id%3Dv1%26current_sensor_id%3Dc1%26n%3D1600%26sr%3D4000%26fast%3D1%26phase_shift%3D4 HTTP/1.1" 200 -
+2026-03-16 11:37:16,776 INFO 127.0.0.1 - - [16/Mar/2026 11:37:16] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:37:16,846 INFO 127.0.0.1 - - [16/Mar/2026 11:37:16] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:37:18,232 INFO 127.0.0.1 - - [16/Mar/2026 11:37:18] "GET /api/generic-get?ip=192.168.1.5&path=/volts?n%3D1024%26sr%3D4000%26sensor_id%3Dv1%26fast%3D1 HTTP/1.1" 200 -
+2026-03-16 11:37:20,355 INFO 127.0.0.1 - - [16/Mar/2026 11:37:20] "GET /api/generic-get?ip=192.168.1.5&path=/volts?n%3D1024%26sr%3D4000%26sensor_id%3Dv1%26fast%3D1 HTTP/1.1" 200 -
+2026-03-16 11:37:20,837 INFO 127.0.0.1 - - [16/Mar/2026 11:37:20] "GET /api/generic-get?ip=192.168.1.5&path=/volts?n%3D1024%26sr%3D4000%26sensor_id%3Dv1%26fast%3D1 HTTP/1.1" 200 -
+2026-03-16 11:37:22,610 INFO 127.0.0.1 - - [16/Mar/2026 11:37:22] "GET /api/generic-get?ip=192.168.1.5&path=/volts?n%3D1024%26sr%3D4000%26sensor_id%3Dv1%26fast%3D1 HTTP/1.1" 200 -
+2026-03-16 11:37:24,335 INFO 127.0.0.1 - - [16/Mar/2026 11:37:24] "POST /api/generic-post HTTP/1.1" 200 -
+2026-03-16 11:37:24,408 INFO 127.0.0.1 - - [16/Mar/2026 11:37:24] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:37:28,779 INFO 127.0.0.1 - - [16/Mar/2026 11:37:28] "POST /api/generic-post HTTP/1.1" 200 -
+2026-03-16 11:37:28,940 INFO 127.0.0.1 - - [16/Mar/2026 11:37:28] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:37:30,849 INFO 127.0.0.1 - - [16/Mar/2026 11:37:30] "POST /api/generic-delete HTTP/1.1" 200 -
+2026-03-16 11:37:30,922 INFO 127.0.0.1 - - [16/Mar/2026 11:37:30] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:37:33,937 INFO 127.0.0.1 - - [16/Mar/2026 11:37:33] "GET /api/generic-get?ip=192.168.1.5&path=/adc/scope_counts?sensor_id%3Dv1%26n%3D1024%26fast%3D1%26binary%3Dtrue HTTP/1.1" 200 -
+2026-03-16 11:38:41,176 INFO [SERVER] Flask app avviata
+2026-03-16 11:38:41,176 INFO [SERVER] Flask app avviata
+2026-03-16 11:38:41,180 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.1.155:8000
+2026-03-16 11:38:41,181 INFO [33mPress CTRL+C to quit[0m
+2026-03-16 11:38:42,686 INFO 127.0.0.1 - - [16/Mar/2026 11:38:42] "GET / HTTP/1.1" 200 -
+2026-03-16 11:38:43,076 INFO 127.0.0.1 - - [16/Mar/2026 11:38:43] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-03-16 11:38:43,083 INFO 127.0.0.1 - - [16/Mar/2026 11:38:43] "GET /static/js/main.js HTTP/1.1" 200 -
+2026-03-16 11:38:49,436 INFO 127.0.0.1 - - [16/Mar/2026 11:38:49] "GET /api/generic-get?ip=192.168.1.5&path=/sensors HTTP/1.1" 200 -
+2026-03-16 11:38:49,480 INFO 127.0.0.1 - - [16/Mar/2026 11:38:49] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:38:49,631 INFO 127.0.0.1 - - [16/Mar/2026 11:38:49] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:38:49,667 INFO 127.0.0.1 - - [16/Mar/2026 11:38:49] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:38:49,701 INFO 127.0.0.1 - - [16/Mar/2026 11:38:49] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:38:49,734 INFO 127.0.0.1 - - [16/Mar/2026 11:38:49] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:38:49,785 INFO 127.0.0.1 - - [16/Mar/2026 11:38:49] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:38:49,798 INFO 127.0.0.1 - - [16/Mar/2026 11:38:49] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:38:49,831 INFO 127.0.0.1 - - [16/Mar/2026 11:38:49] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:38:55,403 INFO 127.0.0.1 - - [16/Mar/2026 11:38:55] "GET /api/generic-get?ip=192.168.1.5&path=/power?voltage_sensor_id%3Dv1%26current_sensor_id%3Dc1%26n%3D1600%26sr%3D4000%26fast%3D1%26phase_shift%3D0 HTTP/1.1" 200 -
+2026-03-16 11:39:09,450 INFO 127.0.0.1 - - [16/Mar/2026 11:39:09] "POST /api/save-phase HTTP/1.1" 200 -
+2026-03-16 11:40:44,327 INFO 127.0.0.1 - - [16/Mar/2026 11:40:44] "POST /api/generic-post HTTP/1.1" 200 -
+2026-03-16 11:40:44,376 INFO 127.0.0.1 - - [16/Mar/2026 11:40:44] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:42:03,646 INFO 127.0.0.1 - - [16/Mar/2026 11:42:03] "POST /api/generic-delete HTTP/1.1" 200 -
+2026-03-16 11:42:03,898 INFO 127.0.0.1 - - [16/Mar/2026 11:42:03] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:45:38,293 INFO [SERVER] Flask app avviata
+2026-03-16 11:45:38,294 INFO [SERVER] Flask app avviata
+2026-03-16 11:45:38,298 INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.1.155:8000
+2026-03-16 11:45:38,298 INFO [33mPress CTRL+C to quit[0m
+2026-03-16 11:45:39,603 INFO 127.0.0.1 - - [16/Mar/2026 11:45:39] "GET / HTTP/1.1" 200 -
+2026-03-16 11:45:39,802 INFO 127.0.0.1 - - [16/Mar/2026 11:45:39] "GET /static/js/main.js HTTP/1.1" 200 -
+2026-03-16 11:45:39,843 INFO 127.0.0.1 - - [16/Mar/2026 11:45:39] "[36mGET /static/css/main.css HTTP/1.1[0m" 304 -
+2026-03-16 11:45:45,796 INFO 127.0.0.1 - - [16/Mar/2026 11:45:45] "GET /api/generic-get?ip=192.168.1.5&path=/sensors HTTP/1.1" 200 -
+2026-03-16 11:45:45,860 INFO 127.0.0.1 - - [16/Mar/2026 11:45:45] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:45:45,924 INFO 127.0.0.1 - - [16/Mar/2026 11:45:45] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:45:46,007 INFO 127.0.0.1 - - [16/Mar/2026 11:45:46] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:45:46,047 INFO 127.0.0.1 - - [16/Mar/2026 11:45:46] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:45:46,081 INFO 127.0.0.1 - - [16/Mar/2026 11:45:46] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:45:46,116 INFO 127.0.0.1 - - [16/Mar/2026 11:45:46] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:45:46,151 INFO 127.0.0.1 - - [16/Mar/2026 11:45:46] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dv1 HTTP/1.1" 200 -
+2026-03-16 11:45:46,185 INFO 127.0.0.1 - - [16/Mar/2026 11:45:46] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -
+2026-03-16 11:45:56,099 INFO 127.0.0.1 - - [16/Mar/2026 11:45:56] "POST /api/generic-post HTTP/1.1" 200 -
+2026-03-16 11:45:56,184 INFO 127.0.0.1 - - [16/Mar/2026 11:45:56] "GET /api/generic-get?ip=192.168.1.5&path=/calibrate?sensor_id%3Dc1 HTTP/1.1" 200 -

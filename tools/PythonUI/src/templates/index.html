@@ -118,6 +118,7 @@
                     <label>Phase shift (samples)
                         <input type="number" x-model.number="powerPhaseShift" min="-1024" step="1" style="width:120px; margin-left:8px;">
                     </label>
+                    <button type="button" @click="savePhaseShift()" :disabled="!powerVoltageSensorId || !powerCurrentSensorId || loading.power" style="margin-left:12px;">Salva</button>
                 </div>
                 <div class="row compact">
                     <button type="button" @click="fetchPower()" :disabled="!powerVoltageSensorId || !powerCurrentSensorId || loading.power || !canMeasurePower()">Rileva potenza</button>
