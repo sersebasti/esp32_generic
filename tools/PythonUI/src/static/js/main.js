@@ -71,7 +71,36 @@ window.esp32Ui = function esp32Ui(defaultIp) {
         else this.clearTimer('_powerTimer');
       });
       this.$watch('powerVoltageSensorId', () => {
+        console.log('Watcher: powerVoltageSensorId changed ->', this.powerVoltageSensorId);
+        try {
+          const key = String(this.powerVoltageSensorId);
+          if (this.calibrationBySensor && this.calibrationBySensor[key]) {
+            // invalidate cache so ensureCalibrationStatus will fetch fresh data
+            delete this.calibrationBySensor[key];
+            console.log('Invalidated calibration cache for', key);
+          }
+        } catch (e) {
+          console.log('Error invalidating cache', e);
+        }
         this.ensureCalibrationStatus(this.powerVoltageSensorId);
+      });
+      // quando cambia la lista di sensori (es. dopo connect/refresh), aggiorna phase_shift per il sensore di tensione selezionato
+      this.$watch('sensors', (newSensors) => {
+        console.log('Watcher: sensors changed ->', newSensors && newSensors.length);
+        try {
+          const volts = (Array.isArray(newSensors) ? newSensors.filter(s => (s.type || '').toLowerCase().includes('volt')) : []);
+          if (!volts || volts.length === 0) return;
+          if (!this.powerVoltageSensorId) {
+            // se non è selezionato nessun sensore, seleziona il primo disponibile
+            console.log('No powerVoltageSensorId selected, selecting first', volts[0].id);
+            this.powerVoltageSensorId = volts[0].id;
+          } else {
+            // ricarica stato calibrazione per il sensore attualmente selezionato
+            console.log('Reloading calibration status for', this.powerVoltageSensorId);
+            this.ensureCalibrationStatus(this.powerVoltageSensorId);
+          }
+        } catch {
+        }
       });
       this.$watch('powerCurrentSensorId', () => {
         this.ensureCalibrationStatus(this.powerCurrentSensorId);
@@ -190,6 +219,20 @@ window.esp32Ui = function esp32Ui(defaultIp) {
         const data = await this.fetchJson(`http://${this.ip}/calibrate?sensor_id=${encodeURIComponent(key)}`);
         const cal = data?.cal ?? data ?? {};
         this.setCalibrationStatus(key, cal?.baseline_mean ?? null, Array.isArray(cal?.points) ? cal.points : []);
+        // se la calibrazione contiene phase_shift e il sensore è quello di tensione selezionato per la potenza,
+        // aggiorna il campo powerPhaseShift nella UI
+        try {
+          const ps = cal?.phase_shift ?? null;
+          console.log('ensureCalibrationStatus: cal.phase_shift ->', ps);
+          if (ps !== null && ps !== undefined && String(this.powerVoltageSensorId) === key) {
+            const n = Number(ps);
+            if (Number.isFinite(n)) {
+              console.log('Setting powerPhaseShift to', n);
+              this.powerPhaseShift = n;
+            }
+          }
+        } catch {
+        }
       } catch {
         this.setCalibrationStatus(key, null, []);
       }

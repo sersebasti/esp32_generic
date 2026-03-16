@@ -1,7 +1,7 @@
 # Logging robusto anche per processi figli Flask
 import logging
 import os
-from flask import Flask, render_template, request, session, jsonify, Response
+from flask import Flask, render_template, request, jsonify, Response
 import requests
 import threading
 import webbrowser
