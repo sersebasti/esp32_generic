@@ -1,7 +1,10 @@
 {
   "sensors": [
-    {"id": "c1", "adc_pin": 34, "type": "current"},
-    {"id": "c2", "adc_pin": 35, "type": "current"},
-    {"id": "v1", "adc_pin": 33, "type": "voltage"}
+    {"id": "c1", "adc_pin": 32, "type": "current"},
+    {"id": "c2", "adc_pin": 33, "type": "current"},
+    {"id": "c3", "adc_pin": 34, "type": "current"},
+    {"id": "c4", "adc_pin": 35, "type": "current"},
+    {"id": "v1", "adc_pin": 36, "type": "voltage"},
+    {"id": "v2", "adc_pin": 39, "type": "voltage"}
   ]
 }

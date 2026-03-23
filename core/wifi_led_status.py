@@ -2,7 +2,7 @@
 
 LED_BLUE_PIN  = 2
 LED_BLUE_LOW  = False
-LED_GREEN_PIN = 15
+LED_GREEN_PIN = 26
 LED_GREEN_LOW = False
 
 try:

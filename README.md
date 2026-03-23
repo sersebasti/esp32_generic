@@ -1,3 +1,83 @@
+## Firmware Installation (Linux)
+
+1) Connect the ESP32 via USB.
+
+2) Find the serial port:
+```bash
+ls /dev/ttyUSB*
+```
+
+3) Install esptool (via pipx is recommended):
+```bash
+sudo apt install -y pipx
+pipx ensurepath
+pipx install esptool
+esptool version
+```
+
+4) (Optional) Erase existing firmware:
+```bash
+esptool --port /dev/ttyUSB0 erase-flash
+```
+
+If needed, enter bootloader mode: hold BOOT, press and release RST/EN, then release BOOT.
+
+5) Flash the firmware (replace the .bin filename with yours):
+```bash
+esptool --chip esp32 --port /dev/ttyUSB0 write-flash -z 0x1000 ./firmware/ESP32_GENERIC-20250911-v1.26.1.bin
+```
+
+6) Install mpremote and verify:
+```bash
+pipx install mpremote
+mpremote --help
+```
+
+7) Inspect files and (optional) wipe the filesystem:
+```bash
+mpremote connect /dev/ttyUSB0 ls
+mpremote connect /dev/ttyUSB0 rm -r :
+```
+
+8) Upload project files to the device (skip binaries, text, git):
+```bash
+mpremote connect /dev/ttyUSB0 cp ./boot.py :boot.py 
+mpremote connect /dev/ttyUSB0 cp ./main.py :main.py
+
+mpremote connect /dev/ttyUSB0 fs mkdir /core
+mpremote connect /dev/ttyUSB0 cp -r  ./core :
+mpremote connect /dev/ttyUSB0 ls  :core
+
+mpremote connect /dev/ttyUSB0 fs mkdir /fs
+mpremote connect /dev/ttyUSB0 cp -r  ./fs :
+mpremote connect /dev/ttyUSB0 ls  :fs
+
+mpremote connect /dev/ttyUSB0 fs mkdir /scope
+mpremote connect /dev/ttyUSB0 cp -r  ./scope :
+mpremote connect /dev/ttyUSB0 ls  :scope
+```
+
+
+
+
+9) Open the REPL console (for logs/diagnostics):
+```bash
+mpremote connect /dev/ttyUSB0 repl
+```
+
+10) Start FTP manually (optional):
+```bash
+mpremote connect /dev/ttyUSB0 exec "import core.uftpd as uftpd; uftpd.restart(port=21, verbose=0)"
+```
+
+---
+
+
+
+
+
+
+
 ## Endpoint ESP32: Misura e Calibrazione
 
 Tutti gli endpoint di misura e calibrazione accettano il parametro obbligatorio `sensor_id` (es. c1, c2, v1) che identifica il sensore su cui operare. L'elenco dei sensori disponibili si ottiene tramite l'endpoint `/sensors`.
@@ -181,78 +261,7 @@ mpremote connect COMx rm -rv :
 
 ---
 
-## Firmware Installation (Linux)
 
-1) Connect the ESP32 via USB.
-
-2) Find the serial port:
-```bash
-ls /dev/ttyUSB* /dev/ttyACM*
-```
-
-3) Install esptool (via pipx is recommended):
-```bash
-sudo apt install -y pipx
-pipx ensurepath
-pipx install esptool
-esptool version
-```
-
-4) (Optional) Erase existing firmware:
-```bash
-esptool --port /dev/ttyUSB0 erase-flash
-```
-
-If needed, enter bootloader mode: hold BOOT, press and release RST/EN, then release BOOT.
-
-5) Flash the firmware (replace the .bin filename with yours):
-```bash
-esptool --chip esp32 --port /dev/ttyUSB0 write-flash -z 0x1000 ESP32_GENERIC-20250911-v1.26.1.bin
-```
-
-6) Install mpremote and verify:
-```bash
-pipx install mpremote
-mpremote --help
-```
-
-7) Inspect files and (optional) wipe the filesystem:
-```bash
-mpremote connect /dev/ttyUSB0 ls
-mpremote connect /dev/ttyUSB0 rm -rv :
-```
-
-8) Upload project files to the device (skip binaries, text, git):
-```bash
-find . -type f \
-  ! -name "*.bin" \
-  ! -name "*.txt" \
-  ! -path "./.git/*" \
-  -exec mpremote connect /dev/ttyUSB0 cp {} :{} \;
-```
-
-Required uploads:
-- Root files: `main.py`, `boot.py` (located in repository root)
-- Full `core/` folder with all its contents (APIs, server, UI, helpers)
-
-Optional modules (upload the folder and enable related features in `core/config.py`):
-- `scope/` → set `features.scope = True`
-- `fs/` → set `features.fs_api = True`
-
-Key core files (normally included when you copy the entire `core/` folder):
-- core/wifi_api.py, core/wifi_store.py, core/wifi_ui.html, core/server.py, core/status_api.py, core/system_api.py, core/http_consts.py, core/busy_lock.py, core/wifi_led_status.py
-
-9) Open the REPL console (for logs/diagnostics):
-```bash
-mpremote connect /dev/ttyUSB0 repl
-```
-
-10) Start FTP manually (optional):
-```bash
-mpremote connect /dev/ttyUSB0 exec "import core.uftpd as uftpd; uftpd.restart(port=21, verbose=0)"
-```
-
----
 
 ## Configuration
 
