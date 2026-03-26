@@ -2,6 +2,7 @@
 # WiFiManager implementation moved under core
 
 import network, time, json, socket, machine  # type: ignore
+from core.status_api import lcd, _get_ip_sta, _mac_sta
 
 class _NullLog:
     def info(self, *a, **k):
@@ -649,6 +650,20 @@ def run(self):
         import gc, sys, machine
         mem_free = gc.mem_free()
         print(f"[MONITOR] Memoria libera: {mem_free} bytes")
+
+        # --- LCD OUTPUT IP & MAC ---
+        if lcd:
+            try:
+                ip = _get_ip_sta() or "-"
+                mac = _mac_sta() or "-"
+                lcd.clear()
+                lcd.write(0, 0, "IP: " + ip)
+                lcd.write(1, 0, "MAC: " + mac)
+            except Exception as e:
+                print("[LCD] Errore scrittura:", e)
+        # --- END LCD OUTPUT ---
+
+        
         #print(f"[MONITOR] Moduli caricati: {list(sys.modules.keys())}")
         if hasattr(sys, 'print_exception'):
             print(f"[MONITOR] Eccezioni: {sys.print_exception}")
