@@ -1,3 +1,37 @@
+# con tool mpremote
+
+
+7) Inspect files and (optional) wipe the filesystem:
+```bash
+
+# verifica
+mpremote connect /dev/ttyUSB0 ls
+
+# cancella tutto
+mpremote connect /dev/ttyUSB0 rm -r :
+
+# carica singoli files
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Endpoint ESP32: Misura e Calibrazione
 
 Tutti gli endpoint di misura e calibrazione accettano il parametro obbligatorio `sensor_id` (es. c1, c2, v1) che identifica il sensore su cui operare. L'elenco dei sensori disponibili si ottiene tramite l'endpoint `/sensors`.
@@ -216,31 +250,6 @@ pipx install mpremote
 mpremote --help
 ```
 
-7) Inspect files and (optional) wipe the filesystem:
-```bash
-mpremote connect /dev/ttyUSB0 ls
-mpremote connect /dev/ttyUSB0 rm -rv :
-```
-
-8) Upload project files to the device (skip binaries, text, git):
-```bash
-find . -type f \
-  ! -name "*.bin" \
-  ! -name "*.txt" \
-  ! -path "./.git/*" \
-  -exec mpremote connect /dev/ttyUSB0 cp {} :{} \;
-```
-
-Required uploads:
-- Root files: `main.py`, `boot.py` (located in repository root)
-- Full `core/` folder with all its contents (APIs, server, UI, helpers)
-
-Optional modules (upload the folder and enable related features in `core/config.py`):
-- `scope/` → set `features.scope = True`
-- `fs/` → set `features.fs_api = True`
-
-Key core files (normally included when you copy the entire `core/` folder):
-- core/wifi_api.py, core/wifi_store.py, core/wifi_ui.html, core/server.py, core/status_api.py, core/system_api.py, core/http_consts.py, core/busy_lock.py, core/wifi_led_status.py
 
 9) Open the REPL console (for logs/diagnostics):
 ```bash
@@ -262,7 +271,7 @@ Configuration lives in `core/config.py` as in-code defaults. To adjust, edit the
   - WIFI_JSON: path to the Wi‑Fi networks file (default: core/wifi.json)
   - LOG_PATH: log file path (default: log.txt)
   - LOG_MAX_BYTES: max log size (default: 8192)
-  - BTN_PIN: user button pin (default: 32)
+  - AP_BTN_PIN: user button pin (default: 32)
   - FTP_AUTOSTART: start FTP automatically (default: False)
   - FTP_PORT: FTP port (default: 21)
   - FTP_USER / FTP_PASS: FTP credentials (default: admin/admin)

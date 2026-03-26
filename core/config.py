@@ -5,14 +5,15 @@ _DEFAULTS = {
     "wifi_json": "core/wifi.json",
     "log_path": "log.txt",
     "log_max_bytes": 8 * 1024,
-    "btn_pin": 32,
+    "AP_BTN_PIN": 27,
     "ftp_autostart": False,
     "ftp_port": 21,
     "ftp_user": "admin",
     "ftp_pass": "admin",
     "features": {
-        "scope": True,
-        "fs_api": True,
+        "scope": False,
+        "fs_api": False,
+        "lcd_display": True
     },
 }
 
@@ -30,7 +31,7 @@ def feature_enabled(name):
 WIFI_JSON = cfg.get("wifi_json", "core/wifi.json")
 LOG_PATH = cfg.get("log_path", "log.txt")
 LOG_MAX_BYTES = int(cfg.get("log_max_bytes", 8 * 1024))
-BTN_PIN = int(cfg.get("btn_pin", 32))
+AP_BTN_PIN = int(cfg.get("AP_BTN_PIN", 32))
 
 FTP_AUTOSTART = bool(cfg.get("ftp_autostart", False))
 FTP_PORT = int(cfg.get("ftp_port", 21))

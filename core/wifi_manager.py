@@ -20,12 +20,12 @@ except Exception:
 
 # Read button pin and wifi json path from centralized config, with resilient fallbacks
 try:
-    from core.config import BTN_PIN as _CFG_BTN_PIN  # type: ignore
+    from core.config import AP_BTN_PIN as _CFG_AP_BTN_PIN  # type: ignore
 except Exception:
     try:
-        from config import BTN_PIN as _CFG_BTN_PIN  # type: ignore
+        from config import AP_BTN_PIN as _CFG_AP_BTN_PIN  # type: ignore
     except Exception:
-        _CFG_BTN_PIN = 32
+        _CFG_AP_BTN_PIN = 32
 
 try:
     from core.config import WIFI_JSON as _CFG_WIFI_JSON  # type: ignore
@@ -57,10 +57,10 @@ class WiFiManager:
         self._rtc_synced = False
         self._setup_mode = False
 
-        self._btn_pin_num = int(_CFG_BTN_PIN)
+        self._AP_BTN_PIN_num = int(_CFG_AP_BTN_PIN)
         self._btn_last_ms = 0
         try:
-            self._btn = machine.Pin(self._btn_pin_num, machine.Pin.IN, machine.Pin.PULL_UP)
+            self._btn = machine.Pin(self._AP_BTN_PIN_num, machine.Pin.IN, machine.Pin.PULL_UP)
             self._btn.irq(trigger=machine.Pin.IRQ_FALLING, handler=self._irq_button)
         except Exception as e:
             self.log.info(f"Button init failed: {e!r}")
