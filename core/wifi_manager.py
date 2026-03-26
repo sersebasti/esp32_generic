@@ -657,13 +657,12 @@ def run(self):
                 ip = _get_ip_sta() or "-"
                 mac = _mac_sta() or "-"
                 lcd.clear()
-                lcd.write(0, 0, "IP: " + ip)
-                lcd.write(1, 0, "MAC: " + mac)
+                lcd.write(0, 0, "IP:" + ip)
             except Exception as e:
                 print("[LCD] Errore scrittura:", e)
         # --- END LCD OUTPUT ---
 
-        
+
         #print(f"[MONITOR] Moduli caricati: {list(sys.modules.keys())}")
         if hasattr(sys, 'print_exception'):
             print(f"[MONITOR] Eccezioni: {sys.print_exception}")
@@ -701,6 +700,19 @@ def run(self):
                     setup_requested = True
                     connected = False
                     break
+
+
+                # --- LCD: mostra "Connecting..." e SSID ---
+                if lcd:
+                    try:
+                        lcd.clear()
+                        lcd.write(0, 0, "Connecting...")
+                        lcd.write(1, 0, ssid[:16])  # mostra il nome della rete (max 16 caratteri)
+                    except Exception as e:
+                        print("[LCD] Errore scrittura:", e)
+                # --- FINE LCD ---    
+
+                
                 ok, ip_new, reason = self._try_connect(
                     ssid, pwd, timeout_s=15,
                     cancel_cb=lambda: self.button_pressed(clear=False, long_ms=800)
