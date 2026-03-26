@@ -80,13 +80,6 @@ def handle(cl, method, path):
     # /health
     if method == "GET" and path.startswith("/health"):
         cl.send(_HTTP_200_JSON + b'{"ok":true}')
-        if lcd:
-            try:
-                lcd.clear()
-                lcd.write(0, 0, "GET /health")
-                lcd.write(1, 0, "[HTTP] OK")
-            except Exception as e:
-                print("[LCD] Errore scrittura:", e)
         return True
 
     # /status
@@ -104,13 +97,6 @@ def handle(cl, method, path):
             "heap_free": gc.mem_free()
         }
         cl.send(_HTTP_200_JSON + ujson.dumps(payload).encode())
-        if lcd:
-            try:
-                lcd.clear()
-                lcd.write(0, 0, "GET /status")
-                lcd.write(1, 0, "v:" + str(payload["version"]))
-            except Exception as e:
-                print("[LCD] Errore scrittura:", e)
         return True
 
     return False
