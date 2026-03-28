@@ -18,6 +18,8 @@ try:
 except Exception:
     power_sensors_api = None
 
+from core.config import feature_enabled
+
 def _hdr_get(req_bytes, name_lower):
     try:
         head = req_bytes.split(b"\r\n\r\n", 1)[0]
@@ -179,7 +181,11 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                     if verbose:
                         try: print("[HTTP] OK adc_api")
                         except Exception: pass
-                elif (power_sensors_api is not None) and power_sensors_api.handle_power_sensor(cl, method, path, req, _read_post_json):
+                elif (
+                    (power_sensors_api is not None)
+                    and feature_enabled("power_sensors")
+                    and power_sensors_api.handle_power_sensor(cl, method, path, req, _read_post_json)
+                ):
                     if verbose:
                         try: print("[HTTP] OK power_sensors_api")
                         except Exception: pass
