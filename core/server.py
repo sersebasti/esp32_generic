@@ -13,6 +13,10 @@ try:
     import fs.api as fs_api
 except Exception:
     fs_api = None
+try:
+    import power_sensors.power_sensors_api as power_sensors_api
+except Exception:
+    power_sensors_api = None
 
 def _hdr_get(req_bytes, name_lower):
     try:
@@ -174,6 +178,10 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                 elif (adc_api is not None) and adc_api.handle(cl, method, path, req, _read_post_json):
                     if verbose:
                         try: print("[HTTP] OK adc_api")
+                        except Exception: pass
+                elif (power_sensors_api is not None) and power_sensors_api.handle_power_sensor(cl, method, path, req, _read_post_json):
+                    if verbose:
+                        try: print("[HTTP] OK power_sensors_api")
                         except Exception: pass
                 elif system_api.handle(cl, method, path):
                     if verbose:

@@ -1,5 +1,5 @@
 # Classe di manager per sensori di potenza PZEM004T
-from power_sensor.pzem004t import PZEM004T
+from power_sensors.pzem004t import PZEM004T
 
 class PowerSensorManager:
     def __init__(self, uart_id=1, tx=17, rx=16, baudrate=9600):
