@@ -13,7 +13,7 @@ _DEFAULTS = {
     "features": {
         "scope": False,
         "fs_api": False,
-        "lcd_display": True
+        "lcd_display": False
     },
 }
 
