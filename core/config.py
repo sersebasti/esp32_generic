@@ -12,9 +12,10 @@ _DEFAULTS = {
     "ftp_pass": "admin",
     "features": {
         "scope": False,
-        "fs_api": False,
+        "fs_api": True,
         "lcd_display": False,
-        "power_sensors": True
+        "power_sensors": True,
+        "webrepl": True
     },
 }
 

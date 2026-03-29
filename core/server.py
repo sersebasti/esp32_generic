@@ -17,6 +17,10 @@ try:
     import power_sensors.power_sensors_api as power_sensors_api
 except Exception:
     power_sensors_api = None
+try:
+    import my_webrepl.webrepl_api as webrepl_api
+except Exception:
+    webrepl_api = None
 
 from core.config import feature_enabled
 
@@ -188,6 +192,14 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                 ):
                     if verbose:
                         try: print("[HTTP] OK power_sensors_api")
+                        except Exception: pass
+                elif (
+                    webrepl_api is not None
+                    and feature_enabled("webrepl")
+                    and webrepl_api.handle_webrepl(cl, method, path, req, _read_post_json)
+                ):
+                    if verbose:
+                        try: print("[HTTP] OK webrepl_api")
                         except Exception: pass
                 elif system_api.handle(cl, method, path):
                     if verbose:
