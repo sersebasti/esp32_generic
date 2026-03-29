@@ -1,7 +1,6 @@
 {
   "sensors": [
     {"id": "c1", "adc_pin": 34, "type": "current"},
-    {"id": "c2", "adc_pin": 35, "type": "current"},
     {"id": "v1", "adc_pin": 33, "type": "voltage"}
   ]
 }
