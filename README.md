@@ -333,6 +333,13 @@ curl -X POST http://<DEVICE_IP>/wifi/delete \
 - System
   - POST /reboot: reboot device
 
+- Relay
+  - GET /relay or /relay/status: stato del rele
+  - POST /relay/on: attiva il rele
+  - POST /relay/off: disattiva il rele
+  - POST /relay/toggle: inverte lo stato del rele
+  - POST /relay/set body `{on}` oppure `{state}`
+
 - Scope/ADC (if module present)
   - GET /adc/scope_counts[?sensor_id=c1&n=1600&sr=4000]: acquisizione raw dal sensore specificato
   - GET /calibrate[?sensor_id=c1]: mostra stato calibrazione per il sensore

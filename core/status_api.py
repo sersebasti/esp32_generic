@@ -8,10 +8,8 @@ import sys
 lcd = None
 try:
     if feature_enabled("lcd_display"):
-        from machine import I2C, Pin
-        from display.lcd1602 import LCD1602
-        i2c = I2C(0, scl=Pin(22), sda=Pin(21))
-        lcd = LCD1602(i2c)
+        from display import create_lcd
+        lcd = create_lcd()
 except Exception as e:
     print("[LCD] Errore inizializzazione LCD1602:", e)
 try:

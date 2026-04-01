@@ -18,6 +18,10 @@ try:
 except Exception:
     power_sensors_api = None
 try:
+    import relay.relay_api as relay_api
+except Exception:
+    relay_api = None
+try:
     import my_webrepl.webrepl_api as webrepl_api
 except Exception:
     webrepl_api = None
@@ -192,6 +196,14 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
                 ):
                     if verbose:
                         try: print("[HTTP] OK power_sensors_api")
+                        except Exception: pass
+                elif (
+                    (relay_api is not None)
+                    and feature_enabled("relay")
+                    and relay_api.handle(cl, method, path, req, _read_post_json)
+                ):
+                    if verbose:
+                        try: print("[HTTP] OK relay_api")
                         except Exception: pass
                 elif (
                     webrepl_api is not None

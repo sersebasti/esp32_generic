@@ -13,8 +13,9 @@ _DEFAULTS = {
     "features": {
         "scope": False,
         "fs_api": True,
-        "lcd_display": False,
+        "lcd_display": True,
         "power_sensors": True,
+        "relay": True,
         "webrepl": True
     },
 }
