@@ -2,7 +2,7 @@
 # Endpoint HTTP semplice per leggere i dati da tutti i sensori di potenza configurati
 
 import ujson, os
-from core.http_consts import _HTTP_200_JSON, _HTTP_200_JSON_CORS
+from server.http_consts import _HTTP_200_JSON, _HTTP_200_JSON_CORS
 try:
     import ustruct as struct
 except Exception:

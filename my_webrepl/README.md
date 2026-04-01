@@ -3,14 +3,14 @@
 Questa directory contiene la gestione della feature WebREPL per ESP32.
 
 ## Funzionalità
-- Avvio automatico di WebREPL solo se abilitato tramite configurazione centrale (`core/config.py`, flag `"webrepl"`).
+- Avvio automatico di WebREPL solo se abilitato tramite configurazione centrale (`core/config.py`, flag `"my_webrepl"`).
 - Endpoint HTTP per controllo remoto:
   - `GET  /webrepl/status` — Stato e abilitazione
   - `POST /webrepl/start`  — Avvia WebREPL
   - `POST /webrepl/stop`   — Ferma WebREPL (se supportato)
 
 ## Come abilitare WebREPL
-1. Imposta `"webrepl": true` in `core/config.py` nella sezione `features`.
+1. Imposta `"my_webrepl": true` in `core/config.py` nella sezione `features`.
 2. All'avvio, WebREPL verrà attivato automaticamente.
 3. Puoi controllare lo stato o avviare/fermare WebREPL anche via HTTP.
 

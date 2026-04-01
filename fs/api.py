@@ -1,6 +1,6 @@
 # fs/api.py (MicroPython)
 import os, gc, ujson
-from core.http_consts import _HTTP_200_JSON_CORS, _HTTP_400
+from server.http_consts import _HTTP_200_JSON_CORS, _HTTP_400
 
 def _bad_path(p):
     return (not p) or (".." in p) or p.endswith("/")

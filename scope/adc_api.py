@@ -1,10 +1,7 @@
 # adc_api.py (scope)
 import ujson, os
-from core.http_consts import _HTTP_200_JSON, _HTTP_200_JSON_CORS
-try:
-    from core.busy_lock import is_busy, busy_region
-except Exception:
-    from busy_lock import is_busy, busy_region
+from server.http_consts import _HTTP_200_JSON, _HTTP_200_JSON_CORS
+from server.busy_lock import is_busy, busy_region
 try:
     import ustruct as struct
 except Exception:
@@ -15,8 +12,19 @@ except Exception:
 from .sensor_manager import CurrentSensorManager
 from .generic_sensor import GenericSensor
 
-# Inizializza il manager dei sensori (singleton)
-_SENSOR_MANAGER = CurrentSensorManager()
+# Inizializza il manager dei sensori on-demand (singleton)
+_SENSOR_MANAGER = None
+
+
+def _get_sensor_manager():
+    global _SENSOR_MANAGER
+    if _SENSOR_MANAGER is None:
+        _SENSOR_MANAGER = CurrentSensorManager()
+    return _SENSOR_MANAGER
+
+
+def _get_sensor(sensor_id):
+    return _get_sensor_manager().get_sensor(sensor_id)
 
 _CAL_PATH = "scope/calibrate.json"
 
@@ -60,6 +68,7 @@ def _to_bool(v):
     return v in ("1", "true", "True", "yes", "on")
 
 def handle(cl, method, path, req=None, _read_post_json=None):
+    path_base = path.split("?", 1)[0]
     
     # --- Endpoint per misura tensione RMS (solo sensori voltage) ---
     if method == "GET" and path.startswith("/volts"):
@@ -77,7 +86,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                             elif k in ("sr","sample_rate_hz"): sr = int(v)
                             elif k == "sensor_id": sensor_id = v
                             elif k == "fast": fast = v in ("1","true","True")
-                sensor = _SENSOR_MANAGER.get_sensor(sensor_id)
+                sensor = _get_sensor(sensor_id)
                 if not sensor:
                     cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"sensor_not_found"}')
                     return True
@@ -93,7 +102,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                 cl.send(_HTTP_200_JSON + ujson.dumps(out).encode())
             return True
     # Endpoint: /sensors - restituisce la lista dei sensori da sensors.json
-    if method == "GET" and path == "/sensors":
+    if method == "GET" and path_base == "/sensors":
             try:
                 with open("scope/sensors.json") as f:
                     sensors_cfg = ujson.load(f)
@@ -123,7 +132,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                         elif k == "fast": fast = v in ("1","true","True")
                         elif k == "binary": binary = _to_bool(v)
             print(f"[DEBUG] Parsed params: n={n}, sr={sr}, sensor_id={sensor_id}, fast={fast}, binary={binary}")
-            sensor = _SENSOR_MANAGER.get_sensor(sensor_id)
+            sensor = _get_sensor(sensor_id)
             print(f"[DEBUG] Sensor object: {sensor}")
             if not sensor:
                 print("[DEBUG] Sensor not found")
@@ -177,7 +186,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                     elif k in ("sr","sample_rate_hz"): sr = int(v)
                     elif k == "sensor_id": sensor_id = v
                     elif k == "fast": fast = v in ("1","true","True")
-        sensor = _SENSOR_MANAGER.get_sensor(sensor_id)
+        sensor = _get_sensor(sensor_id)
         if not sensor:
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"sensor_not_found"}')
             return True
@@ -210,7 +219,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                     elif k == "sensor_id": sensor_id = v
                     elif k == "fast": fast = v in ("1","true","True")
 
-        sensor = _SENSOR_MANAGER.get_sensor(sensor_id)
+        sensor = _get_sensor(sensor_id)
         if not sensor:
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"sensor_not_found"}')
             return True
@@ -269,7 +278,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                         elif k == "sensor_id": sensor_id = v
                         elif k == "fast": fast = v in ("1","true","True")
 
-            sensor = _SENSOR_MANAGER.get_sensor(sensor_id)
+            sensor = _get_sensor(sensor_id)
             if not sensor:
                 cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"sensor_not_found"}')
                 return True
@@ -308,8 +317,8 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                             except Exception:
                                 phase_shift = None
 
-            voltage_sensor = _SENSOR_MANAGER.get_sensor(voltage_sensor_id)
-            current_sensor = _SENSOR_MANAGER.get_sensor(current_sensor_id)
+            voltage_sensor = _get_sensor(voltage_sensor_id)
+            current_sensor = _get_sensor(current_sensor_id)
 
             if not voltage_sensor:
                 cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "err": "sensor_not_found", "sensor_id": voltage_sensor_id}).encode())
@@ -378,7 +387,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             amp = body.get("amps", None)
             rms = body.get("rms_counts", None)
             sensor_id = body.get("sensor_id", None)
-            sensor = _SENSOR_MANAGER.get_sensor(sensor_id or "c1")
+            sensor = _get_sensor(sensor_id or "c1")
             cal = sensor._load_calibration()
             pts = cal.get("points", []) or []
 
@@ -435,7 +444,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                     if "=" in p:
                         k, v = p.split("=", 1)
                         if k == "sensor_id": sensor_id = v
-            sensor = _SENSOR_MANAGER.get_sensor(sensor_id or "c1")
+            sensor = _get_sensor(sensor_id or "c1")
             if sensor and hasattr(sensor, 'reset_calibration'):
                 sensor.reset_calibration()
             else:
@@ -482,7 +491,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                 value_key = "volts"
                 k_key = "k_V_per_count"
 
-            sensor = _SENSOR_MANAGER.get_sensor(sensor_id)
+            sensor = _get_sensor(sensor_id)
             if not sensor:
                 cl.send(_HTTP_200_JSON_CORS + ujson.dumps({"ok": False, "err": "sensor_not_found"}).encode())
                 return True

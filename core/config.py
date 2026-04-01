@@ -2,21 +2,16 @@
 # Configurazione centralizzata basata su default codificati.
 # Modifica i valori qui per adeguare il comportamento dell'app.
 _DEFAULTS = {
-    "wifi_json": "core/wifi.json",
-    "log_path": "log.txt",
-    "log_max_bytes": 8 * 1024,
-    "AP_BTN_PIN": 27,
-    "ftp_autostart": False,
-    "ftp_port": 21,
-    "ftp_user": "admin",
-    "ftp_pass": "admin",
     "features": {
-        "scope": False,
-        "fs_api": True,
-        "lcd_display": True,
-        "power_sensors": True,
-        "relay": True,
-        "webrepl": True
+        "logger": True,
+        "server": True,
+        "wifi": True,
+        "scope": True,
+        "fs": False,
+        "display": True,
+        "power_sensors": False,
+        "relay": False,
+        "my_webrepl": False
     },
 }
 
@@ -30,13 +25,17 @@ def feature_enabled(name):
     except Exception:
         return False
 
-# Export constant-style aliases for convenience
-WIFI_JSON = cfg.get("wifi_json", "core/wifi.json")
-LOG_PATH = cfg.get("log_path", "log.txt")
-LOG_MAX_BYTES = int(cfg.get("log_max_bytes", 8 * 1024))
-AP_BTN_PIN = int(cfg.get("AP_BTN_PIN", 32))
+# Feature startup order (used by core.feature_runner)
+FEATURE_ORDER = (
+    "logger",
+    "my_webrepl",
+    "server",
+    "wifi",
+    "scope",
+    "fs",
+    "display",
+    "power_sensors",
+    "relay",
+)
 
-FTP_AUTOSTART = bool(cfg.get("ftp_autostart", False))
-FTP_PORT = int(cfg.get("ftp_port", 21))
-FTP_USER = cfg.get("ftp_user") or None
-FTP_PASS = cfg.get("ftp_pass") or None
+

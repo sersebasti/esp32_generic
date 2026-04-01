@@ -1,5 +1,5 @@
 import ujson
-from core.http_consts import _HTTP_200_JSON
+from server.http_consts import _HTTP_200_JSON
 
 from relay.relay_manager import RelayManager
 

@@ -11,7 +11,7 @@ webrepl = None
 def start_webrepl():
     global webrepl
     from core.config import feature_enabled
-    if not feature_enabled("webrepl"):
+    if not feature_enabled("my_webrepl"):
         return False
     ensure_webrepl_config()  # Garantisce la presenza del file di configurazione
     try:
@@ -48,7 +48,7 @@ def webrepl_status():
 def handle_webrepl(cl, method, path, req=None, _read_post_json=None):
     import ujson
     if path == "/webrepl/status" and method == "GET":
-        cl.send(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n" + ujson.dumps({"ok": True, "enabled": feature_enabled("webrepl"), "running": webrepl_status()}).encode())
+        cl.send(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n" + ujson.dumps({"ok": True, "enabled": feature_enabled("my_webrepl"), "running": webrepl_status()}).encode())
         return True
     if path == "/webrepl/start" and method == "POST":
         ok = start_webrepl()
@@ -62,10 +62,14 @@ def handle_webrepl(cl, method, path, req=None, _read_post_json=None):
 
 def ensure_webrepl_config(password=b'1234'):
     from core.config import feature_enabled
-    if not feature_enabled("webrepl"):
+    if not feature_enabled("my_webrepl"):
         return False
     files = os.listdir()
     if "webrepl_cfg.py" not in files:
         with open("webrepl_cfg.py", "w") as f:
             f.write("PASS = %r\nENABLED = True\n" % password)
     return True
+
+
+def start(context=None):
+    return start_webrepl()
