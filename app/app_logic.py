@@ -9,9 +9,28 @@ from core.config import feature_enabled
 
 
 def start_app():
+
+	# --- WiFi auto-reconnect monitor ---
+	def start_wifi_monitor(wifi_mgr, lcd=None, check_interval=30):
+		import _thread
+		def monitor():
+			while True:
+				try:
+					import network
+					sta = network.WLAN(network.STA_IF)
+					if not sta.isconnected() and not getattr(wifi_mgr, '_setup_mode', False):
+						wifi_mgr.log.info("[WIFI-MONITOR] WiFi disconnesso, tento riconnessione...")
+						connect_wifi(wifi_mgr, lcd)
+				except Exception:
+					pass
+				time.sleep(check_interval)
+		# Avvia un solo monitor per istanza
+		if not hasattr(wifi_mgr, '_wifi_monitor_started'):
+			wifi_mgr._wifi_monitor_started = True
+			_thread.start_new_thread(monitor, ())
+
 	context = {}
 	wifi_mgr = None
-
 	# --- AP button async monitor ---
 	def start_ap_button_monitor(wifi_mgr):
 		# Monitora il pulsante AP in un thread separato, termina quando ap_monitor_running diventa False
@@ -54,6 +73,9 @@ def start_app():
 		start_ap_button_monitor(wifi_mgr)
 		connected = connect_wifi(wifi_mgr, lcd)
 		ap_mode = getattr(wifi_mgr, '_setup_mode', False)
+		# Avvia il monitor di auto-riconnessione solo dopo una connessione valida
+		if connected:
+			start_wifi_monitor(wifi_mgr, lcd, check_interval=30)
 		# Avvia il server se connesso o se in AP mode
 		if connected or ap_mode:
 			if feature_enabled("server"):
@@ -156,9 +178,10 @@ def connect_wifi(wifi_mgr, lcd=None):
 		# Ferma il thread di monitoraggio pulsante AP
 		if hasattr(wifi_mgr, "ap_monitor_running"):
 			wifi_mgr.ap_monitor_running = False
-		# LED: spegni lampeggio/led se previsto da LedStatus (opzionale)
+		# LED: mostra "connesso" solo se NON in AP mode
 		if hasattr(wifi_mgr, 'leds') and wifi_mgr.leds:
-			wifi_mgr.leds.show_connected()
+			if not getattr(wifi_mgr, '_setup_mode', False):
+				wifi_mgr.leds.show_connected()
 
 	# Verifica stato finale
 	try:
