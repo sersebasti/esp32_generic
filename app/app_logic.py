@@ -10,6 +10,16 @@ def start_app():
 	context = {}
 	wifi_mgr = None
 
+	# --- Display: messaggio di avvio ---
+	lcd = None
+	try:
+		from display.display_manager import create_lcd
+		lcd = create_lcd()
+		lcd.clear()
+		lcd.write(0, 0, "Starting...")
+	except Exception:
+		lcd = None
+
 	if feature_enabled("wifi"):
 		from wifi.feature import start as start_wifi
 
@@ -76,3 +86,16 @@ def connect_wifi(wifi_mgr):
 			time.sleep_ms(500)
 
 		time.sleep(2)
+
+	if wifi_mgr is not None and lcd:
+		try:
+			import network
+			sta = network.WLAN(network.STA_IF)
+			if sta and sta.isconnected():
+				ip = sta.ifconfig()[0]
+				ssid = wifi_mgr._current_ssid if hasattr(wifi_mgr, '_current_ssid') else ""
+				lcd.clear()
+				lcd.write(0, 0, "IP=" + ip)
+				lcd.write(1, 0, ssid)
+		except Exception:
+			pass
