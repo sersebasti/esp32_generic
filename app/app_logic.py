@@ -44,24 +44,12 @@ def start_app():
 	return context
 
 
-def connect_wifi(wifi_mgr):
-	wifi_mgr.log.info("WiFiManager bootstrap: connessione iniziale")
 def connect_wifi(wifi_mgr, lcd=None):
 	wifi_mgr.log.info("WiFiManager bootstrap: connessione iniziale")
 
-	# Setup LED blu (D2 = GPIO2)
-	led = machine.Pin(2, machine.Pin.OUT)
-	led.off()
-	led_blinking = True
-
-	def blink_led():
-		while led_blinking:
-			led.on()
-			time.sleep_ms(500)
-			led.off()
-			time.sleep_ms(500)
-
-	_thread.start_new_thread(blink_led, ())
+	# Usa LedStatus per la gestione del LED
+	if hasattr(wifi_mgr, 'leds') and wifi_mgr.leds:
+		wifi_mgr.leds.show_connecting()
 
 	try:
 		while True:
@@ -69,6 +57,9 @@ def connect_wifi(wifi_mgr, lcd=None):
 			if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
 				wifi_mgr.log.info("Pulsante AP premuto: attivo Access Point!")
 				wifi_mgr._enter_setup_once()
+				# LED: AP mode
+				if hasattr(wifi_mgr, 'leds') and wifi_mgr.leds:
+					wifi_mgr.leds.show_ap()
 				# Mostra su LCD: IP AP e 'AP MODE'
 				if lcd:
 					try:
@@ -117,6 +108,9 @@ def connect_wifi(wifi_mgr, lcd=None):
 				if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
 					wifi_mgr.log.info("Pulsante AP premuto: attivo Access Point!")
 					wifi_mgr._enter_setup_once()
+					# LED: AP mode
+					if hasattr(wifi_mgr, 'leds') and wifi_mgr.leds:
+						wifi_mgr.leds.show_ap()
 					# Mostra su LCD: IP AP e 'AP MODE'
 					if lcd:
 						try:
@@ -137,10 +131,9 @@ def connect_wifi(wifi_mgr, lcd=None):
 				ok, ip, reason = wifi_mgr._try_connect(ssid, pwd, timeout_s=15)
 				if ok:
 					wifi_mgr._ap_disable()
-					try:
+					# LED: connessione riuscita
+					if hasattr(wifi_mgr, 'leds') and wifi_mgr.leds:
 						wifi_mgr.leds.show_connected()
-					except Exception:
-						pass
 					wifi_mgr.log.info("Connesso a '%s' con IP %s" % (ssid, ip))
 					# Mostra su LCD: ip e nome rete
 					if lcd:
@@ -160,9 +153,9 @@ def connect_wifi(wifi_mgr, lcd=None):
 
 			time.sleep(2)
 	finally:
-		# Ferma il lampeggio e spegne il LED
-		led_blinking = False
-		led.off()
+		# LED: spegni lampeggio/led se previsto da LedStatus (opzionale)
+		if hasattr(wifi_mgr, 'leds') and wifi_mgr.leds:
+			wifi_mgr.leds.show_connected()
 
 	# Verifica stato finale
 	try:
