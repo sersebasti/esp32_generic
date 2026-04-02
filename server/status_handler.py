@@ -1,25 +1,8 @@
 # status_api.py
 import gc, network, ubinascii, time, ujson
-from server.http_consts import _HTTP_200_JSON
-from core.config import feature_enabled
+from core.http_consts import _HTTP_200_JSON
+from core.version import version
 from wifi.config import WIFI_JSON
-import sys
-
-# LCD1602: inizializzazione globale se feature attiva
-lcd = None
-try:
-    if feature_enabled("display"):
-        from display import create_lcd
-        lcd = create_lcd()
-except Exception as e:
-    print("[LCD] Errore inizializzazione LCD1602:", e)
-try:
-    sys.modules.pop('core.version', None)
-except Exception:
-    pass
-import core.version
-version = core.version.version
-print("[DEBUG] Importato version dal file core/version.py:", version)
 
 def _get_ip_sta():
     try:
@@ -75,11 +58,11 @@ def _read_meta():
     except Exception:
         return {"hostname": "esp32"}
 
-def handle(cl, method, path):
+def handle(cl, method, path, req=None, read_post_json=None, body_initial_and_len=None):
     # /health
     if method == "GET" and path.startswith("/health"):
         cl.send(_HTTP_200_JSON + b'{"ok":true}')
-        return True
+        return {"code": 200, "action": "health"}
 
     # /status
     if method == "GET" and path.startswith("/status"):
@@ -96,6 +79,6 @@ def handle(cl, method, path):
             "heap_free": gc.mem_free()
         }
         cl.send(_HTTP_200_JSON + ujson.dumps(payload).encode())
-        return True
+        return {"code": 200, "action": "status"}
 
     return False

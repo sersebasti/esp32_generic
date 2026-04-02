@@ -1,8 +1,8 @@
 # server/system_api.py
-from server.http_consts import _HTTP_200_JSON
+from core.http_consts import _HTTP_200_JSON
 
 
-def handle(cl, method, path):
+def handle(cl, method, path, req=None, read_post_json=None, body_initial_and_len=None):
     # POST /reboot
     if method == "POST" and path.startswith("/reboot"):
         cl.send(_HTTP_200_JSON + b'{"ok":true}')
@@ -15,5 +15,5 @@ def handle(cl, method, path):
             machine.reset()
         except Exception:
             pass
-        return True
+        return {"code": 200, "action": "reboot"}
     return False

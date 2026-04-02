@@ -3,12 +3,12 @@
 # Modifica i valori qui per adeguare il comportamento dell'app.
 _DEFAULTS = {
     "features": {
-        "logger": True,
-        "server": True,
+        "logger": False,
         "wifi": True,
-        "scope": True,
+        "server": True,
+        "scope": False,
         "fs": False,
-        "display": True,
+        "display": False,
         "power_sensors": False,
         "relay": False,
         "my_webrepl": False
@@ -26,16 +26,17 @@ def feature_enabled(name):
         return False
 
 # Feature startup order (used by core.feature_runner)
-FEATURE_ORDER = (
-    "logger",
-    "my_webrepl",
-    "server",
-    "wifi",
-    "scope",
-    "fs",
-    "display",
-    "power_sensors",
-    "relay",
-)
+
+# FEATURE_ORDER = (
+#     "logger",
+#     "wifi",
+#     "server",
+#     "my_webrepl",
+#     "scope",
+#     "fs",
+#     "display",
+#     "power_sensors",
+#     "relay",
+# )
 
 
