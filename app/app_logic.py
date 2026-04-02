@@ -2,6 +2,8 @@
 # Minimal application bootstrap: connect Wi-Fi first, then start server.
 
 import time
+import _thread
+import machine
 
 from core.config import feature_enabled
 
@@ -47,55 +49,70 @@ def start_app():
 def connect_wifi(wifi_mgr):
 	wifi_mgr.log.info("WiFiManager bootstrap: connessione iniziale")
 
-	# Tenta la connessione iniziale: se il Wi-Fi e gia attivo esce subito, altrimenti prova le reti configurate.
-	while True:
-		try:
-			import network
+	# Setup LED blu (D2 = GPIO2)
+	led = machine.Pin(2, machine.Pin.OUT)
+	led.off()
+	led_blinking = True
 
-			sta = network.WLAN(network.STA_IF)
-			if sta and sta.isconnected():
-				ip = sta.ifconfig()[0]
-				wifi_mgr.log.info("Wi-Fi gia connesso con IP %s" % ip)
-				return True
-		except Exception:
-			pass
+	def blink_led():
+		while led_blinking:
+			led.on()
+			time.sleep_ms(120)
+			led.off()
+			time.sleep_ms(120)
 
-		wifi_mgr._reset_wifi()
-		nets = wifi_mgr._load_networks()
-		if not nets:
-			wifi_mgr.log.info("Nessuna rete configurata in %s" % wifi_mgr.wifi_json)
+	# Avvia il lampeggio in un thread separato
+	_thread.start_new_thread(blink_led, ())
+
+	try:
+		while True:
+			try:
+				import network
+				sta = network.WLAN(network.STA_IF)
+				if sta and sta.isconnected():
+					ip = sta.ifconfig()[0]
+					wifi_mgr.log.info("Wi-Fi gia connesso con IP %s" % ip)
+					break
+			except Exception:
+				pass
+
+			wifi_mgr._reset_wifi()
+			nets = wifi_mgr._load_networks()
+			if not nets:
+				wifi_mgr.log.info("Nessuna rete configurata in %s" % wifi_mgr.wifi_json)
+				break
+
+			nets = wifi_mgr._prioritize_by_scan(nets)
+			for ssid, pwd in nets:
+				ok, ip, reason = wifi_mgr._try_connect(ssid, pwd, timeout_s=15)
+				if ok:
+					wifi_mgr._ap_disable()
+					try:
+						wifi_mgr.leds.show_connected()
+					except Exception:
+						pass
+					wifi_mgr.log.info("Connesso a '%s' con IP %s" % (ssid, ip))
+					try:
+						wifi_mgr._sync_time_once()
+					except Exception:
+						pass
+					break
+				wifi_mgr.log.info("Connessione fallita a '%s' (%s)" % (ssid, reason or "fail"))
+				time.sleep_ms(500)
+
+			time.sleep(2)
+	finally:
+		# Ferma il lampeggio e spegne il LED
+		led_blinking = False
+		led.off()
+
+	# Verifica stato finale
+	try:
+		import network
+		sta = network.WLAN(network.STA_IF)
+		if sta and sta.isconnected():
+			return True
+		else:
 			return False
-
-		nets = wifi_mgr._prioritize_by_scan(nets)
-		for ssid, pwd in nets:
-			ok, ip, reason = wifi_mgr._try_connect(ssid, pwd, timeout_s=15)
-			if ok:
-				wifi_mgr._ap_disable()
-				try:
-					wifi_mgr.leds.show_connected()
-				except Exception:
-					pass
-				wifi_mgr.log.info("Connesso a '%s' con IP %s" % (ssid, ip))
-				try:
-					wifi_mgr._sync_time_once()
-				except Exception:
-					pass
-				return True
-
-			wifi_mgr.log.info("Connessione fallita a '%s' (%s)" % (ssid, reason or "fail"))
-			time.sleep_ms(500)
-
-		time.sleep(2)
-
-	if wifi_mgr is not None and lcd:
-		try:
-			import network
-			sta = network.WLAN(network.STA_IF)
-			if sta and sta.isconnected():
-				ip = sta.ifconfig()[0]
-				ssid = wifi_mgr._current_ssid if hasattr(wifi_mgr, '_current_ssid') else ""
-				lcd.clear()
-				lcd.write(0, 0, "IP=" + ip)
-				lcd.write(1, 0, ssid)
-		except Exception:
-			pass
+	except Exception:
+		return False
