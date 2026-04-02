@@ -10,12 +10,12 @@ def start(context=None):
         from server.status_handler import handle as status_handle
         from server.system_handler import handle as system_handle
         from server.fs_handler import handle as fs_handle
-        from wifi.wifi_api import handle as wifi_handle
+        from server.wifi_handler import handle as wifi_handler
 
         clear_handlers()
         register_handler("status_handler", status_handle)
         register_handler("system_handler", system_handle)
-        register_handler("wifi_handler", wifi_handle)
+        register_handler("wifi_handler", wifi_handler)
         if feature_enabled("scope"):
             register_handler("scope_handler", scope_handle)
         if feature_enabled("fs"):

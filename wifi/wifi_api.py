@@ -66,9 +66,22 @@ def _send_static_ui(cl):
 
 
 def handle(cl, method, path, req, _read_post_json, _body_initial_and_len=None):
-    # /wifi/ui → serve static HTML
+    # /wifi/ui → serve wifi/wifi_ui.html dalla root
     if method == "GET" and path.startswith("/wifi/ui"):
-        return _send_static_ui(cl)
+        try:
+            from core.http_consts import _HTTP_200_HTML
+            with open("wifi/wifi_ui.html", "rb") as f:
+                cl.send(_HTTP_200_HTML)
+                while True:
+                    chunk = f.read(1024)
+                    if not chunk:
+                        break
+                    cl.send(chunk)
+            return True
+        except Exception as e:
+            # fallback: pagina minima
+            cl.send(_HTTP_200_HTML + b"<html><body><h1>WiFi UI non trovata</h1></body></html>")
+            return True
 
     # /wifi/scan
     if method == "GET" and path.startswith("/wifi/scan"):
