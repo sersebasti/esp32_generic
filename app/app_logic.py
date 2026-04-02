@@ -33,16 +33,14 @@ def start_app():
 
 	if wifi_mgr is not None:
 		connected = connect_wifi(wifi_mgr, lcd)
-		if not connected:
-			return context
-
-	if feature_enabled("server"):
-		from server.feature import start as start_server_feature
-
-		result = start_server_feature(context)
-		if isinstance(result, dict):
-			context.update(result)
-
+		ap_mode = getattr(wifi_mgr, '_setup_mode', False)
+		# Avvia il server se connesso o se in AP mode
+		if connected or ap_mode:
+			if feature_enabled("server"):
+				from server.feature import start as start_server_feature
+				result = start_server_feature(context)
+				if isinstance(result, dict):
+					context.update(result)
 	return context
 
 
@@ -71,6 +69,22 @@ def connect_wifi(wifi_mgr, lcd=None):
 			if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
 				wifi_mgr.log.info("Pulsante AP premuto: attivo Access Point!")
 				wifi_mgr._enter_setup_once()
+				# Mostra su LCD: IP AP e 'AP MODE'
+				if lcd:
+					try:
+						ap_ip = "192.168.4.1"
+						try:
+							import network
+							ap = network.WLAN(network.AP_IF)
+							if ap.active():
+								ap_ip = ap.ifconfig()[0]
+						except Exception:
+							pass
+						lcd.clear()
+						lcd.write(0, 0, ("ip: " + str(ap_ip))[:16])
+						lcd.write(1, 0, "AP MODE")
+					except Exception:
+						pass
 				return False
 
 			try:
@@ -103,6 +117,22 @@ def connect_wifi(wifi_mgr, lcd=None):
 				if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
 					wifi_mgr.log.info("Pulsante AP premuto: attivo Access Point!")
 					wifi_mgr._enter_setup_once()
+					# Mostra su LCD: IP AP e 'AP MODE'
+					if lcd:
+						try:
+							ap_ip = "192.168.4.1"
+							try:
+								import network
+								ap = network.WLAN(network.AP_IF)
+								if ap.active():
+									ap_ip = ap.ifconfig()[0]
+							except Exception:
+								pass
+							lcd.clear()
+							lcd.write(0, 0, ("ip: " + str(ap_ip))[:16])
+							lcd.write(1, 0, "AP MODE")
+						except Exception:
+							pass
 					return False
 				ok, ip, reason = wifi_mgr._try_connect(ssid, pwd, timeout_s=15)
 				if ok:
@@ -112,6 +142,14 @@ def connect_wifi(wifi_mgr, lcd=None):
 					except Exception:
 						pass
 					wifi_mgr.log.info("Connesso a '%s' con IP %s" % (ssid, ip))
+					# Mostra su LCD: ip e nome rete
+					if lcd:
+						try:
+							lcd.clear()
+							lcd.write(0, 0, ("ip: " + str(ip))[:16])
+							lcd.write(1, 0, (ssid or "")[:16])
+						except Exception:
+							pass
 					try:
 						wifi_mgr._sync_time_once()
 					except Exception:
