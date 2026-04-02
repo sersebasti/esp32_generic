@@ -7,7 +7,6 @@ from scope.generic_sensor import GenericSensor
 
 class CurrentSensor(GenericSensor):
     def __init__(self, adc_pin, cal_dir="scope"):
-        print(f"[DEBUG] CurrentSensor __init__ adc_pin={adc_pin}")
         self.adc_pin = adc_pin
         self.cal_dir = cal_dir
         self.cal_file = f"{cal_dir}/calibrate_{adc_pin}.json"

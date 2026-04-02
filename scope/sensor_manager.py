@@ -7,17 +7,14 @@ import ujson, os
 
 class CurrentSensorManager:
     def __init__(self, config_path="scope/sensors.json"):
-        print("[DEBUG] CurrentSensorManager __init__")
         self.config_path = config_path
         self.sensors = {}
         self.config = self._load_config()
         self._sensor_defs = {}
-        print(f"[DEBUG] Loaded config: {self.config}")
         for s in self.config.get("sensors", []):
             sensor_id = s.get("id")
             if sensor_id:
                 self._sensor_defs[sensor_id] = s
-        print("[DEBUG] Sensors defs loaded:", list(self._sensor_defs.keys()))
 
     def _load_config(self):
         try:

@@ -1,16 +1,13 @@
 # adc_api.py (scope)
-import ujson, os
-from server.http_consts import _HTTP_200_JSON, _HTTP_200_JSON_CORS
+import os
+import ujson
+
+from core.http_consts import _HTTP_200_JSON, _HTTP_200_JSON_CORS
 from server.busy_lock import is_busy, busy_region
 try:
     import ustruct as struct
 except Exception:
     import struct
-
-# Refactoring: supporto multi-sensore
-
-from .sensor_manager import CurrentSensorManager
-from .generic_sensor import GenericSensor
 
 # Inizializza il manager dei sensori on-demand (singleton)
 _SENSOR_MANAGER = None
@@ -19,12 +16,20 @@ _SENSOR_MANAGER = None
 def _get_sensor_manager():
     global _SENSOR_MANAGER
     if _SENSOR_MANAGER is None:
+        from .sensor_manager import CurrentSensorManager
+
         _SENSOR_MANAGER = CurrentSensorManager()
     return _SENSOR_MANAGER
 
 
 def _get_sensor(sensor_id):
     return _get_sensor_manager().get_sensor(sensor_id)
+
+
+def _get_generic_sensor_class():
+    from .generic_sensor import GenericSensor
+
+    return GenericSensor
 
 _CAL_PATH = "scope/calibrate.json"
 
@@ -113,9 +118,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             return True
     # /adc/scope_counts?sensor_id=c1
     if method == "GET" and path.startswith("/adc/scope_counts"):
-        print("[DEBUG] handle /adc/scope_counts", path)
         if is_busy():
-            print("[DEBUG] busy lock active")
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
             return True
         with busy_region():
@@ -131,17 +134,12 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                         elif k == "sensor_id": sensor_id = v
                         elif k == "fast": fast = v in ("1","true","True")
                         elif k == "binary": binary = _to_bool(v)
-            print(f"[DEBUG] Parsed params: n={n}, sr={sr}, sensor_id={sensor_id}, fast={fast}, binary={binary}")
             sensor = _get_sensor(sensor_id)
-            print(f"[DEBUG] Sensor object: {sensor}")
             if not sensor:
-                print("[DEBUG] Sensor not found")
                 cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"sensor_not_found"}')
                 return True
             arr, sr = sensor.sample_counts(n, sr, fast=fast)
-            print(f"[DEBUG] Sampled counts: {arr[:10]}... (total {len(arr)})")
             mean, rms = sensor.stats_counts(arr)
-            print(f"[DEBUG] Stats: mean={mean}, rms={rms}")
             if binary:
                 cl.send(_HTTP_200_OCTET_CORS)
                 cl.send(struct.pack("<4sHII", b"SCB1", 1, len(arr), int(sr)))
@@ -162,6 +160,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                         j += 2
                     cl.send(buf)
                     i += chunk_samples
+                del arr
                 return True
             payload = ujson.dumps({
                 "ok": True,
@@ -172,6 +171,7 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                 "counts_rms": round(rms, 2)
             })
             cl.send(_HTTP_200_JSON + payload.encode())
+            del arr
         return True
 
     # --- Endpoint per confronto baseline ---
@@ -317,6 +317,9 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                             except Exception:
                                 phase_shift = None
 
+            # Future improvement: if phase_shift is not provided in the query,
+            # load it from the saved calibration of the voltage/current sensor.
+
             voltage_sensor = _get_sensor(voltage_sensor_id)
             current_sensor = _get_sensor(current_sensor_id)
 
@@ -338,7 +341,8 @@ def handle(cl, method, path, req=None, _read_post_json=None):
                 return True
 
             # Pass optional phase_shift to measurement
-            p = GenericSensor.measure_instant_power_pair(
+            generic_sensor = _get_generic_sensor_class()
+            p = generic_sensor.measure_instant_power_pair(
                 voltage_sensor,
                 current_sensor,
                 n=n,
@@ -418,7 +422,8 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             else:
                 cal["points"] = pts
                 if pts:
-                    k = GenericSensor.fit_k(pts, value_key=value_key, rms_key="rms_counts")
+                    generic_sensor = _get_generic_sensor_class()
+                    k = generic_sensor.fit_k(pts, value_key=value_key, rms_key="rms_counts")
                     cal[k_key] = round(k, 9)
                 else:
                     cal[k_key] = 0.0

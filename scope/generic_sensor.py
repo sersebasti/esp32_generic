@@ -58,7 +58,6 @@ class GenericSensor:
                 sh = -int(s_mod)
 
         
-        print("[DEBUG] phase_shift:", phase_shift, "->", sh)
         # Accumulatori per RMS e potenza attiva istantanea.
         sum_v2 = 0.0
         sum_i2 = 0.0
@@ -249,11 +248,10 @@ class GenericSensor:
             try:
                 os.stat(self.cal_file)
                 os.remove(self.cal_file)
-                print(f"[DEBUG] File {self.cal_file} cancellato.")
             except OSError:
-                print(f"[DEBUG] File {self.cal_file} non esiste, nessuna cancellazione.")
+                pass
         except Exception as e:
-            print("[DEBUG] Errore cancellazione file:", e)
+            pass
         self.cal = {}
 
     def _save_calibration(self):
@@ -293,13 +291,9 @@ class GenericSensor:
         return mean, rms
 
     def sample_counts(self, n=512, sample_rate_hz=4000, fast=False):
-        import gc
-        print(f"[DEBUG] sample_counts n={n}, sample_rate_hz={sample_rate_hz}, fast={fast}")
-        print(f"[DEBUG] Memoria libera prima: {gc.mem_free()} allocata: {gc.mem_alloc()}")
         try:
             self._init_adc()
-        except Exception as e:
-            print(f"[ERROR] Errore in _init_adc: {e}")
+        except Exception:
             return [0]*n, sample_rate_hz
         n = max(32, min(int(n), 4096))
         sr = max(200, min(int(sample_rate_hz), 20000))
@@ -308,15 +302,11 @@ class GenericSensor:
         for i in range(n):
             try:
                 arr.append(self._read_count())
-            except Exception as e:
-                print(f"[ERROR] Errore in _read_count (i={i}): {e}")
+            except Exception:
                 arr.append(0)
-            if i < 5:
-                print(f"[DEBUG] sample_counts[{i}] = {arr[-1]}")
             if not fast:
                 import time
                 time.sleep_us(dt_us)
-        print(f"[DEBUG] Memoria libera dopo: {gc.mem_free()} allocata: {gc.mem_alloc()}")
         return arr, sr
 
     @staticmethod
