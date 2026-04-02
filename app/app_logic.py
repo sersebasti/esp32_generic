@@ -32,7 +32,7 @@ def start_app():
 		wifi_mgr = context.get("wifi_manager")
 
 	if wifi_mgr is not None:
-		connected = connect_wifi(wifi_mgr)
+		connected = connect_wifi(wifi_mgr, lcd)
 		if not connected:
 			return context
 
@@ -48,6 +48,8 @@ def start_app():
 
 def connect_wifi(wifi_mgr):
 	wifi_mgr.log.info("WiFiManager bootstrap: connessione iniziale")
+def connect_wifi(wifi_mgr, lcd=None):
+	wifi_mgr.log.info("WiFiManager bootstrap: connessione iniziale")
 
 	# Setup LED blu (D2 = GPIO2)
 	led = machine.Pin(2, machine.Pin.OUT)
@@ -61,57 +63,64 @@ def connect_wifi(wifi_mgr):
 			led.off()
 			time.sleep_ms(500)
 
-	# Avvia il lampeggio in un thread separato
 	_thread.start_new_thread(blink_led, ())
 
 	try:
-		   while True:
-			   # Se il pulsante AP è premuto a lungo, attiva AP e termina
-			   if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
-				   wifi_mgr.log.info("Pulsante AP premuto: attivo Access Point!")
-				   wifi_mgr._enter_setup_once()
-				   return False
+		while True:
+			# Se il pulsante AP è premuto a lungo, attiva AP e termina
+			if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
+				wifi_mgr.log.info("Pulsante AP premuto: attivo Access Point!")
+				wifi_mgr._enter_setup_once()
+				return False
 
-			   try:
-				   import network
-				   sta = network.WLAN(network.STA_IF)
-				   if sta and sta.isconnected():
-					   ip = sta.ifconfig()[0]
-					   wifi_mgr.log.info("Wi-Fi gia connesso con IP %s" % ip)
-					   break
-			   except Exception:
-				   pass
+			try:
+				import network
+				sta = network.WLAN(network.STA_IF)
+				if sta and sta.isconnected():
+					ip = sta.ifconfig()[0]
+					wifi_mgr.log.info("Wi-Fi gia connesso con IP %s" % ip)
+					break
+			except Exception:
+				pass
 
-			   wifi_mgr._reset_wifi()
-			   nets = wifi_mgr._load_networks()
-			   if not nets:
-				   wifi_mgr.log.info("Nessuna rete configurata in %s" % wifi_mgr.wifi_json)
-				   break
+			wifi_mgr._reset_wifi()
+			nets = wifi_mgr._load_networks()
+			if not nets:
+				wifi_mgr.log.info("Nessuna rete configurata in %s" % wifi_mgr.wifi_json)
+				break
 
-			   nets = wifi_mgr._prioritize_by_scan(nets)
-			   for ssid, pwd in nets:
-				   # Controlla il pulsante anche durante i tentativi
-				   if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
-					   wifi_mgr.log.info("Pulsante AP premuto: attivo Access Point!")
-					   wifi_mgr._enter_setup_once()
-					   return False
-				   ok, ip, reason = wifi_mgr._try_connect(ssid, pwd, timeout_s=15)
-				   if ok:
-					   wifi_mgr._ap_disable()
-					   try:
-						   wifi_mgr.leds.show_connected()
-					   except Exception:
-						   pass
-					   wifi_mgr.log.info("Connesso a '%s' con IP %s" % (ssid, ip))
-					   try:
-						   wifi_mgr._sync_time_once()
-					   except Exception:
-						   pass
-					   break
-				   wifi_mgr.log.info("Connessione fallita a '%s' (%s)" % (ssid, reason or "fail"))
-				   time.sleep_ms(500)
+			nets = wifi_mgr._prioritize_by_scan(nets)
+			for ssid, pwd in nets:
+				# Mostra stato su LCD
+				if lcd:
+					try:
+						lcd.clear()
+						lcd.write(0, 0, "Connecting...")
+						lcd.write(1, 0, (ssid or "")[:16])
+					except Exception:
+						pass
+				# Controlla il pulsante anche durante i tentativi
+				if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
+					wifi_mgr.log.info("Pulsante AP premuto: attivo Access Point!")
+					wifi_mgr._enter_setup_once()
+					return False
+				ok, ip, reason = wifi_mgr._try_connect(ssid, pwd, timeout_s=15)
+				if ok:
+					wifi_mgr._ap_disable()
+					try:
+						wifi_mgr.leds.show_connected()
+					except Exception:
+						pass
+					wifi_mgr.log.info("Connesso a '%s' con IP %s" % (ssid, ip))
+					try:
+						wifi_mgr._sync_time_once()
+					except Exception:
+						pass
+					break
+				wifi_mgr.log.info("Connessione fallita a '%s' (%s)" % (ssid, reason or "fail"))
+				time.sleep_ms(500)
 
-			   time.sleep(2)
+			time.sleep(2)
 	finally:
 		# Ferma il lampeggio e spegne il LED
 		led_blinking = False
