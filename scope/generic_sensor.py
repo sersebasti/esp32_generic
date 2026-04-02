@@ -57,6 +57,16 @@ class GenericSensor:
                     s_mod -= samples_per_cycle
                 sh = -int(s_mod)
 
+        # Temporary fallback: non-zero phase shift is currently disabled.
+        # There is a bug in the alignment branch below: the buffer logic does
+        # not actually apply the intended delay/advance, so results are close
+        # to phase_shift=0 even when a non-zero value is provided.
+        # Future fix: replace that branch with a correct delayed-sample
+        # alignment implementation (preferably a ring buffer/deque-like
+        # approach) so voltage/current samples are paired with an actual
+        # offset of abs(sh) samples.
+        if sh != 0:
+            sh = 0
         
         # Accumulatori per RMS e potenza attiva istantanea.
         sum_v2 = 0.0
@@ -97,79 +107,82 @@ class GenericSensor:
                 if not fast:
                     time.sleep_us(dt_us)
         else:
-            # versione con shift: usiamo un piccolo buffer di size abs_sh per allineare i campioni
-            abs_sh = abs(sh)
-            n_eff = n - abs_sh
-            if n_eff <= 0:
-                raise ValueError("Phase shift magnitude >= n: increase n or reduce phase_shift")
-
-            if sh > 0:
-                # la tensione è in anticipo: leggiamo e memorizziamo i primi 'abs_sh' campioni di tensione
-                vbuf = []
-                for _ in range(abs_sh):
-                    vbuf.append(voltage_sensor._read_count())
-                    if not fast:
-                        time.sleep_us(dt_us)
-                # poi leggiamo n_eff volte: per ciascuna lettura prendiamo il nuovo campione di tensione,
-                # lo applichiamo con il campione di corrente letto subito dopo
-                for _ in range(n_eff):
-                    v_new = voltage_sensor._read_count()
-                    vbuf.append(v_new)
-                    i_count = current_sensor._read_count()
-
-                    # il campione di tensione allineato è l'ultimo inserito (v_new)
-                    v_count = vbuf.pop()
-
-                    if v_count < v_min:
-                        v_min = v_count
-                    if v_count > v_max:
-                        v_max = v_count
-                    if i_count < i_min:
-                        i_min = i_count
-                    if i_count > i_max:
-                        i_max = i_count
-
-                    v_inst = (v_count - v_baseline) * k_v
-                    i_inst = (i_count - i_baseline) * k_i
-
-                    sum_v2 += v_inst * v_inst
-                    sum_i2 += i_inst * i_inst
-                    sum_p += v_inst * i_inst
-
-                    if not fast:
-                        time.sleep_us(dt_us)
-            else:
-                # sh < 0 -> la corrente è in anticipo: memorizziamo i primi 'abs_sh' campioni di corrente
-                ibuf = []
-                for _ in range(abs_sh):
-                    ibuf.append(current_sensor._read_count())
-                    if not fast:
-                        time.sleep_us(dt_us)
-                for _ in range(n_eff):
-                    i_new = current_sensor._read_count()
-                    ibuf.append(i_new)
-                    v_count = voltage_sensor._read_count()
-
-                    i_count = ibuf.pop()
-
-                    if v_count < v_min:
-                        v_min = v_count
-                    if v_count > v_max:
-                        v_max = v_count
-                    if i_count < i_min:
-                        i_min = i_count
-                    if i_count > i_max:
-                        i_max = i_count
-
-                    v_inst = (v_count - v_baseline) * k_v
-                    i_inst = (i_count - i_baseline) * k_i
-
-                    sum_v2 += v_inst * v_inst
-                    sum_i2 += i_inst * i_inst
-                    sum_p += v_inst * i_inst
-
-                    if not fast:
-                        time.sleep_us(dt_us)
+            # Disabled reference implementation for non-zero phase shift.
+            # Kept here commented for future rewrite once the alignment bug is fixed.
+            #
+            # abs_sh = abs(sh)
+            # n_eff = n - abs_sh
+            # if n_eff <= 0:
+            #     raise ValueError("Phase shift magnitude >= n: increase n or reduce phase_shift")
+            #
+            # if sh > 0:
+            #     # la tensione è in anticipo: leggiamo e memorizziamo i primi 'abs_sh' campioni di tensione
+            #     vbuf = []
+            #     for _ in range(abs_sh):
+            #         vbuf.append(voltage_sensor._read_count())
+            #         if not fast:
+            #             time.sleep_us(dt_us)
+            #     # poi leggiamo n_eff volte: per ciascuna lettura prendiamo il nuovo campione di tensione,
+            #     # lo applichiamo con il campione di corrente letto subito dopo
+            #     for _ in range(n_eff):
+            #         v_new = voltage_sensor._read_count()
+            #         vbuf.append(v_new)
+            #         i_count = current_sensor._read_count()
+            #
+            #         # il campione di tensione allineato è l'ultimo inserito (v_new)
+            #         v_count = vbuf.pop()
+            #
+            #         if v_count < v_min:
+            #             v_min = v_count
+            #         if v_count > v_max:
+            #             v_max = v_count
+            #         if i_count < i_min:
+            #             i_min = i_count
+            #         if i_count > i_max:
+            #             i_max = i_count
+            #
+            #         v_inst = (v_count - v_baseline) * k_v
+            #         i_inst = (i_count - i_baseline) * k_i
+            #
+            #         sum_v2 += v_inst * v_inst
+            #         sum_i2 += i_inst * i_inst
+            #         sum_p += v_inst * i_inst
+            #
+            #         if not fast:
+            #             time.sleep_us(dt_us)
+            # else:
+            #     # sh < 0 -> la corrente è in anticipo: memorizziamo i primi 'abs_sh' campioni di corrente
+            #     ibuf = []
+            #     for _ in range(abs_sh):
+            #         ibuf.append(current_sensor._read_count())
+            #         if not fast:
+            #             time.sleep_us(dt_us)
+            #     for _ in range(n_eff):
+            #         i_new = current_sensor._read_count()
+            #         ibuf.append(i_new)
+            #         v_count = voltage_sensor._read_count()
+            #
+            #         i_count = ibuf.pop()
+            #
+            #         if v_count < v_min:
+            #             v_min = v_count
+            #         if v_count > v_max:
+            #             v_max = v_count
+            #         if i_count < i_min:
+            #             i_min = i_count
+            #         if i_count > i_max:
+            #             i_max = i_count
+            #
+            #         v_inst = (v_count - v_baseline) * k_v
+            #         i_inst = (i_count - i_baseline) * k_i
+            #
+            #         sum_v2 += v_inst * v_inst
+            #         sum_i2 += i_inst * i_inst
+            #         sum_p += v_inst * i_inst
+            #
+            #         if not fast:
+            #             time.sleep_us(dt_us)
+            pass
         
         # Determina quale numero di campioni usare per il calcolo finale
         n_used = n
