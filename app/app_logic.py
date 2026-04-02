@@ -11,15 +11,32 @@ from core.config import feature_enabled
 def start_app():
 
 	# --- WiFi auto-reconnect monitor ---
-	def start_wifi_monitor(wifi_mgr, lcd=None, check_interval=30):
+	def start_wifi_monitor(wifi_mgr, lcd=None, check_interval=10):
 		import _thread
 		def monitor():
+			import gc
+			import network
 			while True:
+				gc.collect()
 				try:
-					import network
 					sta = network.WLAN(network.STA_IF)
+					free_mem = gc.mem_free() if hasattr(gc, 'mem_free') else 'N/A'
+					ip = sta.ifconfig()[0] if sta.isconnected() else '0.0.0.0'
+					ssid = None
+					rssi = None
+					try:
+						ssid = sta.config('essid') if sta.isconnected() else None
+					except Exception:
+						ssid = None
+					try:
+						rssi = sta.status('rssi') if sta.isconnected() else None
+					except Exception:
+						rssi = None
+					print("[WIFI-MONITOR] IP: {} | SSID: {} | Segnale: {} dBm | Memoria libera: {} bytes".format(ip, ssid, rssi, free_mem))
 					if not sta.isconnected() and not getattr(wifi_mgr, '_setup_mode', False):
 						wifi_mgr.log.info("[WIFI-MONITOR] WiFi disconnesso, tento riconnessione...")
+						# Riavvia il monitor del pulsante AP prima di ogni tentativo
+						start_ap_button_monitor(wifi_mgr)
 						connect_wifi(wifi_mgr, lcd)
 				except Exception:
 					pass
