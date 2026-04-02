@@ -5,7 +5,7 @@ scan/list/add/delete operations using `core.wifi_store`.
 """
 
 import ujson
-from server.http_consts import _HTTP_200_JSON, _HTTP_200_HTML
+from core.http_consts import _HTTP_200_JSON, _HTTP_200_HTML
 from wifi import wifi_store as wcfg
 
 
@@ -65,7 +65,7 @@ def _send_static_ui(cl):
     return True
 
 
-def handle(cl, method, path, req, _read_post_json):
+def handle(cl, method, path, req, _read_post_json, _body_initial_and_len=None):
     # /wifi/ui → serve static HTML
     if method == "GET" and path.startswith("/wifi/ui"):
         return _send_static_ui(cl)

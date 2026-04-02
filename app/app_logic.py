@@ -57,50 +57,61 @@ def connect_wifi(wifi_mgr):
 	def blink_led():
 		while led_blinking:
 			led.on()
-			time.sleep_ms(120)
+			time.sleep_ms(500)
 			led.off()
-			time.sleep_ms(120)
+			time.sleep_ms(500)
 
 	# Avvia il lampeggio in un thread separato
 	_thread.start_new_thread(blink_led, ())
 
 	try:
-		while True:
-			try:
-				import network
-				sta = network.WLAN(network.STA_IF)
-				if sta and sta.isconnected():
-					ip = sta.ifconfig()[0]
-					wifi_mgr.log.info("Wi-Fi gia connesso con IP %s" % ip)
-					break
-			except Exception:
-				pass
+		   while True:
+			   # Se il pulsante AP è premuto a lungo, attiva AP e termina
+			   if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
+				   wifi_mgr.log.info("Pulsante AP premuto: attivo Access Point!")
+				   wifi_mgr._enter_setup_once()
+				   return False
 
-			wifi_mgr._reset_wifi()
-			nets = wifi_mgr._load_networks()
-			if not nets:
-				wifi_mgr.log.info("Nessuna rete configurata in %s" % wifi_mgr.wifi_json)
-				break
+			   try:
+				   import network
+				   sta = network.WLAN(network.STA_IF)
+				   if sta and sta.isconnected():
+					   ip = sta.ifconfig()[0]
+					   wifi_mgr.log.info("Wi-Fi gia connesso con IP %s" % ip)
+					   break
+			   except Exception:
+				   pass
 
-			nets = wifi_mgr._prioritize_by_scan(nets)
-			for ssid, pwd in nets:
-				ok, ip, reason = wifi_mgr._try_connect(ssid, pwd, timeout_s=15)
-				if ok:
-					wifi_mgr._ap_disable()
-					try:
-						wifi_mgr.leds.show_connected()
-					except Exception:
-						pass
-					wifi_mgr.log.info("Connesso a '%s' con IP %s" % (ssid, ip))
-					try:
-						wifi_mgr._sync_time_once()
-					except Exception:
-						pass
-					break
-				wifi_mgr.log.info("Connessione fallita a '%s' (%s)" % (ssid, reason or "fail"))
-				time.sleep_ms(500)
+			   wifi_mgr._reset_wifi()
+			   nets = wifi_mgr._load_networks()
+			   if not nets:
+				   wifi_mgr.log.info("Nessuna rete configurata in %s" % wifi_mgr.wifi_json)
+				   break
 
-			time.sleep(2)
+			   nets = wifi_mgr._prioritize_by_scan(nets)
+			   for ssid, pwd in nets:
+				   # Controlla il pulsante anche durante i tentativi
+				   if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
+					   wifi_mgr.log.info("Pulsante AP premuto: attivo Access Point!")
+					   wifi_mgr._enter_setup_once()
+					   return False
+				   ok, ip, reason = wifi_mgr._try_connect(ssid, pwd, timeout_s=15)
+				   if ok:
+					   wifi_mgr._ap_disable()
+					   try:
+						   wifi_mgr.leds.show_connected()
+					   except Exception:
+						   pass
+					   wifi_mgr.log.info("Connesso a '%s' con IP %s" % (ssid, ip))
+					   try:
+						   wifi_mgr._sync_time_once()
+					   except Exception:
+						   pass
+					   break
+				   wifi_mgr.log.info("Connessione fallita a '%s' (%s)" % (ssid, reason or "fail"))
+				   time.sleep_ms(500)
+
+			   time.sleep(2)
 	finally:
 		# Ferma il lampeggio e spegne il LED
 		led_blinking = False

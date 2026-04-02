@@ -4,15 +4,18 @@
 def start(context=None):
     try:
         from core.config import feature_enabled
+
         from server.server import clear_handlers, register_handler, start_server
         from server.scope_handler import handle as scope_handle
         from server.status_handler import handle as status_handle
         from server.system_handler import handle as system_handle
         from server.fs_handler import handle as fs_handle
+        from wifi.wifi_api import handle as wifi_handle
 
         clear_handlers()
         register_handler("status_handler", status_handle)
         register_handler("system_handler", system_handle)
+        register_handler("wifi_handler", wifi_handle)
         if feature_enabled("scope"):
             register_handler("scope_handler", scope_handle)
         if feature_enabled("fs"):
