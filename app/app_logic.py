@@ -12,6 +12,25 @@ def start_app():
 	context = {}
 	wifi_mgr = None
 
+	# --- AP button async monitor ---
+	def start_ap_button_monitor(wifi_mgr):
+		# Monitora il pulsante AP in un thread separato, termina quando ap_monitor_running diventa False
+		def monitor():
+			while getattr(wifi_mgr, "ap_monitor_running", True):
+				try:
+					if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
+						wifi_mgr.ap_requested = True
+						break
+				except Exception:
+					pass
+				time.sleep_ms(100)
+		try:
+			wifi_mgr.ap_requested = False
+			wifi_mgr.ap_monitor_running = True
+			_thread.start_new_thread(monitor, ())
+		except Exception:
+			pass
+
 	# --- Display: messaggio di avvio ---
 	lcd = None
 	try:
@@ -32,6 +51,7 @@ def start_app():
 		wifi_mgr = context.get("wifi_manager")
 
 	if wifi_mgr is not None:
+		start_ap_button_monitor(wifi_mgr)
 		connected = connect_wifi(wifi_mgr, lcd)
 		ap_mode = getattr(wifi_mgr, '_setup_mode', False)
 		# Avvia il server se connesso o se in AP mode
@@ -53,30 +73,7 @@ def connect_wifi(wifi_mgr, lcd=None):
 
 	try:
 		while True:
-			# Se il pulsante AP è premuto a lungo, attiva AP e termina
-			if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
-				wifi_mgr.log.info("Pulsante AP premuto: attivo Access Point!")
-				wifi_mgr._enter_setup_once()
-				# LED: AP mode
-				if hasattr(wifi_mgr, 'leds') and wifi_mgr.leds:
-					wifi_mgr.leds.show_ap()
-				# Mostra su LCD: IP AP e 'AP MODE'
-				if lcd:
-					try:
-						ap_ip = "192.168.4.1"
-						try:
-							import network
-							ap = network.WLAN(network.AP_IF)
-							if ap.active():
-								ap_ip = ap.ifconfig()[0]
-						except Exception:
-							pass
-						lcd.clear()
-						lcd.write(0, 0, ("ip: " + str(ap_ip))[:16])
-						lcd.write(1, 0, "AP MODE")
-					except Exception:
-						pass
-				return False
+			# ...
 
 			try:
 				import network
@@ -105,7 +102,7 @@ def connect_wifi(wifi_mgr, lcd=None):
 					except Exception:
 						pass
 				# Controlla il pulsante anche durante i tentativi
-				if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
+				if getattr(wifi_mgr, "ap_requested", False):
 					wifi_mgr.log.info("Pulsante AP premuto: attivo Access Point!")
 					wifi_mgr._enter_setup_once()
 					# LED: AP mode
@@ -128,7 +125,10 @@ def connect_wifi(wifi_mgr, lcd=None):
 						except Exception:
 							pass
 					return False
-				ok, ip, reason = wifi_mgr._try_connect(ssid, pwd, timeout_s=15)
+				# Passa una callback che controlla ap_requested per interruzione immediata
+				def cancel_cb():
+					return getattr(wifi_mgr, "ap_requested", False)
+				ok, ip, reason = wifi_mgr._try_connect(ssid, pwd, timeout_s=15, cancel_cb=cancel_cb)
 				if ok:
 					wifi_mgr._ap_disable()
 					# LED: connessione riuscita
@@ -149,10 +149,13 @@ def connect_wifi(wifi_mgr, lcd=None):
 						pass
 					break
 				wifi_mgr.log.info("Connessione fallita a '%s' (%s)" % (ssid, reason or "fail"))
-				time.sleep_ms(500)
 
+			# Pausa fissa dopo i tentativi (ora senza controllo su ap_requested)
 			time.sleep(2)
 	finally:
+		# Ferma il thread di monitoraggio pulsante AP
+		if hasattr(wifi_mgr, "ap_monitor_running"):
+			wifi_mgr.ap_monitor_running = False
 		# LED: spegni lampeggio/led se previsto da LedStatus (opzionale)
 		if hasattr(wifi_mgr, 'leds') and wifi_mgr.leds:
 			wifi_mgr.leds.show_connected()
