@@ -8,12 +8,15 @@ def start(context=None):
         from server.scope_handler import handle as scope_handle
         from server.status_handler import handle as status_handle
         from server.system_handler import handle as system_handle
+        from server.fs_handler import handle as fs_handle
 
         clear_handlers()
         register_handler("status_handler", status_handle)
         register_handler("system_handler", system_handle)
         if feature_enabled("scope"):
             register_handler("scope_handler", scope_handle)
+        if feature_enabled("fs"):
+            register_handler("fs_handler", fs_handle)
 
         def _run_server():
             print("[SERVER] start_server()")
