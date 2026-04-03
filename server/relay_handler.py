@@ -24,7 +24,7 @@ def _get_relay_api():
     if _RELAY_IMPORT_ERR is not None:
         return None
     try:
-        import relay.relay_api as relay_api
+        import relays.relay_api as relay_api
         _RELAY_API = relay_api
         return _RELAY_API
     except Exception as exc:

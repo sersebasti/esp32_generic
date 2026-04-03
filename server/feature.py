@@ -12,6 +12,7 @@ def start(context=None):
         from server.fs_handler import handle as fs_handle
         from server.wifi_handler import handle as wifi_handler
         from server.power_sensors_handler import handle as power_sensors_handle
+        from server.relay_handler import handle as relay_handle
 
         clear_handlers()
         register_handler("status_handler", status_handle)
@@ -23,6 +24,8 @@ def start(context=None):
             register_handler("fs_handler", fs_handle)
         if feature_enabled("power_sensors"):
             register_handler("power_sensors_handler", power_sensors_handle)
+        if feature_enabled("relay"):
+            register_handler("relay_handler", relay_handle)
 
         def _run_server():
             print("[SERVER] start_server()")

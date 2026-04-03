@@ -10,7 +10,7 @@ _DEFAULTS = {
         "fs": True,
         "display": False,
         "power_sensors": True,
-        "relay": False,
+        "relay": True,
         "my_webrepl": False
     },
 }
@@ -24,19 +24,3 @@ def feature_enabled(name):
         return bool(feats.get(name, False))
     except Exception:
         return False
-
-# Feature startup order (used by core.feature_runner)
-
-# FEATURE_ORDER = (
-#     "logger",
-#     "wifi",
-#     "server",
-#     "my_webrepl",
-#     "scope",
-#     "fs",
-#     "display",
-#     "power_sensors",
-#     "relay",
-# )
-
-
