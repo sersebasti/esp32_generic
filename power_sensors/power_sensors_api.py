@@ -38,22 +38,30 @@ def get_power_sensor(sensor_id):
 
 def handle_power_sensor(cl, method, path, req=None, _read_post_json=None):
     import ujson
-    if method == "GET" and path.startswith("/power_sensor"):
-        sensor_id = "pz1"
-        if "?" in path:
-            q = path.split("?", 1)[1]
-            for p in q.split("&"):
-                if "=" in p:
-                    k, v = p.split("=", 1)
-                    if k == "id":
-                        sensor_id = v
-        data = get_power_sensor(sensor_id)
-        if data:
-            cl.send(_HTTP_200_JSON + ujson.dumps({"ok": True, "data": data}).encode())
-        else:
-            cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "err": "sensor_not_found"}).encode())
+    try:
+        if method == "GET" and (path.split("?", 1)[0] == "/power_sensor"):
+            sensor_id = "pz1"
+            if "?" in path:
+                q = path.split("?", 1)[1]
+                for p in q.split("&"):
+                    if "=" in p:
+                        k, v = p.split("=", 1)
+                        if k == "id":
+                            sensor_id = v
+            try:
+                data = get_power_sensor(sensor_id)
+            except Exception as e:
+                cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "err": "sensor_exception", "msg": str(e)}).encode())
+                return True
+            if data:
+                cl.send(_HTTP_200_JSON + ujson.dumps({"ok": True, "data": data}).encode())
+            else:
+                cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "err": "sensor_not_found"}).encode())
+            return True
+        return False
+    except Exception as e:
+        cl.send(_HTTP_200_JSON + ujson.dumps({"ok": False, "err": "server_exception", "msg": str(e)}).encode())
         return True
-    return False
 
 # Esempio di endpoint HTTP con MicroPython (picoweb, uasyncio, ecc.)
 # Qui solo funzione, da integrare in un server HTTP secondo il framework usato

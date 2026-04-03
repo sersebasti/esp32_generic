@@ -9,7 +9,7 @@ _DEFAULTS = {
         "scope": True,
         "fs": True,
         "display": False,
-        "power_sensors": False,
+        "power_sensors": True,
         "relay": False,
         "my_webrepl": False
     },

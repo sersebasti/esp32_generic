@@ -290,7 +290,8 @@ def handle(cl, method, path, req=None, _read_post_json=None):
             cl.send(_HTTP_200_JSON + ujson.dumps(out).encode())
         return True
 
-    if method == "GET" and path.startswith("/power"):
+    # --- Endpoint per misura potenza RMS (solo /power) ---
+    if method == "GET" and (path.split("?", 1)[0] == "/power"):
         if is_busy():
             cl.send(_HTTP_200_JSON + b'{"ok":false,"err":"busy"}')
             return True
