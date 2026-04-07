@@ -9,6 +9,14 @@ class Relay:
         self.active_low = bool(relay_conf.get("active_low", True))
         self.initial_state = relay_conf.get("initial_state", "off")
         self.pin = Pin(self.pin_num, Pin.OUT)
+        self.feedback_pin_num = relay_conf.get("feedback_pin")
+        self.feedback_invert = bool(relay_conf.get("feedback_invert", False))
+        self.feedback_pin = None
+        try:
+            if self.feedback_pin_num is not None:
+                self.feedback_pin = Pin(int(self.feedback_pin_num), Pin.IN)
+        except Exception:
+            self.feedback_pin = None
         self._is_on = False
         self.set_state(self.initial_state == "on")
 
@@ -32,8 +40,26 @@ class Relay:
     def toggle(self):
         return self.set_state(not self._is_on)
 
+    def real_state(self):
+        if self.feedback_pin is not None:
+            try:
+                value = bool(self.feedback_pin.value())
+                if self.feedback_invert:
+                    value = not value
+                return value
+            except Exception:
+                return None
+        return None
+
     def status(self):
-        return {"id": self.id, "is_on": self._is_on, "pin": self.pin_num}
+        return {
+            "id": self.id,
+            "is_on": self._is_on,
+            "pin": self.pin_num,
+            "feedback_pin": self.feedback_pin_num,
+            "feedback_invert": self.feedback_invert,
+            "real_state": self.real_state(),
+        }
 
 
 class RelayManager:

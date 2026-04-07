@@ -49,6 +49,14 @@ def handle(cl, method, path, req=None, _read_post_json=None):
         _send_json(cl, relay_mgr.status(relay_id))
         return True
 
+    if method == "GET" and path_base == "/relay/feedback":
+        relay = relay_mgr.get(relay_id)
+        if relay:
+            _send_json(cl, {"id": relay.id, "real_state": relay.real_state()})
+        else:
+            _send_json(cl, {"ok": False, "err": "relay_not_found"})
+        return True
+
     if method == "POST" and path_base == "/relay/on":
         _send_json(cl, relay_mgr.on(relay_id))
         return True
