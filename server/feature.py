@@ -5,7 +5,7 @@ def start(context=None):
     try:
         from core.config import feature_enabled
 
-        from server.server import clear_handlers, register_handler, start_server
+        from server.server import clear_handlers, register_handler, start_server, get_handlers
         from server.scope_handler import handle as scope_handle
         from server.status_handler import handle as status_handle
         from server.system_handler import handle as system_handle
@@ -24,6 +24,7 @@ def start(context=None):
             register_handler("fs_handler", fs_handle)
         if feature_enabled("power_sensors"):
             register_handler("power_sensors_handler", power_sensors_handle)
+            print("[DEBUG] power_sensors_handler registered")
         if feature_enabled("relay"):
             register_handler("relay_handler", relay_handle)
 
@@ -31,6 +32,7 @@ def start(context=None):
             print("[SERVER] start_server()")
             start_server(preferred_port=80, fallback_port=8080, verbose=True)
 
+        print("[DEBUG] HANDLERS:", [name for name, _ in get_handlers()])
         _run_server()
     except Exception as e:
         print("[SERVER] start failed:", e)

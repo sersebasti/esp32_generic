@@ -16,7 +16,7 @@ _SCOPE_PREFIXES = (
 def _is_scope_path(path):
     path_base = path.split("?", 1)[0]
     for prefix in _SCOPE_PREFIXES:
-        if path_base == prefix or path_base.startswith(prefix + "/") or path.startswith(prefix):
+        if path_base == prefix or path_base.startswith(prefix + "/"):
             return True
     return False
 

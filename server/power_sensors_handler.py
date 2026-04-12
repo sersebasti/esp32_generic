@@ -8,6 +8,7 @@ _POWER_API = None
 _POWER_IMPORT_ERR = None
 _POWER_PREFIXES = (
     "/power_sensor",
+    "/power_sensors",
 )
 
 def _is_power_path(path):
@@ -38,6 +39,24 @@ def handle(cl, method, path, req=None, read_post_json=None, body_initial_and_len
     if power_api is None:
         cl.send(_HTTP_400)
         return {"code": 400, "action": "power_import_error"}
+    # Nuovo endpoint: GET /power_sensors restituisce la lista dettagliata dei sensori
+    if method == "GET" and path.split("?", 1)[0] == "/power_sensors":
+        try:
+            sensors_info = []
+            if hasattr(power_api, "sensors_config"):
+                sensors_info = power_api.sensors_config
+            elif hasattr(power_api, "sensors_config"):
+                sensors_info = list(power_api.sensors_config)
+            else:
+                # fallback: solo id
+                sensors_info = [{"id": sid} for sid in getattr(power_api, "sensors", {}).keys()]
+            import ujson
+            cl.send(b'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n' +
+                    ujson.dumps({"ok": True, "sensors": sensors_info}).encode())
+        except Exception as e:
+            cl.send(b'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n' +
+                    b'{"ok":false, "err":"exception", "msg":' + str(e).encode() + b'}')
+        return {"code": 200, "action": "power_sensors_list"}
     handled = power_api.handle_power_sensor(cl, method, path, req, read_post_json)
     if handled:
         return {"code": 200, "action": "power_sensor"}
