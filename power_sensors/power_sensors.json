@@ -2,15 +2,15 @@
   {
     "id": "pz1",
     "uart_id": 1,
-    "tx": 16,
-    "rx": 17,
+    "tx": 14,
+    "rx": 27,
     "baudrate": 9600
   },
   {
     "id": "pz2",
     "uart_id": 2,
-    "tx": 18,
-    "rx": 19,
+    "tx": 26,
+    "rx": 25,
     "baudrate": 9600
   }
 

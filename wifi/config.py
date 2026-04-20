@@ -3,7 +3,7 @@
 
 _DEFAULTS = {
     "wifi_json": "wifi/wifi.json",
-    "ap_btn_pin": 27,
+    "ap_btn_pin": 16,
 }
 
 cfg = dict(_DEFAULTS)
