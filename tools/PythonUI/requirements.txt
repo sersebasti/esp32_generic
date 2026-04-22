@@ -1,5 +1,0 @@
-requests
-matplotlib
-pandas
-numpy
-flask==3.0.3
