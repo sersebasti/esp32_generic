@@ -48,9 +48,13 @@ class CurrentSensor(GenericSensor):
 
     def measure_amps(self, n=1600, sr=4000, fast=False):
         arr, sr = self.sample_counts(n, sr, fast=fast)
-        baseline = float(self.cal.get("baseline_mean", sum(arr)/len(arr)))
+
+        # Baseline dinamica: sempre calcolata dai campioni correnti
+        baseline = sum(arr) / len(arr)
+
         rms = self._rms_with_baseline(arr, baseline)
         k = float(self.cal.get("k_A_per_count", 0.0))
         amps = k * rms
+
         return amps, rms, baseline, min(arr), max(arr)
 

@@ -14,16 +14,13 @@ class GenericSensor:
 
     @staticmethod
     def measure_instant_power_pair(voltage_sensor, current_sensor, n=1600, sample_rate_hz=4000, fast=False, phase_shift=None):
-        # Inizializza i due ADC una sola volta.
         voltage_sensor._init_adc()
         current_sensor._init_adc()
 
-        # Normalizza i parametri di acquisizione in un range sicuro.
         n = max(32, min(int(n), 4096))
         sr = max(200, min(int(sample_rate_hz), 20000))
         dt_us = int(1_000_000 / sr)
 
-        # Frequenza rete
         try:
             mains_freq = float(voltage_sensor.cal.get("mains_freq", 50.0))
         except Exception:
@@ -31,15 +28,8 @@ class GenericSensor:
 
         sh = 0
 
-        v_baseline = GenericSensor._cal_float(voltage_sensor, "baseline_mean", 2048.0)
-        i_baseline = GenericSensor._cal_float(current_sensor, "baseline_mean", 2048.0)
-        k_v = GenericSensor._cal_float(voltage_sensor, "k_V_per_count", 0.0)
-        k_i = GenericSensor._cal_float(current_sensor, "k_A_per_count", 0.0)
-
-        # Determina lo shift in campioni, limitato a +/- mezzo periodo
         if phase_shift is not None:
             s_in = int(phase_shift)
-
             samples_per_cycle = max(1, int(round(float(sr) / float(mains_freq))))
             max_shift = max(1, samples_per_cycle // 2)
 
@@ -54,148 +44,61 @@ class GenericSensor:
                     s_mod -= samples_per_cycle
                 sh = -int(s_mod)
 
-        # Accumulatori
+        k_v = GenericSensor._cal_float(voltage_sensor, "k_V_per_count", 0.0)
+        k_i = GenericSensor._cal_float(current_sensor, "k_A_per_count", 0.0)
+
+        v_arr = []
+        i_arr = []
+
+        for _ in range(n):
+            v_arr.append(voltage_sensor._read_count())
+            i_arr.append(current_sensor._read_count())
+
+            if not fast:
+                time.sleep_us(dt_us)
+
+        v_min = min(v_arr)
+        v_max = max(v_arr)
+        i_min = min(i_arr)
+        i_max = max(i_arr)
+
+        # Baseline dinamica: sempre calcolata dai campioni correnti
+        v_baseline = sum(v_arr) / len(v_arr)
+        i_baseline = sum(i_arr) / len(i_arr)
+
+        if sh > 0:
+            # tensione in anticipo: usa tensione ritardata
+            v_use = v_arr[:-sh]
+            i_use = i_arr[sh:]
+        elif sh < 0:
+            # corrente in anticipo: usa corrente ritardata
+            s = abs(sh)
+            v_use = v_arr[s:]
+            i_use = i_arr[:-s]
+        else:
+            v_use = v_arr
+            i_use = i_arr
+
+        n_used = min(len(v_use), len(i_use))
+
+        if n_used <= 0:
+            raise ValueError("Phase shift magnitude >= n: increase n or reduce phase_shift")
+
         sum_v2 = 0.0
         sum_i2 = 0.0
         sum_p = 0.0
 
-        # Diagnostica ADC
-        v_min = 4095
-        v_max = 0
-        i_min = 4095
-        i_max = 0
+        for idx in range(n_used):
+            v_inst = (v_use[idx] - v_baseline) * k_v
+            i_inst = (i_use[idx] - i_baseline) * k_i
 
-        n_used = n
+            sum_v2 += v_inst * v_inst
+            sum_i2 += i_inst * i_inst
+            sum_p += v_inst * i_inst
 
-        # ------------------------------------------------------------------
-        # CASO 1: shift nullo -> comportamento uguale al codice attuale
-        # ------------------------------------------------------------------
-        if sh == 0:
-            for _ in range(n):
-                v_count = voltage_sensor._read_count()
-                i_count = current_sensor._read_count()
-
-                if v_count < v_min:
-                    v_min = v_count
-                if v_count > v_max:
-                    v_max = v_count
-                if i_count < i_min:
-                    i_min = i_count
-                if i_count > i_max:
-                    i_max = i_count
-
-                v_inst = (v_count - v_baseline) * k_v
-                i_inst = (i_count - i_baseline) * k_i
-
-                sum_v2 += v_inst * v_inst
-                sum_i2 += i_inst * i_inst
-                sum_p += v_inst * i_inst
-
-                if not fast:
-                    time.sleep_us(dt_us)
-
-        # ------------------------------------------------------------------
-        # CASO 2: shift != 0 -> allineamento con buffer circolare
-        # ------------------------------------------------------------------
-        else:
-            abs_sh = abs(sh)
-            n_eff = n - abs_sh
-
-            if n_eff <= 0:
-                raise ValueError("Phase shift magnitude >= n: increase n or reduce phase_shift")
-
-            n_used = n_eff
-
-            # sh > 0: tensione in anticipo -> ritarda tensione
-            if sh > 0:
-                vbuf = [0] * abs_sh
-                w = 0
-
-                # precarica i primi abs_sh campioni di tensione
-                for idx in range(abs_sh):
-                    vbuf[idx] = voltage_sensor._read_count()
-                    if not fast:
-                        time.sleep_us(dt_us)
-
-                for _ in range(n_eff):
-                    v_new = voltage_sensor._read_count()
-                    i_count = current_sensor._read_count()
-
-                    # legge il campione vecchio (ritardato)
-                    v_count = vbuf[w]
-
-                    # scrive il campione nuovo nella stessa posizione
-                    vbuf[w] = v_new
-                    w += 1
-                    if w >= abs_sh:
-                        w = 0
-
-                    if v_count < v_min:
-                        v_min = v_count
-                    if v_count > v_max:
-                        v_max = v_count
-                    if i_count < i_min:
-                        i_min = i_count
-                    if i_count > i_max:
-                        i_max = i_count
-
-                    v_inst = (v_count - v_baseline) * k_v
-                    i_inst = (i_count - i_baseline) * k_i
-
-                    sum_v2 += v_inst * v_inst
-                    sum_i2 += i_inst * i_inst
-                    sum_p += v_inst * i_inst
-
-                    if not fast:
-                        time.sleep_us(dt_us)
-
-            # sh < 0: corrente in anticipo -> ritarda corrente
-            else:
-                ibuf = [0] * abs_sh
-                w = 0
-
-                # precarica i primi abs_sh campioni di corrente
-                for idx in range(abs_sh):
-                    ibuf[idx] = current_sensor._read_count()
-                    if not fast:
-                        time.sleep_us(dt_us)
-
-                for _ in range(n_eff):
-                    i_new = current_sensor._read_count()
-                    v_count = voltage_sensor._read_count()
-
-                    # legge il campione vecchio (ritardato)
-                    i_count = ibuf[w]
-
-                    # scrive il campione nuovo nella stessa posizione
-                    ibuf[w] = i_new
-                    w += 1
-                    if w >= abs_sh:
-                        w = 0
-
-                    if v_count < v_min:
-                        v_min = v_count
-                    if v_count > v_max:
-                        v_max = v_count
-                    if i_count < i_min:
-                        i_min = i_count
-                    if i_count > i_max:
-                        i_max = i_count
-
-                    v_inst = (v_count - v_baseline) * k_v
-                    i_inst = (i_count - i_baseline) * k_i
-
-                    sum_v2 += v_inst * v_inst
-                    sum_i2 += i_inst * i_inst
-                    sum_p += v_inst * i_inst
-
-                    if not fast:
-                        time.sleep_us(dt_us)
-
-        # Calcoli finali
-        v_rms = math.sqrt(sum_v2 / n_used) if n_used > 0 else 0.0
-        i_rms = math.sqrt(sum_i2 / n_used) if n_used > 0 else 0.0
-        p_active = sum_p / n_used if n_used > 0 else 0.0
+        v_rms = math.sqrt(sum_v2 / n_used)
+        i_rms = math.sqrt(sum_i2 / n_used)
+        p_active = sum_p / n_used
         p_apparent = v_rms * i_rms
         power_factor = (p_active / p_apparent) if p_apparent > 0 else 0.0
 

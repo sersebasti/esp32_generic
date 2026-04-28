@@ -184,16 +184,15 @@ window.esp32Ui = function esp32Ui(defaultIp) {
     },
 
     canQuickMeasure() {
-      const hasBaseline = this.calibrationBaseline !== null && this.calibrationBaseline !== undefined;
       const hasPoint = Array.isArray(this.calibrationPoints) && this.calibrationPoints.length > 0;
-      return hasBaseline && hasPoint;
+      return hasPoint;
     },
 
     hasCalibrationForSensor(sensorId) {
       if (!sensorId) return false;
       const info = this.calibrationBySensor[String(sensorId)];
       if (!info) return false;
-      return info.baseline !== null && info.baseline !== undefined && Number(info.points || 0) > 0;
+      return Number(info.points || 0) > 0;
     },
 
     canMeasurePower() {
@@ -322,7 +321,7 @@ window.esp32Ui = function esp32Ui(defaultIp) {
         this.calibrationBaseline = cal?.baseline_mean ?? null;
         this.calibrationPoints = Array.isArray(cal?.points) ? cal.points : [];
         this.setCalibrationStatus(this.selectedSensorId, this.calibrationBaseline, this.calibrationPoints);
-        this.calibrationChartVisible = this.calibrationBaseline !== null && this.calibrationPoints.length > 0;
+        this.calibrationChartVisible = this.calibrationPoints.length > 0;
         if (this.calibrationChartVisible) {
           this.$nextTick(() => this.renderCalibrationChart());
         } else if (this._calibrationChart) {
@@ -391,7 +390,7 @@ window.esp32Ui = function esp32Ui(defaultIp) {
     async fetchMeasure() {
       if (!this.selectedSensorId) return;
       if (!this.canQuickMeasure()) {
-        this.measureData = { error: 'Calibrazione incompleta: acquisisci baseline e almeno un punto.' };
+        this.measureData = { error: 'Calibrazione incompleta: acquisisci almeno un punto di calibrazione.' };
         return;
       }
       this.loading.measure = true;
