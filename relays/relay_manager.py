@@ -1,4 +1,5 @@
 import ujson
+import time
 from machine import Pin
 
 
@@ -11,13 +12,16 @@ class Relay:
         self.pin = Pin(self.pin_num, Pin.OUT)
         self.feedback_pin_num = relay_conf.get("feedback_pin")
         self.feedback_invert = bool(relay_conf.get("feedback_invert", False))
+        self.feedback_settle_ms = int(relay_conf.get("feedback_settle_ms", 30))
+        self.feedback_samples = int(relay_conf.get("feedback_samples", 3))
         self.feedback_pin = None
         try:
             if self.feedback_pin_num is not None:
-                self.feedback_pin = Pin(int(self.feedback_pin_num), Pin.IN)
+                self.feedback_pin = Pin(int(self.feedback_pin_num), Pin.IN, Pin.PULL_UP)
         except Exception:
             self.feedback_pin = None
         self._is_on = False
+        self._last_real_state = None
         self.set_state(self.initial_state == "on")
 
     def _write_output(self, enabled):
@@ -27,8 +31,13 @@ class Relay:
             self.pin.value(1 if enabled else 0)
 
     def set_state(self, enabled):
-        self._is_on = bool(enabled)
-        self._write_output(self._is_on)
+        enabled = bool(enabled)
+        changed = enabled != self._is_on
+        self._is_on = enabled
+        if changed:
+            self._write_output(self._is_on)
+        if changed and self.feedback_pin is not None and self.feedback_settle_ms > 0:
+            time.sleep_ms(self.feedback_settle_ms)
         return self.status()
 
     def on(self):
@@ -40,13 +49,32 @@ class Relay:
     def toggle(self):
         return self.set_state(not self._is_on)
 
+    def _read_feedback_once(self):
+        if self.feedback_pin is None:
+            return None
+        high_reads = 0
+        samples = self.feedback_samples if self.feedback_samples > 0 else 1
+        for index in range(samples):
+            high_reads += 1 if self.feedback_pin.value() else 0
+            if index + 1 < samples:
+                time.sleep_ms(2)
+        value = high_reads >= ((samples // 2) + 1)
+        if self.feedback_invert:
+            value = not value
+        return value
+
     def real_state(self):
         if self.feedback_pin is not None:
             try:
-                value = bool(self.feedback_pin.value())
-                if self.feedback_invert:
-                    value = not value
-                return value
+                first_value = self._read_feedback_once()
+                second_value = self._read_feedback_once()
+                if first_value == second_value:
+                    self._last_real_state = first_value
+                    return first_value
+                if self._last_real_state is not None:
+                    return self._last_real_state
+                self._last_real_state = second_value
+                return second_value
             except Exception:
                 return None
         return None

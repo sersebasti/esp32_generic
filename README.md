@@ -7,6 +7,9 @@
 # verifica
 mpremote connect /dev/ttyUSB0 ls
 
+# verifica windows
+mpremote connect COM4 ls
+
 # cancella tutto
 mpremote connect /dev/ttyUSB0 rm -r :
 

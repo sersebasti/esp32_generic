@@ -3,7 +3,7 @@
     {
       "id": "relay1",
       "pin": 13,
-      "active_low": true,
+      "active_low": false,
       "initial_state": "off",
       "feedback_pin": 27,
       "feedback_invert": true
@@ -11,13 +11,7 @@
     {
       "id": "relay2",
       "pin": 14,
-      "active_low": true,
-      "initial_state": "off"
-    },
-    {
-      "id": "relay3",
-      "pin": 15,
-      "active_low": true,
+      "active_low": false,
       "initial_state": "off"
     }
   ]
