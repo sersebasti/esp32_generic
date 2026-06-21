@@ -33,6 +33,19 @@ def start_app():
 					except Exception:
 						rssi = None
 					print("[WIFI-MONITOR] IP: {} | SSID: {} | Segnale: {} dBm | Memoria libera: {} bytes".format(ip, ssid, rssi, free_mem))
+					
+					print("AP PIN = ", getattr(wifi_mgr,"_AP_BTN_PIN_num", None))
+					
+					####  volgio ustral a quyi ### 
+
+					if feature_enabled("pzem_017"):
+						from pzem_017.pzem_rs485 import start_pzem017
+						start_pzem017()
+					else:
+						print("prob importazione")	
+						
+                    
+
 					if not sta.isconnected() and not getattr(wifi_mgr, '_setup_mode', False):
 						wifi_mgr.log.info("[WIFI-MONITOR] WiFi disconnesso, tento riconnessione...")
 						# Riavvia il monitor del pulsante AP prima di ogni tentativo
