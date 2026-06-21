@@ -6,12 +6,13 @@ _DEFAULTS = {
         "logger": False,
         "wifi": True,
         "server": True,
-        "scope": True,
+        "scope": False,
         "fs": True,
         "display": False,
-        "power_sensors": True,
-        "relay": True,
-        "my_webrepl": False
+        "power_sensors": False,
+        "relay": False,
+        "my_webrepl": False,
+        "pzem_017": True          
     },
 }
 
