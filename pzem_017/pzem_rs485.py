@@ -72,8 +72,7 @@ def build_read_frame(addr=SLAVE_ADDR):
 
     return frame
 
-
-def rs485_write_read(frame, wait_ms=300):
+def rs485_write_read(frame, wait_ms=800):
     # svuota buffer vecchio
     try:
         while uart.any():
@@ -83,17 +82,33 @@ def rs485_write_read(frame, wait_ms=300):
 
     # TX
     rs485_dir.value(1)
-    time.sleep_ms(2)
+    time.sleep_ms(5)
 
     uart.write(frame)
-    time.sleep_ms(20)
+
+    # tempo per finire davvero la trasmissione
+    time.sleep_ms(50)
 
     # RX
     rs485_dir.value(0)
-    time.sleep_ms(wait_ms)
 
-    if uart.any():
-        return uart.read()
+    start = time.ticks_ms()
+    resp = bytearray()
+
+    while time.ticks_diff(time.ticks_ms(), start) < wait_ms:
+        if uart.any():
+            chunk = uart.read()
+            if chunk:
+                resp.extend(chunk)
+
+                # risposta attesa: 01 04 10 + 16 dati + 2 crc = 21 byte
+                if len(resp) >= 21:
+                    break
+
+        time.sleep_ms(10)
+
+    if resp:
+        return bytes(resp)
 
     return None
 
@@ -117,6 +132,7 @@ def _registers_from_response(resp):
 
 
 def parse_pzem017_response(resp):
+
     if not resp:
         return {
             "ok": False,
@@ -129,6 +145,7 @@ def parse_pzem017_response(resp):
         return {
             "ok": False,
             "err": "short_response",
+            "len": len(resp),
             "raw": raw_hex
         }
 
@@ -143,7 +160,8 @@ def parse_pzem017_response(resp):
         return {
             "ok": False,
             "err": "wrong_slave",
-            "slave": resp[0],
+            "expected": SLAVE_ADDR,
+            "received": resp[0],
             "raw": raw_hex
         }
 
@@ -151,32 +169,53 @@ def parse_pzem017_response(resp):
         return {
             "ok": False,
             "err": "wrong_function",
-            "function": resp[1],
+            "expected": 0x04,
+            "received": resp[1],
             "raw": raw_hex
         }
 
-    if len(resp) < 21:
+    byte_count = resp[2]
+
+    if byte_count != 16:
         return {
             "ok": False,
-            "err": "incomplete_response",
-            "len": len(resp),
+            "err": "wrong_byte_count",
+            "expected": 16,
+            "received": byte_count,
+            "raw": raw_hex
+        }
+
+    expected_length = 3 + byte_count + 2
+
+    if len(resp) != expected_length:
+        return {
+            "ok": False,
+            "err": "wrong_response_length",
+            "expected": expected_length,
+            "received": len(resp),
             "raw": raw_hex
         }
 
     regs = _registers_from_response(resp)
 
-    voltage_raw = regs[0] if len(regs) > 0 else None
+    if len(regs) != 8:
+        return {
+            "ok": False,
+            "err": "wrong_register_count",
+            "expected": 8,
+            "received": len(regs),
+            "registers": regs,
+            "raw": raw_hex
+        }
 
-    # Dal tuo RX 04 83 = 1155, quindi 1155 / 100 = 11.55 V
-    voltage_v = None
-    if voltage_raw is not None:
-        voltage_v = voltage_raw / 100.0
+    voltage_raw = regs[0]
+    voltage_v = voltage_raw / 100.0
 
     return {
         "ok": True,
         "slave": resp[0],
         "function": resp[1],
-        "byte_count": resp[2],
+        "byte_count": byte_count,
         "voltage_v": voltage_v,
         "voltage_raw": voltage_raw,
         "registers": regs,
@@ -186,17 +225,38 @@ def parse_pzem017_response(resp):
 
 def read_pzem017():
     frame = build_read_frame()
+    last_result = None
 
-    print("[PZEM-017] TX:", to_hex(frame))
+    for attempt in range(1, 4):
+        print("[PZEM-017] tentativo", attempt)
+        print("[PZEM-017] TX:", to_hex(frame))
 
-    resp = rs485_write_read(frame, wait_ms=300)
+        resp = rs485_write_read(frame, wait_ms=800)
 
-    if resp:
-        print("[PZEM-017] RX:", to_hex(resp))
-    else:
-        print("[PZEM-017] nessuna risposta")
+        if resp:
+            print("[PZEM-017] RX:", to_hex(resp))
+            result = parse_pzem017_response(resp)
+            last_result = result
 
-    return parse_pzem017_response(resp)
+            if result.get("ok"):
+                return result
+
+            print("[PZEM-017] errore:", result)
+
+        else:
+            print("[PZEM-017] nessuna risposta")
+            last_result = {
+                "ok": False,
+                "err": "no_response"
+            }
+
+        time.sleep_ms(200)
+
+    return {
+        "ok": False,
+        "err": "no_valid_response_after_retries",
+        "last_result": last_result
+    }
 
 
 def start_pzem017():
