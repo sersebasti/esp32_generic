@@ -132,6 +132,103 @@ def _format_result(result):
     return str(result)
 
 
+def _log_http(verbose, message, *args):
+    if not verbose:
+        return
+    try:
+        if args:
+            print(message % args)
+        else:
+            print(message)
+    except Exception:
+        pass
+
+
+def _configure_server_socket(s, preferred_port, fallback_port):
+    try:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    except Exception:
+        pass
+
+    try:
+        s.bind(("0.0.0.0", preferred_port))
+        return preferred_port
+    except OSError:
+        s.bind(("0.0.0.0", fallback_port))
+        return fallback_port
+
+
+def _accept_client(server_socket):
+    try:
+        return server_socket.accept()
+    except OSError:
+        return None, None
+
+
+def _handle_special_request(cl, method, path, verbose):
+    if method == "OPTIONS":
+        cl.send(_HTTP_204_CORS)
+        _log_http(verbose, "[HTTP] 204 OPTIONS")
+        return {"code": 204, "action": "options"}
+
+    if method == "GET" and path.startswith("/favicon.ico"):
+        cl.send(_HTTP_204_CORS)
+        _log_http(verbose, "[HTTP] 204 favicon")
+        return {"code": 204, "action": "favicon"}
+
+    return None
+
+
+def _read_request(cl):
+    cl.settimeout(3.0)
+    req = cl.recv(1024)
+    if not req:
+        return None, None, None
+
+    line = req.split(b"\r\n", 1)[0].decode("utf-8", "ignore")
+    method, path = _parse_path(line)
+    return req, method, path
+
+
+def _handle_client(cl, addr, verbose):
+    req, method, path = _read_request(cl)
+    if not req:
+        return None
+
+    _log_http(verbose, "[HTTP] client=%s %s %s", _client_ip(addr), method, path)
+
+    special = _handle_special_request(cl, method, path, verbose)
+    if special is not None:
+        return special
+
+    result = _dispatch_request(cl, method, path, req)
+    if result is None:
+        cl.send(_HTTP_400)
+        result = {"code": 400, "action": "no_route"}
+        _log_http(verbose, "[HTTP] 400 route non trovata: %s %s", method, path)
+
+    _log_http(verbose, "[HTTP] result=%s", _format_result(result))
+    return result
+
+
+def _should_log_exception(exc):
+    try:
+        if isinstance(exc, OSError) and len(exc.args) > 0:
+            return exc.args[0] not in (110, 116)
+    except Exception:
+        pass
+    return True
+
+
+def _close_client(cl):
+    if cl is None:
+        return
+    try:
+        cl.close()
+    except Exception:
+        pass
+
+
 def start_server(preferred_port=80, fallback_port=8080, verbose=True):
     try:
         set_busy(False)
@@ -140,106 +237,26 @@ def start_server(preferred_port=80, fallback_port=8080, verbose=True):
 
     s = socket.socket()
     try:
-        try:
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        except Exception:
-            pass
-
-        try:
-            s.bind(("0.0.0.0", preferred_port))
-            bound = preferred_port
-        except OSError:
-            s.bind(("0.0.0.0", fallback_port))
-            bound = fallback_port
+        bound = _configure_server_socket(s, preferred_port, fallback_port)
 
         s.listen(2)
         s.settimeout(0.5)
 
-        if verbose:
-            print("Status server su http://%s:%d/status" % ("0.0.0.0", bound))
+        _log_http(verbose, "Status server su http://%s:%d/status", "0.0.0.0", bound)
 
         while True:
-            try:
-                cl, addr = s.accept()
-            except OSError:
+            cl, addr = _accept_client(s)
+            if cl is None:
                 continue
 
             try:
-                cl.settimeout(3.0)
-                req = cl.recv(1024)
-                if not req:
-                    cl.close()
-                    continue
-
-                line = req.split(b"\r\n", 1)[0].decode("utf-8", "ignore")
-                method, path = _parse_path(line)
-
-                if verbose:
-                    try:
-                        print("[HTTP] client=%s %s %s" % (_client_ip(addr), method, path))
-                    except Exception:
-                        pass
-
-                if method == "OPTIONS":
-                    cl.send(_HTTP_204_CORS)
-                    if verbose:
-                        try:
-                            print("[HTTP] 204 OPTIONS")
-                        except Exception:
-                            pass
-                    continue
-
-                if method == "GET" and path.startswith("/favicon.ico"):
-                    cl.send(_HTTP_204_CORS)
-                    if verbose:
-                        try:
-                            print("[HTTP] 204 favicon")
-                        except Exception:
-                            pass
-                    continue
-
-                result = _dispatch_request(cl, method, path, req)
-                if result is None:
-                    cl.send(_HTTP_400)
-                    result = {"code": 400, "action": "no_route"}
-                    if verbose:
-                        try:
-                            print("[HTTP] 400 route non trovata: %s %s" % (method, path))
-                        except Exception:
-                            pass
-
-                if verbose:
-                    try:
-                        print("[HTTP] result=%s" % (_format_result(result),))
-                    except Exception:
-                        pass
-
+                _handle_client(cl, addr, verbose)
             except Exception as e:
-                err_no = None
-                try:
-                    if isinstance(e, OSError) and len(e.args) > 0:
-                        err_no = e.args[0]
-                except Exception:
-                    err_no = None
-
-                if err_no not in (110, 116):
-                    if verbose:
-                        try:
-                            print("[HTTP] EXC %r" % (e,))
-                        except Exception:
-                            pass
-
-                try:
-                    cl.close()
-                except Exception:
-                    pass
-                continue
+                if _should_log_exception(e):
+                    _log_http(verbose, "[HTTP] EXC %r", e)
 
             finally:
-                try:
-                    cl.close()
-                except Exception:
-                    pass
+                _close_client(cl)
                 gc.collect()
 
     finally:

@@ -7,12 +7,12 @@ _DEFAULTS = {
         "wifi": True,
         "server": True,
         "scope": False,
-        "fs": True,
+        "fs": False,
         "display": False,
         "power_sensors": False,
         "relay": False,
         "my_webrepl": False,
-        "pzem_017": True          
+        "pzem_017": False
     },
 }
 

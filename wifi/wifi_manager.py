@@ -48,6 +48,28 @@ class WiFiManager:
             self.log.info(f"Button init failed: {e!r}")
             self._btn = None
 
+    @staticmethod
+    def _wlan(iface):
+        try:
+            return network.WLAN(iface)
+        except Exception:
+            return None
+
+    def _sta_if(self):
+        return self._wlan(network.STA_IF)
+
+    def _ap_if(self):
+        return self._wlan(network.AP_IF)
+
+    @staticmethod
+    def _close_socket(sock):
+        if not sock:
+            return
+        try:
+            sock.close()
+        except Exception:
+            pass
+
     def _sync_time_once(self):
         if self._rtc_synced:
             return
@@ -63,69 +85,92 @@ class WiFiManager:
         except Exception as e:
             self.log.info("NTP sync fallita: %r" % (e,))
 
+    def _load_wifi_config(self):
+        try:
+            with open(self.wifi_json) as f:
+                return json.load(f)
+        except Exception as e:
+            self.log.info("Impossibile leggere %s: %r" % (self.wifi_json, e))
+            return None
+
     @staticmethod
-    def _networks_from_cfg(cfg):
+    def _dedupe_networks(nets):
+        seen = set()
+        out = []
+        for ssid, pwd in nets:
+            if ssid in seen:
+                continue
+            out.append((ssid, pwd))
+            seen.add(ssid)
+        return out
+
+    @staticmethod
+    def _indexed_ssids_from_cfg(cfg):
+        idxs = []
+        for key in cfg.keys():
+            if not isinstance(key, str) or not key.startswith("ssid_"):
+                continue
+            try:
+                idxs.append(int(key.split("_", 1)[1]))
+            except Exception:
+                pass
+        return sorted(set(idxs))
+
+    @classmethod
+    def _networks_from_cfg(cls, cfg):
         nets = []
         s_single = (cfg.get("ssid") or "").strip()
         if s_single:
             nets.append((s_single, cfg.get("password") or ""))
-        idxs = []
-        for k in cfg.keys():
-            if isinstance(k, str) and k.startswith("ssid_"):
-                try:
-                    idxs.append(int(k.split("_", 1)[1]))
-                except Exception:
-                    pass
-        for i in sorted(set(idxs)):
+
+        for i in cls._indexed_ssids_from_cfg(cfg):
             s = (cfg.get("ssid_%d" % i) or "").strip()
             if s:
                 nets.append((s, cfg.get("password_%d" % i) or ""))
+
         for net in cfg.get("networks", []) or []:
             s = (net.get("ssid") or "").strip()
             if s:
                 nets.append((s, net.get("password") or ""))
-        seen, out = set(), []
-        for ssid, pwd in nets:
-            if ssid not in seen:
-                out.append((ssid, pwd))
-                seen.add(ssid)
-        return out
+
+        return cls._dedupe_networks(nets)
 
     def _load_networks(self):
-        try:
-            with open(self.wifi_json) as f:
-                cfg = json.load(f)
-        except Exception as e:
-            self.log.info("Impossibile leggere %s: %r" % (self.wifi_json, e))
+        cfg = self._load_wifi_config()
+        if cfg is None:
             return []
+
         nets = self._networks_from_cfg(cfg)
         if not nets:
             self.log.info("Nessuna rete trovata in %s" % self.wifi_json)
         return nets
 
     def _reset_wifi(self):
-        try:
-            sta = network.WLAN(network.STA_IF)
-            if sta.active():
-                try:
-                    sta.disconnect()
-                except Exception:
-                    pass
+        sta = self._sta_if()
+        if sta and sta.active():
+            try:
+                sta.disconnect()
+            except Exception:
+                pass
+            try:
                 sta.active(False)
-        except Exception:
-            pass
-        try:
-            ap = network.WLAN(network.AP_IF)
-            if ap.active():
+            except Exception:
+                pass
+
+        ap = self._ap_if()
+        if ap and ap.active():
+            try:
                 ap.active(False)
-        except Exception:
-            pass
+            except Exception:
+                pass
 
     def _ap_enable(self, essid="ESP-SETUP", password=""):
         try:
             if not essid or essid == "ESP-SETUP":
                 essid = device_name_from_mac(prefix="ESP32_", fallback="ESP-SETUP", max_len=32)
-            ap = network.WLAN(network.AP_IF)
+            ap = self._ap_if()
+            if ap is None:
+                raise OSError("ap_unavailable")
             ap.active(True)
             ap.config(essid=essid)
             if password and len(password) >= 8:
@@ -148,12 +193,36 @@ class WiFiManager:
 
     def _ap_disable(self):
         try:
-            ap = network.WLAN(network.AP_IF)
-            if ap.active():
+            ap = self._ap_if()
+            if ap and ap.active():
                 ap.active(False)
                 self.log.info("AP disattivato")
         except Exception as e:
             self.log.info("AP disable fallito: %r" % (e,))
+
+    def _disable_sta(self):
+        sta = self._sta_if()
+        if not sta or not sta.active():
+            return
+        try:
+            sta.disconnect()
+        except Exception:
+            pass
+        try:
+            sta.active(False)
+        except Exception:
+            pass
+
+    def _announce_setup_ui(self, ip_ap):
+        try:
+            if self._port_open(ip_ap, 80):
+                self.log.info("UI WiFi: http://%s/wifi/ui" % ip_ap)
+            elif self._port_open(ip_ap, 8080):
+                self.log.info("UI WiFi: http://%s:8080/wifi/ui" % ip_ap)
+            else:
+                self.log.info("UI WiFi: server non raggiungibile su 80/8080")
+        except Exception:
+            pass
 
     def _enter_setup_once(self):
         if self._setup_mode:
@@ -165,31 +234,16 @@ class WiFiManager:
                 self.leds.show_ap()
         except Exception:
             pass
-        try:
-            sta = network.WLAN(network.STA_IF)
-            if sta.active():
-                try:
-                    sta.disconnect()
-                except Exception:
-                    pass
-                sta.active(False)
-        except Exception:
-            pass
+        self._disable_sta()
         ip_ap = self._ap_enable()
         if not ip_ap:
             ip_ap = "192.168.4.1"
-        try:
-            if self._port_open(ip_ap, 80):
-                self.log.info("UI WiFi: http://%s/wifi/ui" % ip_ap)
-            elif self._port_open(ip_ap, 8080):
-                self.log.info("UI WiFi: http://%s:8080/wifi/ui" % ip_ap)
-            else:
-                self.log.info("UI WiFi: server non raggiungibile su 80/8080")
-        except Exception:
-            pass
+        self._announce_setup_ui(ip_ap)
 
     def _try_connect(self, ssid, pwd, timeout_s=15, cancel_cb=None):
-        sta = network.WLAN(network.STA_IF)
+        sta = self._sta_if()
+        if sta is None:
+            return (False, None, "wifi_init_error")
         try:
             if not sta.active():
                 sta.active(True)
@@ -223,29 +277,33 @@ class WiFiManager:
         return (True, ip, None)
 
     def _port_open(self, ip, port, timeout_ms=500):
+        s = None
         try:
             s = socket.socket()
             s.settimeout(timeout_ms / 1000.0)
             s.connect((ip, port))
-            s.close()
             return True
         except Exception:
             return False
+        finally:
+            self._close_socket(s)
 
     def _current_ip(self):
-        try:
-            sta = network.WLAN(network.STA_IF)
-        except Exception:
-            sta = None
-        try:
-            ap = network.WLAN(network.AP_IF)
-        except Exception:
-            ap = None
+        sta = self._sta_if()
+        ap = self._ap_if()
         if sta and sta.isconnected():
             return sta.ifconfig()[0]
         if ap and ap.active():
             return ap.ifconfig()[0]
         return "0.0.0.0"
+
+    def _wifi_status(self):
+        sta = self._sta_if()
+        if sta is None:
+            raise OSError("wifi_unavailable")
+        wifi_ok = bool(sta.isconnected())
+        ip = sta.ifconfig()[0] if wifi_ok else None
+        return wifi_ok, ip
 
     def _maybe_start_ftp(self):
         try:
@@ -285,11 +343,51 @@ class WiFiManager:
                 pass
             return False
 
+    def _http_health_probe(self, target_host, port, timeout):
+        s = None
+        try:
+            s = socket.socket()
+            s.settimeout(timeout)
+            s.connect((target_host, port))
+            host_hdr = target_host if isinstance(target_host, str) else "localhost"
+            req = b"GET /health HTTP/1.0\r\nHost: %s\r\n\r\n" % host_hdr.encode()
+            s.send(req)
+            chunks = []
+            start = time.ticks_ms()
+            while True:
+                chunk = s.recv(512)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                if sum(len(c) for c in chunks) > 8192:
+                    break
+                if time.ticks_diff(time.ticks_ms(), start) > int(timeout * 1000):
+                    break
+            return b"".join(chunks)
+        finally:
+            self._close_socket(s)
+
+    @staticmethod
+    def _parse_health_payload(data):
+        if not data:
+            raise ValueError("empty_response")
+        sep = data.find(b"\r\n\r\n")
+        if sep < 0:
+            raise ValueError("bad_headers")
+        header = data[:sep]
+        body = data[sep + 4:]
+        status_line = header.split(b"\r\n", 1)[0]
+        if b"200" not in status_line:
+            raise ValueError("http_status_not_200: " + status_line.decode(errors="ignore"))
+        try:
+            health = json.loads(body.decode())
+        except Exception:
+            health = {"raw": body.decode(errors="ignore")}
+        return health
+
     def check_wifi_and_server(self, host=None, port=80, timeout=2.0, retries=2):
         try:
-            sta = network.WLAN(network.STA_IF)
-            wifi_ok = bool(sta.isconnected())
-            ip = sta.ifconfig()[0] if wifi_ok else None
+            wifi_ok, ip = self._wifi_status()
         except Exception as e:
             return {"wifi_ok": False, "ip": None, "server_ok": False, "health": None, "error": "wifi_init_error:%r" % (e,)}
         target_host = host or ip
@@ -303,42 +401,8 @@ class WiFiManager:
         last_err = None
         for _ in range(max(1, retries)):
             try:
-                s = socket.socket()
-                s.settimeout(timeout)
-                s.connect((target_host, port))
-                host_hdr = target_host if isinstance(target_host, str) else "localhost"
-                req = b"GET /health HTTP/1.0\r\nHost: %s\r\n\r\n" % host_hdr.encode()
-                s.send(req)
-                chunks = []
-                start = time.ticks_ms()
-                while True:
-                    chunk = s.recv(512)
-                    if not chunk:
-                        break
-                    chunks.append(chunk)
-                    if sum(len(c) for c in chunks) > 8192:
-                        break
-                    if time.ticks_diff(time.ticks_ms(), start) > int(timeout * 1000):
-                        break
-                s.close()
-                data = b"".join(chunks)
-                if not data:
-                    last_err = "empty_response"
-                    continue
-                sep = data.find(b"\r\n\r\n")
-                if sep < 0:
-                    last_err = "bad_headers"
-                    continue
-                header = data[:sep]
-                body = data[sep + 4:]
-                status_line = header.split(b"\r\n", 1)[0]
-                if b"200" not in status_line:
-                    last_err = "http_status_not_200: " + status_line.decode(errors="ignore")
-                    continue
-                try:
-                    health = json.loads(body.decode())
-                except Exception:
-                    health = {"raw": body.decode(errors="ignore")}
+                data = self._http_health_probe(target_host, port, timeout)
+                health = self._parse_health_payload(data)
                 result["server_ok"] = True
                 result["health"] = health
                 result["error"] = None
@@ -381,7 +445,9 @@ class WiFiManager:
     def _scan_rssi_map(self, timeout_ms=2500):
         rssi_map = {}
         try:
-            sta = network.WLAN(network.STA_IF)
+            sta = self._sta_if()
+            if sta is None:
+                return rssi_map
             try:
                 if not sta.active():
                     sta.active(True)
@@ -410,10 +476,8 @@ class WiFiManager:
             pass
         return rssi_map
 
-    def _prioritize_by_scan(self, nets):
-        rssi_map = self._scan_rssi_map()
-        if not rssi_map:
-            return nets
+    @staticmethod
+    def _prioritize_with_rssi_map(nets, rssi_map):
         with_rssi = []
         without_rssi = []
         for ssid, pwd in nets:
@@ -421,9 +485,14 @@ class WiFiManager:
                 with_rssi.append((ssid, pwd, rssi_map[ssid]))
             else:
                 without_rssi.append((ssid, pwd))
-        with_rssi.sort(key=lambda t: t[2], reverse=True)
-        prioritized = [(s, p) for (s, p, _) in with_rssi] + without_rssi
-        return prioritized
+        with_rssi.sort(key=lambda item: item[2], reverse=True)
+        return [(ssid, pwd) for ssid, pwd, _ in with_rssi] + without_rssi
+
+    def _prioritize_by_scan(self, nets):
+        rssi_map = self._scan_rssi_map()
+        if not rssi_map:
+            return nets
+        return self._prioritize_with_rssi_map(nets, rssi_map)
 
     def run(self):
         try:
