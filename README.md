@@ -11,13 +11,26 @@ mpremote connect /dev/ttyUSB0 ls
 mpremote connect COM4 ls
 
 # cancella tutto
-mpremote connect /dev/ttyUSB0 rm -r :
+mpremote connect XXX rm -r :
 
-# carica singoli files
+# carica singoli files base
+mpremote connect XXXX cp boot.py :boot.py
+mpremote connect XXXX cp main.py :main.py
 
-```
+# crea cartelle base
+mpremote connect XXXX mkdir :core
+mpremote connect XXXX mkdir :wifi
+mpremote connect XXXX mkdir :server
+mpremote connect XXXX mkdir :app
 
 
+# crea eventuali ulteriori cartelle sulla base della configurazione
+mpremote connect XXXX mkdir :fs
+mpremote connect XXXX mkdir :display
+# ecc...
+
+# copia i files nelle rispettive cartelle**:
+mpremote connect XXXX cp -r core :
 
 
 

@@ -7,7 +7,7 @@ _DEFAULTS = {
         "wifi": True,
         "server": True,
         "scope": False,
-        "fs": False,
+        "fs": True,
         "display": False,
         "power_sensors": False,
         "relay": False,
