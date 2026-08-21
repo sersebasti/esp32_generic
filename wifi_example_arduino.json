@@ -1,0 +1,11 @@
+{
+	"ap_btn_pin": 47,
+	"led_blue_pin": 8,
+	"led_blue_low": false,
+	"led_green_pin": 9,
+	"led_green_low": false,
+	"networks": [
+		{"ssid": "ext-fibra", "password": "CShe6xD5fd"},
+		{"ssid": "H6745-21359714", "password": "CShe6xD5fd"}
+	]
+}
