@@ -1,8 +1,26 @@
-## con tool mpremote
+## installazione ambiente
+
+# trova porta seriale linux:
+ls /dev/ttyUSB* /dev/ttyACM*
 
 
-7) Inspect files and (optional) wipe the filesystem:
-```bash
+# installa esptool linux
+sudo apt install -y pipx
+pipx ensurepath
+pipx install esptool
+esptool version
+
+## installazione firmware linux
+
+# cancellazione firmware
+esptool --port /dev/ttyUSB0 erase-flash
+
+
+# installazione firmware
+esptool --chip esp32 --port /dev/ttyUSB0 write-flash -z 0x1000 ESP32_GENERIC-20250911-v1.26.1.bin
+
+
+## installazione software
 
 # verifica
 mpremote connect /dev/ttyUSB0 ls
@@ -32,340 +50,10 @@ mpremote connect XXXX mkdir :display
 # copia i files nelle rispettive cartelle**:
 mpremote connect XXXX cp -r core :
 
+# oppure cancella tutti i file sul dispositivo e distribuisci la configurazione base:
+# boot.py, main.py, core, app, wifi, server e fs
+./tools/deploy_base.sh /dev/ttyUSB0
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Endpoint ESP32: Misura e Calibrazione
-
-Tutti gli endpoint di misura e calibrazione accettano il parametro obbligatorio `sensor_id` (es. c1, c2, v1) che identifica il sensore su cui operare. L'elenco dei sensori disponibili si ottiene tramite l'endpoint `/sensors`.
-
-Tutti gli endpoint supportano inoltre il parametro opzionale `fast=1`.
-
-### Elenco sensori disponibili
-- **GET /sensors**
-  - Restituisce la lista dei sensori configurati (da sensors.json) con i relativi parametri (id, tipo, nome, ecc.).
-  - Esempio di risposta:
-    ```json
-    [
-      {"id": "c1", "type": "current", "name": "Corrente 1"},
-      {"id": "v1", "type": "voltage", "name": "Tensione 1"}
-    ]
-    ```
-  - Utile per popolare dinamicamente la UI lato client.
-
-### Misura
-- **GET /adc/scope_counts**
-  - Parametri: sensor_id, n, sr, fast
-  - Esempio: `/adc/scope_counts?sensor_id=c1&n=1024&sr=4000&fast=1`
-
-- **GET /amps**
-  - Parametri: sensor_id, n, sr, fast
-  - Esempio: `/amps?sensor_id=c1&n=1024&sr=4000&fast=1`
-
-- **GET /power**
-  - Misura la **potenza attiva** con campionamento istantaneo accoppiato V/I nello stesso loop ADC (riduce errore da sfasamento)
-  - Parametri: `voltage_sensor_id`, `current_sensor_id`, `n`, `sr`, `fast`
-  - Default: `voltage_sensor_id=v1`, `current_sensor_id=c1`
-  - Esempio: `/power?voltage_sensor_id=v1&current_sensor_id=c1&n=1024&sr=4000&fast=1`
-
-### Calibrazione
-- **GET /calibrate**
-  - Parametri: sensor_id, fast
-  - Esempio: `/calibrate?sensor_id=c1&fast=1`
-
-- **GET /calibrate?amp=0** (misura baseline)
-  - Parametri: sensor_id, fast
-  - Esempio: `/calibrate?amp=0&sensor_id=c1&fast=1`
-
-- **GET /calibrate?amp=...** (aggiungi punto)
-  - Parametri: sensor_id, amp, n, sr, fast
-  - Esempio: `/calibrate?amp=5.0&sensor_id=c1&n=1600&sr=4000&fast=1`
-
-- **POST /calibrate/delete**
-  - Body JSON: `{ "sensor_id": "c1", "index": 0 }`
-  - Elimina il punto di calibrazione all’indice indicato
-
-- **POST /calibrate/reset**
-  - Parametri: sensor_id, fast
-  - Esempio: `/calibrate/reset?sensor_id=c1&fast=1`
-  - Cancella tutti i punti e la baseline del sensore
-
-### Baseline
-- **GET /compare_baseline**
-  - Parametri: sensor_id, n, sr, fast
-  - Esempio: `/compare_baseline?sensor_id=c1&n=1600&sr=4000&fast=1`
-
----
-## Elenco e descrizione endpoint sensori
-
-- **GET /sensors**: Elenco di tutti i sensori configurati (id, tipo, nome, ecc.)
-- **GET /adc/scope_counts**: Acquisizione raw dal sensore specificato (parametri: sensor_id, n, sr, fast)
-- **GET /amps**: Misura la corrente RMS dal sensore (parametri: sensor_id, n, sr, fast)
-- **GET /power**: Misura potenza attiva con campionamento istantaneo V/I (parametri: n, sr, fast; sensori fissi v1/s1)
-- **GET /calibrate**: Stato calibrazione per il sensore (parametri: sensor_id, fast)
-- **GET /calibrate?amp=0**: Misura baseline (parametri: sensor_id, fast)
-- **GET /calibrate?amp=...**: Aggiungi punto di calibrazione (parametri: sensor_id, amp, n, sr, fast)
-- **POST /calibrate/delete**: Elimina punto di calibrazione (body: { sensor_id, index })
-- **POST /calibrate/reset**: Cancella tutti i punti e baseline (parametri: sensor_id, fast)
-- **GET /compare_baseline**: Confronta baseline salvata con media attuale (parametri: sensor_id, n, sr, fast)
-
----
-## Modalità campionamento veloce (fast=1)
-
-Tutti gli endpoint di misura e calibrazione supportano il parametro opzionale `fast=1`:
-
-- Se aggiungi `&fast=1` alla richiesta, il campionamento avviene alla massima velocità possibile (senza ritardo tra i campioni).
-- Utile per test di velocità o quando non serve un sample rate preciso.
-
-### Esempi di richieste (sostituisci `<IP_ESP32>` con l'indirizzo del tuo dispositivo):
-
-```
-http://<IP_ESP32>/adc/scope_counts?sensor_id=c1&n=1024&sr=4000
-http://<IP_ESP32>/adc/scope_counts?sensor_id=c1&n=1024&sr=4000&fast=1
-http://<IP_ESP32>/amps?sensor_id=c1&n=1024&sr=4000
-http://<IP_ESP32>/amps?sensor_id=c1&n=1024&sr=4000&fast=1
-http://<IP_ESP32>/power?n=1024&sr=4000
-http://<IP_ESP32>/power?n=1024&sr=4000&fast=1
-http://<IP_ESP32>/calibrate?sensor_id=c1
-http://<IP_ESP32>/calibrate?amp=0&sensor_id=c1
-http://<IP_ESP32>/calibrate?amp=0&sensor_id=c1&fast=1
-http://<IP_ESP32>/calibrate?amp=5.0&sensor_id=c1
-http://<IP_ESP32>/calibrate?amp=5.0&sensor_id=c1&fast=1
-http://<IP_ESP32>/compare_baseline?sensor_id=c1
-http://<IP_ESP32>/compare_baseline?sensor_id=c1&fast=1
-```
-
-Se ometti `fast=1`, il sample rate sarà regolato dal parametro `sr` (più lento ma temporizzato).
-
-**Nota:** con `fast=1` il tempo di risposta è molto più breve, ma i campioni non sono equispaziati nel tempo.
-
-## Firmware Installation (Windows)
-
-1) Collega l'ESP32 via USB.
-
-
-2) Trova la porta seriale (COM):
-```powershell
-Get-WmiObject Win32_SerialPort | Select-Object DeviceID,Description
-```
-**Procedura consigliata:**
-- Scollega l'ESP32 dal PC e lancia il comando qui sopra.
-- Ricollega l'ESP32 e rilancia il comando.
-- La porta che appare (o scompare quando scolleghi) è quella giusta per l'ESP32.
-- Se non compare nessuna nuova porta, prova a cambiare cavo USB o porta USB del PC.
-- Se vedi solo porte "Intel(R) Active Management Technology" o simili, l'ESP32 non è rilevato: verifica i driver o il cavo.
-
-3) (Opzionale) Installa Python e ampy/mpremote:
-Scarica Python da https://www.python.org/downloads/ e assicurati che sia nel PATH.
-Poi:
-```powershell
-pip install adafruit-ampy mpremote
-```
-
-4) Connettiti alla REPL MicroPython:
-```powershell
-mpremote connect COMx repl
-```
-Sostituisci COMx con la porta trovata (es: COM3).
-
-5) Carica file o esegui comandi:
-```powershell
-ampy --port COMx put main.py
-mpremote connect COMx cp main.py :main.py
- 
-# Per cancellare TUTTI i file dal dispositivo (attenzione, elimina tutto!):
-mpremote connect COMx rm -rv :
-```
-
----
-
-## Aggiornamento completo del software (wipe & reinstall)
-
-1. **Cancella tutti i file dal dispositivo** (ATTENZIONE: elimina tutto!)
-  ```powershell
-  mpremote connect COMx rm -rv :
-  ```
-2. **Carica i file principali nella root**:
-  ```powershell
-  mpremote connect COMx cp boot.py :boot.py
-  mpremote connect COMx cp main.py :main.py
-  ```
-3. **Crea le cartelle necessarie** (core, fs, scope):
-  ```powershell
-  mpremote connect COMx mkdir :core
-  mpremote connect COMx mkdir :fs
-  mpremote connect COMx mkdir :scope
-  ```
-4. **Copia tutti i file nelle rispettive cartelle**:
-  ```powershell
-
- mpremote connect COMx cp -r core :
-  mpremote connect COMx cp -r fs :
-  mpremote connect COMx cp -r scope :
-  ```
-  Se ricevi errori di permesso, assicurati che le cartelle siano state create prima e ripeti il comando.
-
-5. **Riavvia il dispositivo** (opzionale ma consigliato):
-  ```powershell
-  mpremote connect COMx exec "import machine; machine.reset()"
-  ```
-
-**Nota:**
-- Dopo il wipe, è fondamentale caricare subito almeno boot.py e main.py nella root, altrimenti il dispositivo potrebbe non avviarsi correttamente.
-- Se usi moduli opzionali (scope, fs), ricordati di copiare anche queste cartelle e i relativi file.
-
-6) Puoi anche usare programmi come PuTTY/Tera Term per la console seriale (baud 115200).
-
----
-
-## Firmware Installation (Linux)
-
-1) Connect the ESP32 via USB.
-
-2) Find the serial port:
-```bash
-ls /dev/ttyUSB* /dev/ttyACM*
-```
-
-3) Install esptool (via pipx is recommended):
-```bash
-sudo apt install -y pipx
-pipx ensurepath
-pipx install esptool
-esptool version
-```
-
-4) (Optional) Erase existing firmware:
-```bash
-esptool --port /dev/ttyUSB0 erase-flash
-```
-
-If needed, enter bootloader mode: hold BOOT, press and release RST/EN, then release BOOT.
-
-5) Flash the firmware (replace the .bin filename with yours):
-```bash
-esptool --chip esp32 --port /dev/ttyUSB0 write-flash -z 0x1000 ESP32_GENERIC-20250911-v1.26.1.bin
-```
-
-6) Install mpremote and verify:
-```bash
-pipx install mpremote
-mpremote --help
-```
-
-
-9) Open the REPL console (for logs/diagnostics):
-```bash
-mpremote connect /dev/ttyUSB0 repl
-```
-
-10) Start FTP manually (optional):
-```bash
-mpremote connect /dev/ttyUSB0 exec "import core.uftpd as uftpd; uftpd.restart(port=21, verbose=0)"
-```
-
----
-
-## Configuration
-
-Configuration lives in `core/config.py` as in-code defaults. To adjust, edit the default dictionary in that file.
-
-- Main parameters:
-  - WIFI_JSON: path to the Wi‑Fi networks file (default: core/wifi.json)
-  - LOG_PATH: log file path (default: log.txt)
-  - LOG_MAX_BYTES: max log size (default: 8192)
-  - AP_BTN_PIN: user button pin (default: 32)
-  - FTP_AUTOSTART: start FTP automatically (default: False)
-  - FTP_PORT: FTP port (default: 21)
-  - FTP_USER / FTP_PASS: FTP credentials (default: admin/admin)
-
-Note: some UIs may read the device name/hostname from core/wifi.json.
-
----
-
-## Access Point mode (Wi‑Fi setup)
-
-- Hold the button ~2 seconds: blue LED solid = AP is active.
-- Connect to SSID `ESP32_<MAC>`, password `12345678`.
-- Open http://192.168.4.1/wifi/ui to configure networks.
-- Tip: on smartphones, temporarily disable mobile data.
-
-Useful curl commands (replace <DEVICE_IP>):
-```bash
-# List configured networks
-curl http://<DEVICE_IP>/wifi/list
-
-# Add network (append)
-curl -X POST http://<DEVICE_IP>/wifi/add \
-  -H "Content-Type: application/json" \
-  -d '{"ssid":"MySSID","password":"secret"}'
-
-# Add to top (priority=1)
-curl -X POST http://<DEVICE_IP>/wifi/add \
-  -H "Content-Type: application/json" \
-  -d '{"ssid":"TopNet","password":"pwd","priority":1}'
-
-# Delete network
-curl -X POST http://<DEVICE_IP>/wifi/delete \
-  -H "Content-Type: application/json" \
-  -d '{"ssid":"MySSID"}'
-```
-
----
-
-## Endpoints
-
-- Status
-  - GET /health: simple probe `{ok:true}`
-  - GET /status: detailed status (version, ip, ssid, rssi, mac, uptime, heap)
-
-- Wi‑Fi
-  - GET /wifi/ui: static UI (serves core/wifi_ui.html if present)
-  - GET /wifi/scan: available networks
-  - GET /wifi/list: configured networks (no passwords)
-  - POST /wifi/add: add network `{ssid, password, priority?}`
-  - POST /wifi/delete: remove network `{ssid}`
-
-- File system (REST)
-  - GET /fs/list[?dir=/subdir]
-  - GET /fs/download?path=/file
-  - POST /fs/upload?to=/dest
-  - POST /fs/delete body `{path}`
-  - POST /fs/rename body `{src,dst}`
-
-- System
-  - POST /reboot: reboot device
-
-- Relay
-  - GET /relay or /relay/status: stato del rele
-  - POST /relay/on: attiva il rele
-  - POST /relay/off: disattiva il rele
-  - POST /relay/toggle: inverte lo stato del rele
-  - POST /relay/set body `{on}` oppure `{state}`
-
-- Scope/ADC (if module present)
-  - GET /adc/scope_counts[?sensor_id=c1&n=1600&sr=4000]: acquisizione raw dal sensore specificato
-  - GET /calibrate[?sensor_id=c1]: mostra stato calibrazione per il sensore
-  - GET /calibrate?amp=<A>&sensor_id=c1: aggiungi baseline (A=0) o punto di calibrazione per il sensore
-  - GET /amps[?sensor_id=c1&n=1600&sr=4000]: misura la corrente RMS dal sensore
-  - GET /compare_baseline[?sensor_id=c1&n=1600&sr=4000]: confronta la baseline salvata con la media attuale dei counts per il sensore
-  - POST /calibrate/delete: remove a point `{index}` or `{amps,rms_counts}`
-  - POST /calibrate/reset: reset calibration
-
----
 
 ## Notes
 
