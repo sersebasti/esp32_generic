@@ -8,11 +8,11 @@ _DEFAULTS = {
         "server": True,
         "scope": False,
         "fs": True,
-        "display": False,
+        "display": True,
         "power_sensors": False,
-        "relay": False,
+        "relay": True,
         "my_webrepl": False,
-        "pzem_017": True          
+        "pzem_017": False
     },
 }
 

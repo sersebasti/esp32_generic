@@ -1,9 +1,12 @@
 # wifi_led_status.py
 
-LED_BLUE_PIN  = 2
-LED_BLUE_LOW  = False
-LED_GREEN_PIN = 15
-LED_GREEN_LOW = False
+try:
+    from wifi.config import LED_BLUE_PIN, LED_BLUE_LOW, LED_GREEN_PIN, LED_GREEN_LOW
+except Exception:
+    LED_BLUE_PIN = 2
+    LED_BLUE_LOW = False
+    LED_GREEN_PIN = 15
+    LED_GREEN_LOW = False
 
 try:
     from machine import Pin, Timer

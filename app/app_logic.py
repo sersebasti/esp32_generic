@@ -1,122 +1,172 @@
-# app/app_logic.py
-# Minimal application bootstrap: connect Wi-Fi first, then start server.
-
-import time
 import _thread
-import machine
+import time
 
 from core.config import feature_enabled
 
 
-def start_app():
+def _format_mem_line(free_mem):
+	try:
+		return ("MEM:" + str(int(free_mem)) + "B")[:16]
+	except Exception:
+		return "MEM:N/A"
 
-	# --- WiFi auto-reconnect monitor ---
-	def start_wifi_monitor(wifi_mgr, lcd=None, check_interval=10):
-		import _thread
-		def monitor():
-			import gc
-			import network
-			while True:
-				gc.collect()
-				try:
-					sta = network.WLAN(network.STA_IF)
-					free_mem = gc.mem_free() if hasattr(gc, 'mem_free') else 'N/A'
-					ip = sta.ifconfig()[0] if sta.isconnected() else '0.0.0.0'
-					ssid = None
-					rssi = None
+
+def _show_connected_on_display(display, ip, free_mem):
+	if not display:
+		return
+	try:
+		display.clear()
+		display.write(0, 0, ("ip: " + str(ip))[:16])
+		display.write(1, 0, _format_mem_line(free_mem))
+	except Exception:
+		pass
+
+
+def _start_ap_button_monitor(wifi_mgr):
+	def monitor():
+		while getattr(wifi_mgr, "ap_monitor_running", True):
+			try:
+				if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
+					wifi_mgr.ap_requested = True
+					break
+			except Exception:
+				pass
+			time.sleep_ms(100)
+
+	try:
+		wifi_mgr.ap_requested = False
+		wifi_mgr.ap_monitor_running = True
+		_thread.start_new_thread(monitor, ())
+	except Exception:
+		pass
+
+
+def _start_wifi_monitor(wifi_mgr, display=None, check_interval=30):
+	def monitor():
+		import gc
+		import network
+
+		while True:
+			gc.collect()
+			try:
+				sta = network.WLAN(network.STA_IF)
+				free_mem = gc.mem_free() if hasattr(gc, "mem_free") else "N/A"
+				ip = sta.ifconfig()[0] if sta.isconnected() else "0.0.0.0"
+				ssid = None
+				rssi = None
+
+				if sta.isconnected():
 					try:
-						ssid = sta.config('essid') if sta.isconnected() else None
+						ssid = sta.config("essid")
 					except Exception:
 						ssid = None
 					try:
-						rssi = sta.status('rssi') if sta.isconnected() else None
+						rssi = sta.status("rssi")
 					except Exception:
 						rssi = None
-					print("[WIFI-MONITOR] IP: {} | SSID: {} | Segnale: {} dBm | Memoria libera: {} bytes".format(ip, ssid, rssi, free_mem))
-					
-					print("AP PIN = ", getattr(wifi_mgr,"_AP_BTN_PIN_num", None))
-					
-					####  volgio ustral a quyi ### 
 
-					if feature_enabled("pzem_017"):
-						from pzem_017.pzem_rs485 import start_pzem017
-						start_pzem017()
-					else:
-						print("prob importazione")	
-						
-                    
+				print(
+					"[WIFI-MONITOR] IP: {} | SSID: {} | Segnale: {} dBm | Memoria libera: {} bytes".format(
+						ip, ssid, rssi, free_mem
+					)
+				)
 
-					if not sta.isconnected() and not getattr(wifi_mgr, '_setup_mode', False):
-						wifi_mgr.log.info("[WIFI-MONITOR] WiFi disconnesso, tento riconnessione...")
-						# Riavvia il monitor del pulsante AP prima di ogni tentativo
-						start_ap_button_monitor(wifi_mgr)
-						connect_wifi(wifi_mgr, lcd)
-				except Exception:
-					pass
-				time.sleep(check_interval)
-		# Avvia un solo monitor per istanza
-		if not hasattr(wifi_mgr, '_wifi_monitor_started'):
-			wifi_mgr._wifi_monitor_started = True
-			_thread.start_new_thread(monitor, ())
+				if sta.isconnected():
+					_show_connected_on_display(display, ip, free_mem)
 
-	context = {}
-	wifi_mgr = None
-	# --- AP button async monitor ---
-	def start_ap_button_monitor(wifi_mgr):
-		# Monitora il pulsante AP in un thread separato, termina quando ap_monitor_running diventa False
-		def monitor():
-			while getattr(wifi_mgr, "ap_monitor_running", True):
-				try:
-					if hasattr(wifi_mgr, "button_pressed") and wifi_mgr.button_pressed():
-						wifi_mgr.ap_requested = True
-						break
-				except Exception:
-					pass
-				time.sleep_ms(100)
-		try:
-			wifi_mgr.ap_requested = False
-			wifi_mgr.ap_monitor_running = True
-			_thread.start_new_thread(monitor, ())
-		except Exception:
-			pass
+				if not sta.isconnected() and not getattr(wifi_mgr, "_setup_mode", False):
+					wifi_mgr.log.info("[WIFI-MONITOR] WiFi disconnesso, tento riconnessione...")
+					_start_ap_button_monitor(wifi_mgr)
+					connect_wifi(wifi_mgr, display)
+			except Exception:
+				pass
+			time.sleep(check_interval)
 
-	# --- Display: messaggio di avvio ---
-	lcd = None
+	if not hasattr(wifi_mgr, "_wifi_monitor_started"):
+		wifi_mgr._wifi_monitor_started = True
+		_thread.start_new_thread(monitor, ())
+
+
+def _create_display_if_available():
 	try:
 		from display.display_manager import create_lcd
-		lcd = create_lcd()
-		lcd.clear()
-		lcd.write(0, 0, "Starting...")
+
+		display = create_lcd()
+		display.clear()
+		display.write(0, 0, "Starting...")
+		return display
 	except Exception:
-		lcd = None
+		return None
 
-	if feature_enabled("wifi"):
-		from wifi.feature import start as start_wifi
 
-		# start_wifi popola context con wifi_manager e lo restituisce anche nel result.
-		result = start_wifi(context)
-		if isinstance(result, dict):
-			context.update(result)
-		wifi_mgr = context.get("wifi_manager")
+def _show_ap_mode_on_display(display):
+	if not display:
+		return
 
-	if wifi_mgr is not None:
-		start_ap_button_monitor(wifi_mgr)
-		connected = connect_wifi(wifi_mgr, lcd)
-		ap_mode = getattr(wifi_mgr, '_setup_mode', False)
-		# Avvia il monitor di auto-riconnessione solo dopo una connessione valida
-		if connected:
-			start_wifi_monitor(wifi_mgr, lcd, check_interval=30)
-		# Avvia il server se connesso o se in AP mode
-		if connected or ap_mode:
-			if feature_enabled("server"):
-				from server.feature import start as start_server_feature
-				result = start_server_feature(context)
-				if isinstance(result, dict):
-					context.update(result)
+	try:
+		import network
+
+		ap_ssid = "ESP-SETUP"
+		ap_ip = "192.168.4.1"
+		ap = network.WLAN(network.AP_IF)
+		if ap.active():
+			try:
+				ap_ssid = str(ap.config("essid") or ap_ssid)
+			except Exception:
+				pass
+			ap_ip = ap.ifconfig()[0]
+		display.clear()
+		display.write(0, 0, ("AP:" + str(ap_ssid))[:16])
+		display.write(1, 0, ("IP:" + str(ap_ip))[:16])
+	except Exception:
+		pass
+
+
+def _bootstrap_wifi(context, display):
+	if not feature_enabled("wifi"):
+		return None, False
+
+	from wifi.feature import start as start_wifi
+
+	result = start_wifi(context)
+	if isinstance(result, dict):
+		context.update(result)
+
+	wifi_mgr = context.get("wifi_manager")
+	if wifi_mgr is None:
+		return None, False
+
+	_start_ap_button_monitor(wifi_mgr)
+	connected = connect_wifi(wifi_mgr, display)
+	if connected:
+		_start_wifi_monitor(wifi_mgr, display=display, check_interval=30)
+	return wifi_mgr, connected
+
+
+def _bootstrap_server(context, wifi_mgr, connected):
+	if wifi_mgr is None or not feature_enabled("server"):
+		return
+
+	ap_mode = getattr(wifi_mgr, "_setup_mode", False)
+	if not connected and not ap_mode:
+		return
+
+	from server.feature import start as start_server_feature
+
+	result = start_server_feature(context)
+	if isinstance(result, dict):
+		context.update(result)
+
+
+def start_app():
+	context = {}
+	display = _create_display_if_available()
+	wifi_mgr, connected = _bootstrap_wifi(context, display)
+	_bootstrap_server(context, wifi_mgr, connected)
 	return context
 
 
-def connect_wifi(wifi_mgr, lcd=None):
+def connect_wifi(wifi_mgr, display=None):
 	wifi_mgr.log.info("WiFiManager bootstrap: connessione iniziale")
 
 	# Usa LedStatus per la gestione del LED
@@ -125,10 +175,9 @@ def connect_wifi(wifi_mgr, lcd=None):
 
 	try:
 		while True:
-			# ...
-
 			try:
 				import network
+
 				sta = network.WLAN(network.STA_IF)
 				if sta and sta.isconnected():
 					ip = sta.ifconfig()[0]
@@ -139,81 +188,70 @@ def connect_wifi(wifi_mgr, lcd=None):
 
 			wifi_mgr._reset_wifi()
 			nets = wifi_mgr._load_networks()
+
 			if not nets:
 				wifi_mgr.log.info("Nessuna rete configurata in %s" % wifi_mgr.wifi_json)
 				break
 
 			nets = wifi_mgr._prioritize_by_scan(nets)
+			connected = False
 			for ssid, pwd in nets:
-				# Mostra stato su LCD
-				if lcd:
+				if display:
 					try:
-						lcd.clear()
-						lcd.write(0, 0, "Connecting...")
-						lcd.write(1, 0, (ssid or "")[:16])
+						display.clear()
+						display.write(0, 0, "Connecting...")
+						display.write(1, 0, (ssid or "")[:16])
 					except Exception:
 						pass
-				# Controlla il pulsante anche durante i tentativi
+
 				if getattr(wifi_mgr, "ap_requested", False):
 					wifi_mgr.log.info("Pulsante AP premuto: attivo Access Point!")
 					wifi_mgr._enter_setup_once()
-					# LED: AP mode
-					if hasattr(wifi_mgr, 'leds') and wifi_mgr.leds:
+					if hasattr(wifi_mgr, "leds") and wifi_mgr.leds:
 						wifi_mgr.leds.show_ap()
-					# Mostra su LCD: IP AP e 'AP MODE'
-					if lcd:
-						try:
-							ap_ip = "192.168.4.1"
-							try:
-								import network
-								ap = network.WLAN(network.AP_IF)
-								if ap.active():
-									ap_ip = ap.ifconfig()[0]
-							except Exception:
-								pass
-							lcd.clear()
-							lcd.write(0, 0, ("ip: " + str(ap_ip))[:16])
-							lcd.write(1, 0, "AP MODE")
-						except Exception:
-							pass
+					_show_ap_mode_on_display(display)
 					return False
-				# Passa una callback che controlla ap_requested per interruzione immediata
+
 				def cancel_cb():
 					return getattr(wifi_mgr, "ap_requested", False)
+
 				ok, ip, reason = wifi_mgr._try_connect(ssid, pwd, timeout_s=15, cancel_cb=cancel_cb)
-				if ok:
-					wifi_mgr._ap_disable()
-					# LED: connessione riuscita
-					if hasattr(wifi_mgr, 'leds') and wifi_mgr.leds:
-						wifi_mgr.leds.show_connected()
-					wifi_mgr.log.info("Connesso a '%s' con IP %s" % (ssid, ip))
-					# Mostra su LCD: ip e nome rete
-					if lcd:
-						try:
-							lcd.clear()
-							lcd.write(0, 0, ("ip: " + str(ip))[:16])
-							lcd.write(1, 0, (ssid or "")[:16])
-						except Exception:
-							pass
+				if not ok:
+					wifi_mgr.log.info("Connessione fallita a '%s' (%s)" % (ssid, reason or "fail"))
+					continue
+
+				wifi_mgr._ap_disable()
+				if hasattr(wifi_mgr, "leds") and wifi_mgr.leds:
+					wifi_mgr.leds.show_connected()
+				wifi_mgr.log.info("Connesso a '%s' con IP %s" % (ssid, ip))
+
+				if display:
 					try:
-						wifi_mgr._sync_time_once()
+						import gc
+						free_mem = gc.mem_free() if hasattr(gc, "mem_free") else "N/A"
+						_show_connected_on_display(display, ip, free_mem)
 					except Exception:
 						pass
-					break
-				wifi_mgr.log.info("Connessione fallita a '%s' (%s)" % (ssid, reason or "fail"))
 
-			# Pausa fissa dopo i tentativi (ora senza controllo su ap_requested)
+				try:
+					wifi_mgr._sync_time_once()
+				except Exception:
+					pass
+
+				connected = True
+				break
+
+			if connected:
+				break
+
 			time.sleep(2)
 	finally:
-		# Ferma il thread di monitoraggio pulsante AP
 		if hasattr(wifi_mgr, "ap_monitor_running"):
 			wifi_mgr.ap_monitor_running = False
-		# LED: mostra "connesso" solo se NON in AP mode
 		if hasattr(wifi_mgr, 'leds') and wifi_mgr.leds:
 			if not getattr(wifi_mgr, '_setup_mode', False):
 				wifi_mgr.leds.show_connected()
 
-	# Verifica stato finale
 	try:
 		import network
 		sta = network.WLAN(network.STA_IF)
