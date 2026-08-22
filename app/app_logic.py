@@ -15,8 +15,10 @@ def _show_connected_on_display(display, ip, free_mem):
 	if not display:
 		return
 	try:
+		ip_text = str(ip).strip()
 		display.clear()
-		display.write(0, 0, ("ip: " + str(ip))[:16])
+		# On LCD/OLED 16-colonne un IPv4 completo (max 15 char) entra solo senza prefissi.
+		display.write(0, 0, ip_text[:16])
 		display.write(1, 0, _format_mem_line(free_mem))
 	except Exception:
 		pass
