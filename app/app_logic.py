@@ -4,6 +4,24 @@ import time
 from core.config import feature_enabled
 
 
+def _format_mem_line(free_mem):
+	try:
+		return ("MEM:" + str(int(free_mem)) + "B")[:16]
+	except Exception:
+		return "MEM:N/A"
+
+
+def _show_connected_on_display(display, ip, free_mem):
+	if not display:
+		return
+	try:
+		display.clear()
+		display.write(0, 0, ("ip: " + str(ip))[:16])
+		display.write(1, 0, _format_mem_line(free_mem))
+	except Exception:
+		pass
+
+
 def _start_ap_button_monitor(wifi_mgr):
 	def monitor():
 		while getattr(wifi_mgr, "ap_monitor_running", True):
@@ -53,6 +71,9 @@ def _start_wifi_monitor(wifi_mgr, display=None, check_interval=30):
 					)
 				)
 
+				if sta.isconnected():
+					_show_connected_on_display(display, ip, free_mem)
+
 				if not sta.isconnected() and not getattr(wifi_mgr, "_setup_mode", False):
 					wifi_mgr.log.info("[WIFI-MONITOR] WiFi disconnesso, tento riconnessione...")
 					_start_ap_button_monitor(wifi_mgr)
@@ -85,13 +106,18 @@ def _show_ap_mode_on_display(display):
 	try:
 		import network
 
+		ap_ssid = "ESP-SETUP"
 		ap_ip = "192.168.4.1"
 		ap = network.WLAN(network.AP_IF)
 		if ap.active():
+			try:
+				ap_ssid = str(ap.config("essid") or ap_ssid)
+			except Exception:
+				pass
 			ap_ip = ap.ifconfig()[0]
 		display.clear()
-		display.write(0, 0, ("ip: " + str(ap_ip))[:16])
-		display.write(1, 0, "AP MODE")
+		display.write(0, 0, ("AP:" + str(ap_ssid))[:16])
+		display.write(1, 0, ("IP:" + str(ap_ip))[:16])
 	except Exception:
 		pass
 
@@ -162,6 +188,7 @@ def connect_wifi(wifi_mgr, display=None):
 
 			wifi_mgr._reset_wifi()
 			nets = wifi_mgr._load_networks()
+
 			if not nets:
 				wifi_mgr.log.info("Nessuna rete configurata in %s" % wifi_mgr.wifi_json)
 				break
@@ -200,9 +227,9 @@ def connect_wifi(wifi_mgr, display=None):
 
 				if display:
 					try:
-						display.clear()
-						display.write(0, 0, ("ip: " + str(ip))[:16])
-						display.write(1, 0, (ssid or "")[:16])
+						import gc
+						free_mem = gc.mem_free() if hasattr(gc, "mem_free") else "N/A"
+						_show_connected_on_display(display, ip, free_mem)
 					except Exception:
 						pass
 
