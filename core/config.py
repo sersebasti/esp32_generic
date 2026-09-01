@@ -6,7 +6,7 @@ _DEFAULTS = {
         "logger": False,
         "wifi": True,
         "server": True,
-        "scope": False,
+        "scope": True,
         "fs": True,
         "display": True,
         "power_sensors": True,
