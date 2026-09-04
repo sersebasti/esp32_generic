@@ -1,0 +1,10 @@
+{
+  "sensors": [
+    {"id": "v1", "adc_pin": 1, "type": "voltage"},
+    {"id": "v2", "adc_pin": 2, "type": "voltage"},
+    {"id": "c1", "adc_pin": 3, "type": "current"},
+    {"id": "c2", "adc_pin": 4, "type": "current"},
+    {"id": "c3", "adc_pin": 5, "type": "current"},
+    {"id": "c4", "adc_pin": 6, "type": "current"} 
+  ]
+}

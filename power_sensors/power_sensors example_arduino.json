@@ -1,0 +1,17 @@
+[
+  {
+    "id": "pz1",
+    "uart_id": 1,
+    "tx": 10,
+    "rx": 17,
+    "baudrate": 9600
+  },
+  {
+    "id": "pz2",
+    "uart_id": 2,
+    "tx": 18,
+    "rx": 21,
+    "baudrate": 9600
+  }
+
+]

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Desktop GUI</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4"></script>
+    <script defer src="/static/js/main.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+    <div class="container" x-data="esp32Ui('{{ default_ip }}')" x-init="init()">
+        <h1>ESP32 Desktop GUI</h1>
+
+        <div class="card">
+            <h2>Connessione ESP32</h2>
+            <div class="row">
+                <label for="ip">Indirizzo IP ESP32</label>
+                <input id="ip" type="text" x-model="ip" placeholder="192.168.1.10">
+                <button type="button" @click="connect()" :disabled="loading.connect">Connetti</button>
+            </div>
+            <div class="result" x-text="statusMessage || 'Inserisci IP e premi Connetti'"></div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>Sensori singoli</h2>
+                <label for="sensor-select">Sensore</label>
+                <select id="sensor-select" x-model="selectedSensorId">
+                    <option value="">-- scegli --</option>
+                    <template x-for="s in sensors" :key="s.id">
+                        <option :value="s.id" x-text="sensorOptionLabel(s)"></option>
+                    </template>
+                </select>
+
+                <div class="section section-box">
+                    <h3>Misura</h3>
+                    <div class="row compact">
+                        <button type="button" @click="fetchMeasure()" :disabled="!selectedSensorId || loading.measure || !canQuickMeasure()">Rileva valore</button>
+                        <label class="inline"><input type="checkbox" x-model="autoMeasure"> Auto</label>
+                    </div>
+                    <div class="value" x-text="measureLabel()"></div>
+                    <pre class="result" x-text="measureRawPretty"></pre>
+                </div>
+
+                <div class="section section-box">
+                    <h3>Calibrazione</h3>
+                    <div class="row compact">
+                        <button type="button" @click="acquireBaseline()" :disabled="!selectedSensorId || loading.calibrate">Baseline</button>
+                        <button type="button" x-show="showCurrentPointButton()" @click="addCurrentPoint()" :disabled="!selectedSensorId || loading.calibrate">Punto corrente</button>
+                        <button type="button" x-show="showVoltagePointButton()" @click="addVoltagePoint()" :disabled="!selectedSensorId || loading.calibrate">Punto tensione</button>
+                    </div>
+
+                    <div class="result calibration-compact">
+                        <div class="calibration-head">
+                            <strong>Baseline:</strong>
+                            <span x-text="calibrationBaselineText()"></span>
+                        </div>
+                        <div class="calibration-subtitle"><strong>Punti:</strong></div>
+                        <ul class="calibration-points-list">
+                            <template x-for="(p, idx) in calibrationPoints" :key="idx">
+                                <li class="calibration-point-row">
+                                    <span class="calibration-point-text" x-text="calibrationPointText(p)"></span>
+                                    <button type="button" class="calibration-delete-btn" @click="deleteCalibrationPoint(idx)" :disabled="loading.calibrate">Elimina</button>
+                                </li>
+                            </template>
+                            <li x-show="calibrationPoints.length === 0"><em>Nessun punto di calibrazione</em></li>
+                        </ul>
+                    </div>
+
+                    <div x-show="calibrationChartVisible" style="margin-top:10px;">
+                        <canvas id="calibration-chart" height="140"></canvas>
+                    </div>
+
+                    <div class="result" x-text="calibrationMessage || 'Nessuna operazione calibrazione eseguita'" ></div>
+                </div>
+
+                <div class="section section-box">
+                    <h3>Campionamento</h3>
+                    <div class="row compact">
+                        <label>N <input type="number" min="1" x-model.number="sampleN"></label>
+                        <button type="button" @click="fetchSample()" :disabled="!selectedSensorId || loading.sample">Esegui</button>
+                        <label class="inline"><input type="checkbox" x-model="autoSample"> Auto</label>
+                    </div>
+                    <div class="chart-meta">
+                        <button type="button" class="chart-meta-btn" @click="changeSampleYMin()" x-text="`Y min: ${sampleYMin}`"></button>
+                        <button type="button" class="chart-meta-btn" @click="changeSampleYMax()" x-text="`Y max: ${sampleYMax}`"></button>
+                    </div>
+                    <canvas id="sample-chart" height="140"></canvas>
+                    <pre class="result" x-text="sampleRawPretty"></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Potenza</h2>
+                <div class="row compact">
+                    <div>
+                        <label for="v-sensor">Sensore tensione</label>
+                        <select id="v-sensor" x-model="powerVoltageSensorId">
+                            <option value="">-- scegli --</option>
+                            <template x-for="s in voltageSensors" :key="s.id">
+                                <option :value="s.id" x-text="s.name || s.id"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="i-sensor">Sensore corrente</label>
+                        <select id="i-sensor" x-model="powerCurrentSensorId">
+                            <option value="">-- scegli --</option>
+                            <template x-for="s in currentSensors" :key="s.id">
+                                <option :value="s.id" x-text="s.name || s.id"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+                <div class="row compact">
+                    <label>Phase shift (samples)
+                        <input type="number" x-model.number="powerPhaseShift" min="-1024" step="1" style="width:120px; margin-left:8px;">
+                    </label>
+                    <button type="button" @click="savePhaseShift()" :disabled="!powerVoltageSensorId || !powerCurrentSensorId || loading.power" style="margin-left:12px;">Salva</button>
+                </div>
+                <div class="row compact">
+                    <button type="button" @click="fetchPower()" :disabled="!powerVoltageSensorId || !powerCurrentSensorId || loading.power || !canMeasurePower()">Rileva potenza</button>
+                    <label class="inline"><input type="checkbox" x-model="autoPower"> Auto</label>
+                </div>
+
+                <div class="metric-grid">
+                    <div class="metric"><span>Watt</span><strong x-text="fmt(powerData.watt)">-</strong></div>
+                    <div class="metric"><span>PF</span><strong x-text="fmt(powerData.pf)">-</strong></div>
+                    <div class="metric"><span>Volt</span><strong x-text="fmt(powerData.volt)">-</strong></div>
+                    <div class="metric"><span>Ampere</span><strong x-text="fmt(powerData.amp)">-</strong></div>
+                </div>
+                <pre class="result" x-text="powerRawPretty"></pre>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

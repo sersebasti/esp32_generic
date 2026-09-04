@@ -1,0 +1,11 @@
+{
+  "i2c_id": 0,
+  "scl": 22,
+  "sda": 21,
+  "freq": 100000,
+  "addr": 60,
+  "driver": "sh1106",
+  "width": 128,
+  "height": 64,
+  "col_offset": 0
+}

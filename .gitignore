@@ -1,0 +1,5 @@
+tools/PythonUI/src/build/
+tools/PythonUI/src/dist/
+tools/PythonUI/src/log.txt
+__pycache__/
+*.pyc

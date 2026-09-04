@@ -1,0 +1,18 @@
+{
+  "relays": [
+    {
+      "id": "relay1",
+      "pin": 13,
+      "active_low": false,
+      "initial_state": "off",
+      "feedback_pin": 27,
+      "feedback_invert": true
+    },
+    {
+      "id": "relay2",
+      "pin": 14,
+      "active_low": false,
+      "initial_state": "off"
+    }
+  ]
+}
