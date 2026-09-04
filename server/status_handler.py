@@ -1,6 +1,7 @@
 # status_api.py
 import gc, network, ubinascii, time, ujson
 from core.http_consts import _HTTP_200_JSON
+from core.config import MDNS_HOSTNAME
 from core.version import version
 from wifi.config import WIFI_JSON
 
@@ -71,6 +72,8 @@ def handle(cl, method, path, req=None, read_post_json=None, body_initial_and_len
         payload = {
             "version": version,
             "name": meta["hostname"],
+            "mdns_hostname": MDNS_HOSTNAME,
+            "mdns_url": "http://%s.local" % MDNS_HOSTNAME,
             "ip": _get_ip_sta(),
             "ssid": _get_ssid(),
             "rssi": _rssi(),

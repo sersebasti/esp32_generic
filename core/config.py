@@ -2,7 +2,7 @@
 # Configurazione centralizzata basata su default codificati.
 # Modifica i valori qui per adeguare il comportamento dell'app.
 _DEFAULTS = {
-    "mdns_hostname": "controllo-relay",
+    "mdns_hostname": "mdns_hostname",
     "mdns_http_port": 80,
     "features": {
         "logger": False,
