@@ -160,26 +160,10 @@ def _bootstrap_server(context, wifi_mgr, connected):
 		context.update(result)
 
 
-def _bootstrap_mdns(context, wifi_mgr, connected):
-	if wifi_mgr is None or not connected or not feature_enabled("mdns"):
-		return
-	try:
-		from core.config import MDNS_HOSTNAME, MDNS_HTTP_PORT
-		from core.mdns_manager import MDNSManager
-
-		manager = MDNSManager(MDNS_HOSTNAME, MDNS_HTTP_PORT, wifi_mgr.log)
-		if manager.start():
-			wifi_mgr.mdns_manager = manager
-			context["mdns_manager"] = manager
-	except Exception as error:
-		wifi_mgr.log.info("mDNS bootstrap fallito: %r" % error)
-
-
 def start_app():
 	context = {}
 	display = _create_display_if_available()
 	wifi_mgr, connected = _bootstrap_wifi(context, display)
-	_bootstrap_mdns(context, wifi_mgr, connected)
 	_bootstrap_server(context, wifi_mgr, connected)
 	return context
 

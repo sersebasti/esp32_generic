@@ -3,12 +3,10 @@
 # Modifica i valori qui per adeguare il comportamento dell'app.
 _DEFAULTS = {
     "mdns_hostname": "mdns_hostname",
-    "mdns_http_port": 80,
     "features": {
         "logger": False,
         "wifi": True,
         "server": True,
-        "mdns": True,
         "scope": False,
         "fs": True,
         "display": False,
@@ -21,7 +19,6 @@ _DEFAULTS = {
 
 cfg = dict(_DEFAULTS)
 MDNS_HOSTNAME = cfg["mdns_hostname"]
-MDNS_HTTP_PORT = cfg["mdns_http_port"]
 
 
 def feature_enabled(name):
