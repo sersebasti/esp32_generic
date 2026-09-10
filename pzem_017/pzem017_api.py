@@ -3,7 +3,7 @@
 import ujson
 from core.http_consts import _HTTP_200_JSON
 
-from pzem_017.pzem_rs485 import read_pzem017
+from pzem_017.pzem017_sensor import read_pzem017
 
 
 def get_pzem017():

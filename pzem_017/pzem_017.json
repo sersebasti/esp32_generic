@@ -1,0 +1,11 @@
+{
+  "id": "pzem017_1",
+  "uart_id": 2,
+  "tx": 26,
+  "rx": 27,
+  "dir_pin": 25,
+  "baudrate": 9600,
+  "slave_addr": 1,
+  "timeout_ms": 800,
+  "retries": 3
+}
