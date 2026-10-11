@@ -4,14 +4,16 @@
     "uart_id": 1,
     "tx": 26,
     "rx": 25,
-    "baudrate": 9600
+    "baudrate": 9600,
+    "slave_addr": 1
   },
   {
     "id": "pz2",
-    "uart_id": 2,
-    "tx": 33,
-    "rx": 32,
-    "baudrate": 9600
+    "uart_id": 1,
+    "tx": 26,
+    "rx": 25,
+    "baudrate": 9600,
+    "slave_addr": 2
   }
 
 ]

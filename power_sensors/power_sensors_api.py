@@ -2,6 +2,8 @@
 # Endpoint HTTP semplice per leggere i dati da tutti i sensori di potenza configurati
 
 import ujson, os
+import time
+from machine import UART
 from core.http_consts import _HTTP_200_JSON, _HTTP_200_JSON_CORS
 try:
     import ustruct as struct
@@ -14,15 +16,48 @@ from power_sensors.pzem004t import PZEM004T
 with open('power_sensors/power_sensors.json') as f:
     sensors_config = ujson.load(f)
 
-# Istanzia tutti i sensori
+# Create one UART per hardware port and share it among sensors on that bus.
 sensors = {}
+uart_buses = {}
+uart_settings = {}
+uart_addresses = {}
+uart_sensor_counts = {}
 for cfg in sensors_config:
+    sensor_id = cfg['id']
+    uart_id = cfg.get('uart_id', 1)
+    tx = cfg.get('tx', 17)
+    rx = cfg.get('rx', 16)
+    baudrate = cfg.get('baudrate', 9600)
+    slave_addr = cfg.get('slave_addr', 0xF8)
+    settings = (tx, rx, baudrate)
+
+    if uart_id in uart_settings and uart_settings[uart_id] != settings:
+        raise ValueError("Sensors sharing UART{} must use the same TX, RX and baudrate".format(uart_id))
+    if uart_id not in uart_buses:
+        uart_buses[uart_id] = UART(uart_id, baudrate=baudrate, tx=tx, rx=rx, timeout=100)
+        uart_settings[uart_id] = settings
+        uart_addresses[uart_id] = set()
+        uart_sensor_counts[uart_id] = 0
+        time.sleep(1)
+    if not 1 <= slave_addr <= 0xF8:
+        raise ValueError("Invalid slave_addr for sensor {}".format(sensor_id))
+    if slave_addr in uart_addresses[uart_id]:
+        raise ValueError("Duplicate slave_addr {} on UART{}".format(slave_addr, uart_id))
+    uart_addresses[uart_id].add(slave_addr)
+    uart_sensor_counts[uart_id] += 1
+
     sensors[cfg['id']] = PZEM004T(
-        uart_id=cfg.get('uart_id', 1),
-        tx=cfg.get('tx', 17),
-        rx=cfg.get('rx', 16),
-        baudrate=cfg.get('baudrate', 9600)
+        uart_id=uart_id,
+        tx=tx,
+        rx=rx,
+        baudrate=baudrate,
+        slave_addr=slave_addr,
+        uart=uart_buses[uart_id]
     )
+
+for uart_id, sensor_count in uart_sensor_counts.items():
+    if sensor_count > 1 and 0xF8 in uart_addresses[uart_id]:
+        raise ValueError("UART{} multi-sensor bus requires slave_addr 1..247 for every sensor".format(uart_id))
 
 def get_all_power_sensors():
     result = {}
